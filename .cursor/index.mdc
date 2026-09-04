@@ -1,0 +1,20 @@
+# Charge-me Not — Project Rules
+
+## Language
+- 100% Kotlin
+
+## UI Framework
+- Jetpack Compose with Material 3 (No XML layouts)
+
+## Architecture
+- Clean Architecture with MVVM and StateFlow
+
+## Local Persistence
+- Room Database
+
+## Strict Privacy
+- Local-first only, no cloud databases or external APIs.
+
+## Code Style
+- Production-ready only. No placeholder functions.
+- Keep ViewModels free of Android framework imports.
