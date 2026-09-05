@@ -58,6 +58,7 @@ class BillOcrAnalyzer(
             mediaImage,
             imageProxy.imageInfo.rotationDegrees
         )
+        val receiptBitmap = ImageProxyConverter.toBitmap(imageProxy)
 
         var pendingTasks = 2
 
@@ -87,14 +88,15 @@ class BillOcrAnalyzer(
         textRecognizer().process(inputImage)
             .addOnSuccessListener { visionText ->
                 val fullRawText = visionText.text
-                val receiptBitmap = ImageProxyConverter.toBitmap(imageProxy)
                 val result = extractBillData(fullRawText).copy(receiptBitmap = receiptBitmap)
                 if (result.hasActionableData) {
                     onScanResult(result)
+                } else {
+                    receiptBitmap?.recycle()
                 }
             }
             .addOnFailureListener {
-                // Frame failed OCR processing; continue scanning.
+                receiptBitmap?.recycle()
             }
             .addOnCompleteListener {
                 completeTask()

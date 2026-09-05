@@ -84,7 +84,17 @@ class ScannerViewModel(
             return
         }
 
+        val previousReceiptPath = _uiState.value.scannedBill.receiptImagePath
         val mergedScan = _uiState.value.scannedBill.merge(result, receiptImagePath)
+        if (
+            receiptImagePath != null &&
+            previousReceiptPath != null &&
+            receiptImagePath != previousReceiptPath
+        ) {
+            coroutineScope.launch(ioDispatcher) {
+                billRepository.deleteOrphanReceiptImage(previousReceiptPath)
+            }
+        }
         val monthlyBudget = _uiState.value.monthlyBudget
         val impact = mergedScan.amount?.let { amount ->
             calculatePredictiveImpact(
@@ -196,6 +206,7 @@ class ScannerViewModel(
         val scanned = _uiState.value.scannedBill
         val amount = scanned.amount ?: return
         val dueDate = scanned.dueDate ?: return
+        val selectedCategory = _uiState.value.selectedCategory
         if (!isSavingScannedBill.compareAndSet(false, true)) {
             return
         }
@@ -206,12 +217,12 @@ class ScannerViewModel(
                 billRepository.insertScannedBill(
                     bill = Bill(
                         name = deriveBillName(
-                            category = _uiState.value.selectedCategory,
+                            category = selectedCategory,
                             rawText = scanned.rawText
                         ),
                         amount = amount,
                         dueDate = dueDate,
-                        category = _uiState.value.selectedCategory,
+                        category = selectedCategory,
                         receiptImagePath = scanned.receiptImagePath
                     ),
                     rawText = scanned.rawText
@@ -228,6 +239,7 @@ class ScannerViewModel(
     }
 
     fun resetScanSession() {
+        val orphanReceiptPath = _uiState.value.scannedBill.receiptImagePath
         _uiState.update { current ->
             current.copy(
                 scannedBill = ScannedBillData(),
@@ -240,6 +252,11 @@ class ScannerViewModel(
                 canSaveScannedBill = false,
                 isSavingScannedBill = false
             )
+        }
+        if (orphanReceiptPath != null) {
+            coroutineScope.launch(ioDispatcher) {
+                billRepository.deleteOrphanReceiptImage(orphanReceiptPath)
+            }
         }
     }
 

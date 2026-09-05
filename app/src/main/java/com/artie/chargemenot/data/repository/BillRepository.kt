@@ -77,6 +77,10 @@ class BillRepository(
     fun getChildrenForParent(parentId: Long): Flow<List<Bill>> =
         billDao.getChildrenForParent(parentId).map { entities -> entities.map { it.toDomain() } }
 
+    fun deleteOrphanReceiptImage(receiptImagePath: String?) {
+        ImageStorageUtil.deleteReceiptImage(receiptImagePath)
+    }
+
     fun searchCompost(rawQuery: String): Flow<List<BillWithCompost>> {
         val sanitizedQuery = FtsQuerySanitizer.sanitize(rawQuery)
         if (sanitizedQuery.isBlank()) {

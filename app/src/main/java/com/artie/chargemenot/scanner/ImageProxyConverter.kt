@@ -1,5 +1,6 @@
 package com.artie.chargemenot.scanner
 
+import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
@@ -10,6 +11,7 @@ import java.io.ByteArrayOutputStream
 
 object ImageProxyConverter {
 
+    @SuppressLint("UnsafeOptInUsageError")
     fun toBitmap(imageProxy: ImageProxy): Bitmap? {
         val image = imageProxy.image ?: return null
         if (image.format != ImageFormat.YUV_420_888) {
