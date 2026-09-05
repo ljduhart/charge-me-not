@@ -119,6 +119,58 @@ class WeedWhackerViewModelTest {
     }
 
     @Test
+    fun recordAuditResponse_ignoresConcurrentDuplicateTaps() {
+        val billDao = FakeBillDao(
+            initialBills = listOf(
+                subscriptionBill(id = 1L, name = "Netflix"),
+                subscriptionBill(id = 2L, name = "Spotify Premium")
+            ),
+            updateDelayMs = 50L
+        )
+        val viewModel = WeedWhackerViewModel(
+            billDao = billDao,
+            coroutineScope = testScope,
+            ioDispatcher = testDispatcher
+        )
+        testScope.advanceUntilIdle()
+
+        viewModel.recordAuditResponse(billId = 1L, used = true)
+        viewModel.recordAuditResponse(billId = 1L, used = true)
+        testScope.advanceUntilIdle()
+
+        val updated = billDao.getBillSnapshot(1L)
+        assertEquals(1, updated?.usageCount)
+        assertEquals(1, updated?.auditPromptCount)
+        assertEquals("Spotify Premium", viewModel.uiState.value.currentAuditCard?.name)
+    }
+
+    @Test
+    fun reconcileAuditIndex_marksSessionCompleteWhenSubscriptionsShrink() {
+        val billDao = FakeBillDao(
+            initialBills = listOf(
+                subscriptionBill(id = 1L, name = "Netflix"),
+                subscriptionBill(id = 2L, name = "Spotify Premium")
+            )
+        )
+        val viewModel = WeedWhackerViewModel(
+            billDao = billDao,
+            coroutineScope = testScope,
+            ioDispatcher = testDispatcher
+        )
+        testScope.advanceUntilIdle()
+
+        viewModel.recordAuditResponse(billId = 1L, used = true)
+        testScope.advanceUntilIdle()
+
+        billDao.setSubscriptions(
+            listOf(subscriptionBill(id = 2L, name = "Spotify Premium"))
+        )
+        testScope.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.auditSessionComplete)
+    }
+
+    @Test
     fun restartAuditSession_resetsCurrentAuditCard() {
         val billDao = FakeBillDao(
             initialBills = listOf(
@@ -164,11 +216,16 @@ class WeedWhackerViewModelTest {
         )
     }
 
-    private class FakeBillDao(
-        initialBills: List<BillEntity>
+    private open class FakeBillDao(
+        initialBills: List<BillEntity>,
+        private val updateDelayMs: Long = 0L
     ) : BillDao {
 
         private val bills = MutableStateFlow(initialBills)
+
+        fun setSubscriptions(updatedBills: List<BillEntity>) {
+            bills.value = updatedBills
+        }
 
         fun getBillSnapshot(billId: Long): BillEntity? =
             bills.value.firstOrNull { bill -> bill.id == billId }
@@ -186,6 +243,9 @@ class WeedWhackerViewModelTest {
         }
 
         override suspend fun updateBill(bill: BillEntity) {
+            if (updateDelayMs > 0L) {
+                kotlinx.coroutines.delay(updateDelayMs)
+            }
             bills.value = bills.value.map { existing ->
                 if (existing.id == bill.id) bill else existing
             }

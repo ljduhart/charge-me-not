@@ -57,6 +57,9 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(pendingNavigationRoute) {
                     val route = pendingNavigationRoute
                     if (route != null) {
+                        if (route == AppRoutes.WEED_WHACKER) {
+                            weedWhackerViewModel.restartAuditSession()
+                        }
                         navController.navigate(route) {
                             launchSingleTop = true
                         }

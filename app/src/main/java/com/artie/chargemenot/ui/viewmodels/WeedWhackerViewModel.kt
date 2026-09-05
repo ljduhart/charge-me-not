@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 
 class WeedWhackerViewModel(
     private val billDao: BillDao,
@@ -21,6 +22,7 @@ class WeedWhackerViewModel(
     private val currentAuditIndex = MutableStateFlow(0)
     private val auditSessionComplete = MutableStateFlow(false)
     private val hasLoadedSubscriptions = MutableStateFlow(false)
+    private val isRecordingAuditResponse = AtomicBoolean(false)
 
     private val _uiState = MutableStateFlow(WeedWhackerUiState())
     val uiState: StateFlow<WeedWhackerUiState> = _uiState.asStateFlow()
@@ -31,7 +33,18 @@ class WeedWhackerViewModel(
             billDao.getActiveSubscriptions().collect { subscriptions ->
                 subscriptionsState.value = subscriptions
                 hasLoadedSubscriptions.value = true
+                reconcileAuditIndex(subscriptions)
             }
+        }
+    }
+
+    private fun reconcileAuditIndex(subscriptions: List<BillEntity>) {
+        if (auditSessionComplete.value || subscriptions.isEmpty()) {
+            return
+        }
+
+        if (currentAuditIndex.value >= subscriptions.size) {
+            auditSessionComplete.value = true
         }
     }
 
@@ -56,26 +69,34 @@ class WeedWhackerViewModel(
     }
 
     fun recordAuditResponse(billId: Long, used: Boolean) {
+        if (!isRecordingAuditResponse.compareAndSet(false, true)) {
+            return
+        }
+
         coroutineScope.launch(ioDispatcher) {
-            val bill = billDao.getBillByIdOnce(billId) ?: return@launch
+            try {
+                val bill = billDao.getBillByIdOnce(billId) ?: return@launch
 
-            val updatedBill = if (used) {
-                bill.copy(
-                    usageCount = bill.usageCount + 1,
-                    auditPromptCount = bill.auditPromptCount + 1
-                )
-            } else {
-                bill.copy(auditPromptCount = bill.auditPromptCount + 1)
-            }
+                val updatedBill = if (used) {
+                    bill.copy(
+                        usageCount = bill.usageCount + 1,
+                        auditPromptCount = bill.auditPromptCount + 1
+                    )
+                } else {
+                    bill.copy(auditPromptCount = bill.auditPromptCount + 1)
+                }
 
-            billDao.updateBill(updatedBill)
+                billDao.updateBill(updatedBill)
 
-            val subscriptions = subscriptionsState.value
-            val nextIndex = currentAuditIndex.value + 1
-            if (nextIndex >= subscriptions.size) {
-                auditSessionComplete.value = true
-            } else {
-                currentAuditIndex.value = nextIndex
+                val subscriptions = subscriptionsState.value
+                val nextIndex = currentAuditIndex.value + 1
+                if (nextIndex >= subscriptions.size) {
+                    auditSessionComplete.value = true
+                } else {
+                    currentAuditIndex.value = nextIndex
+                }
+            } finally {
+                isRecordingAuditResponse.set(false)
             }
         }
     }
@@ -83,6 +104,7 @@ class WeedWhackerViewModel(
     fun restartAuditSession() {
         currentAuditIndex.value = 0
         auditSessionComplete.value = false
+        isRecordingAuditResponse.set(false)
     }
 
     private fun buildUiState(
