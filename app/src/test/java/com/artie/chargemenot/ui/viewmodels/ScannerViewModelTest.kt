@@ -8,17 +8,23 @@ import com.artie.chargemenot.data.repository.BillRepository
 import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.domain.model.UserSettings
+import com.artie.chargemenot.data.model.CrossPollinationPayload
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import com.artie.chargemenot.data.model.CrossPollinationPayload
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
 
@@ -26,6 +32,18 @@ class ScannerViewModelTest {
 
   private val testDispatcher = UnconfinedTestDispatcher()
   private val testScope = TestScope(testDispatcher)
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Before
+  fun setUp() {
+    Dispatchers.setMain(testDispatcher)
+  }
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @After
+  fun tearDown() {
+    Dispatchers.resetMain()
+  }
 
   @Test
   fun calculatePredictiveImpact_usesProvidedMonthlyBudget() {
@@ -122,6 +140,52 @@ class ScannerViewModelTest {
     assertEquals(1, billDao.insertedBills.size)
     assertEquals("Roommate Rent Split", billDao.insertedBills.first().name)
     assertNull(viewModel.uiState.value.pollenReceived)
+  }
+
+  @Test
+  fun discardPollen_suppressesImmediateQrRedetection() {
+    val viewModel = createViewModel()
+    val payload = CrossPollinationPayload(
+      name = "Spotify Premium",
+      amount = 11.99,
+      dueDate = "2026-09-12",
+      category = "SUBSCRIPTIONS"
+    )
+
+    viewModel.onQrPayloadDetected(payload)
+    viewModel.discardPollen()
+    viewModel.onQrPayloadDetected(payload)
+
+    assertNull(viewModel.uiState.value.pollenReceived)
+  }
+
+  @Test
+  fun acceptPollinatedBill_preventsDuplicateInsertsOnDoubleTap() {
+    val billDao = TrackingBillDao()
+    val viewModel = ScannerViewModel(
+      billRepository = BillRepository(billDao),
+      userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
+      coroutineScope = testScope,
+      ioDispatcher = testDispatcher
+    )
+    testScope.advanceUntilIdle()
+
+    viewModel.onQrPayloadDetected(
+      CrossPollinationPayload(
+        name = "Roommate Rent Split",
+        amount = 725.0,
+        dueDate = "2026-09-15",
+        category = "RENT"
+      )
+    )
+
+    var acceptCount = 0
+    viewModel.acceptPollinatedBill { acceptCount++ }
+    viewModel.acceptPollinatedBill { acceptCount++ }
+    testScope.advanceUntilIdle()
+
+    assertEquals(1, billDao.insertedBills.size)
+    assertEquals(1, acceptCount)
   }
 
   @Test

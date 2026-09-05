@@ -16,9 +16,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 
 class ScannerViewModel(
     private val billRepository: BillRepository,
@@ -32,6 +34,9 @@ class ScannerViewModel(
 
     private val _uiState = MutableStateFlow(ScannerUiState())
     val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
+
+    private val isAcceptingPollen = AtomicBoolean(false)
+    private var qrSuppressedUntilMs = 0L
 
     init {
         observeScannerData()
@@ -120,6 +125,10 @@ class ScannerViewModel(
             return
         }
 
+        if (System.currentTimeMillis() < qrSuppressedUntilMs) {
+            return
+        }
+
         val billEntity = payload.toBillEntity() ?: return
 
         _uiState.update { current ->
@@ -137,6 +146,7 @@ class ScannerViewModel(
     }
 
     fun discardPollen() {
+        qrSuppressedUntilMs = System.currentTimeMillis() + QR_SUPPRESSION_MS
         _uiState.update { current ->
             current.copy(
                 pollenReceived = null,
@@ -148,18 +158,27 @@ class ScannerViewModel(
 
     fun acceptPollinatedBill(onAccepted: () -> Unit) {
         val pollen = _uiState.value.pollenReceived ?: return
+        if (!isAcceptingPollen.compareAndSet(false, true)) {
+            return
+        }
 
         coroutineScope.launch(ioDispatcher) {
-            billRepository.insertBill(
-                Bill(
-                    name = pollen.name,
-                    amount = pollen.amount,
-                    dueDate = pollen.dueDate,
-                    category = pollen.category
+            try {
+                billRepository.insertBill(
+                    Bill(
+                        name = pollen.name,
+                        amount = pollen.amount,
+                        dueDate = pollen.dueDate,
+                        category = pollen.category
+                    )
                 )
-            )
-            resetScanSession()
-            onAccepted()
+                resetScanSession()
+                withContext(Dispatchers.Main) {
+                    onAccepted()
+                }
+            } finally {
+                isAcceptingPollen.set(false)
+            }
         }
     }
 
@@ -227,5 +246,6 @@ class ScannerViewModel(
     companion object {
         private const val PERCENT_SCALE = 100.0
         private const val DEFAULT_DETECTION_BANNER = "Ready to scan paper bills or partner QR codes"
+        private const val QR_SUPPRESSION_MS = 2_500L
     }
 }

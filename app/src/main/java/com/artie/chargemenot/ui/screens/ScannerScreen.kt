@@ -141,7 +141,8 @@ fun ScannerScreen(
                 if (cameraPermissionState.status.isGranted) {
                     CameraPreviewSection(
                         onScanResult = onScanResult,
-                        onQrPayloadDetected = onQrPayloadDetected
+                        onQrPayloadDetected = onQrPayloadDetected,
+                        scanningPaused = uiState.pollenReceived != null
                     )
                 } else {
                     CameraPermissionPlaceholder()
@@ -187,17 +188,27 @@ fun ScannerScreen(
 @Composable
 private fun CameraPreviewSection(
     onScanResult: (OcrScanResult) -> Unit,
-    onQrPayloadDetected: (CrossPollinationPayload) -> Unit
+    onQrPayloadDetected: (CrossPollinationPayload) -> Unit,
+    scanningPaused: Boolean
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
     val currentOnScanResult by rememberUpdatedState(onScanResult)
     val currentOnQrPayloadDetected by rememberUpdatedState(onQrPayloadDetected)
+    val scanningPausedState = rememberUpdatedState(scanningPaused)
     val analyzer = remember {
         BillOcrAnalyzer(
-            onScanResult = { result -> currentOnScanResult(result) },
-            onQrPayloadDetected = { payload -> currentOnQrPayloadDetected(payload) }
+            onScanResult = { result ->
+                if (!scanningPausedState.value) {
+                    currentOnScanResult(result)
+                }
+            },
+            onQrPayloadDetected = { payload ->
+                if (!scanningPausedState.value) {
+                    currentOnQrPayloadDetected(payload)
+                }
+            }
         )
     }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
