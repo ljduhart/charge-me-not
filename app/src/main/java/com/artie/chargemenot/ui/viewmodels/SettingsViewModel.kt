@@ -3,6 +3,7 @@ package com.artie.chargemenot.ui.viewmodels
 import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.repository.NagModeScheduler
 import com.artie.chargemenot.domain.repository.NotificationPermissionGateway
+import com.artie.chargemenot.domain.repository.WeedWhackerScheduler
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,6 +16,7 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(
     private val userSettingsRepository: UserSettingsRepository,
     private val nagModeScheduler: NagModeScheduler,
+    private val weedWhackerScheduler: WeedWhackerScheduler,
     private val notificationPermissionGateway: NotificationPermissionGateway,
     private val coroutineScope: CoroutineScope,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -33,6 +35,7 @@ class SettingsViewModel(
 
     init {
         observeSettings()
+        scheduleWeedWhackerAudits()
     }
 
     private fun observeSettings() {
@@ -52,6 +55,12 @@ class SettingsViewModel(
             }.collect { state ->
                 _uiState.value = state
             }
+        }
+    }
+
+    fun scheduleWeedWhackerAudits() {
+        coroutineScope.launch(ioDispatcher) {
+            weedWhackerScheduler.enablePeriodicAudits()
         }
     }
 
@@ -116,6 +125,10 @@ class SettingsViewModel(
                 nagModeScheduler.enableNagMode()
             }
         }
+    }
+
+    fun restoreWeedWhackerWork() {
+        scheduleWeedWhackerAudits()
     }
 
     private fun buildUiState(

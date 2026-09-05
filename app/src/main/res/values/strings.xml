@@ -36,4 +36,28 @@
     <string name="scanner_accept_pollinated_subtitle">A partner shared this bill with you offline.</string>
     <string name="scanner_accept_into_garden">Accept into Garden</string>
     <string name="scanner_discard_pollen">Discard</string>
+
+    <string name="weed_whacker_channel_name">Weed Whacker Garden Audits</string>
+    <string name="weed_whacker_channel_description">Weekly reminders to audit subscription usage in your garden</string>
+    <string name="weed_whacker_notification_title">Garden Audit</string>
+    <string name="weed_whacker_notification_body">Garden Audit: Did you use your subscriptions this week? Tap to prune.</string>
+    <string name="weed_whacker_title">Weed Whacker Audit</string>
+    <string name="weed_whacker_back">Back to dashboard</string>
+    <string name="weed_whacker_entry">Weed Whacker Audit</string>
+    <string name="weed_whacker_entry_subtitle">Track true cost-per-use and spot prime weeds in your garden</string>
+    <string name="weed_whacker_audit_header">Weekly Subscription Check-In</string>
+    <string name="weed_whacker_audit_question">Did you use %1$s recently?</string>
+    <string name="weed_whacker_audit_amount">Monthly cost: %1$s</string>
+    <string name="weed_whacker_pending_count">%1$d remaining in this audit</string>
+    <string name="weed_whacker_used_yes">Yes, I used it</string>
+    <string name="weed_whacker_used_no">No</string>
+    <string name="weed_whacker_no_subscriptions">No active subscriptions to audit right now.</string>
+    <string name="weed_whacker_audit_complete">Audit complete for this session. Review your garden health report below.</string>
+    <string name="weed_whacker_restart_audit">Start New Audit</string>
+    <string name="weed_whacker_report_title">Garden Health Report</string>
+    <string name="weed_whacker_report_subtitle">True cost-per-use for each subscription bloom</string>
+    <string name="weed_whacker_report_empty">Add subscription bills to begin your cost-per-use audit.</string>
+    <string name="weed_whacker_cost_per_use">Cost per use: %1$s</string>
+    <string name="weed_whacker_usage_stats">Uses: %1$d · Audits: %2$d</string>
+    <string name="weed_whacker_prime_weed_warning">Prime weed — consider pulling this to save money.</string>
 </resources>

@@ -6,13 +6,16 @@ import com.artie.chargemenot.data.nagmode.WorkManagerNagModeScheduler
 import com.artie.chargemenot.data.notification.AndroidNotificationPermissionGateway
 import com.artie.chargemenot.data.repository.BillRepository
 import com.artie.chargemenot.data.repository.UserSettingsRepository
+import com.artie.chargemenot.data.weedwhacker.WorkManagerWeedWhackerScheduler
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.notification.NagModeNotificationHelper
+import com.artie.chargemenot.notification.WeedWhackerNotificationHelper
 import com.artie.chargemenot.ui.dashboard.DashboardViewModel
 import com.artie.chargemenot.ui.viewmodels.PruningViewModel
 import com.artie.chargemenot.ui.viewmodels.ScannerViewModel
 import com.artie.chargemenot.ui.viewmodels.SettingsViewModel
+import com.artie.chargemenot.ui.viewmodels.WeedWhackerViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -29,6 +32,7 @@ class ChargeMeNotApplication : Application() {
         UserSettingsRepository(database.userSettingsDao())
     }
     private val nagModeScheduler by lazy { WorkManagerNagModeScheduler(this) }
+    private val weedWhackerScheduler by lazy { WorkManagerWeedWhackerScheduler(this) }
     private val notificationPermissionGateway by lazy {
         AndroidNotificationPermissionGateway(this)
     }
@@ -53,6 +57,7 @@ class ChargeMeNotApplication : Application() {
         SettingsViewModel(
             userSettingsRepository = userSettingsRepository,
             nagModeScheduler = nagModeScheduler,
+            weedWhackerScheduler = weedWhackerScheduler,
             notificationPermissionGateway = notificationPermissionGateway,
             coroutineScope = applicationScope
         )
@@ -66,11 +71,20 @@ class ChargeMeNotApplication : Application() {
         )
     }
 
+    val weedWhackerViewModel: WeedWhackerViewModel by lazy {
+        WeedWhackerViewModel(
+            billDao = database.billDao(),
+            coroutineScope = applicationScope
+        )
+    }
+
     override fun onCreate() {
         super.onCreate()
         NagModeNotificationHelper.createNotificationChannel(this)
+        WeedWhackerNotificationHelper.createNotificationChannel(this)
         seedInitialDataIfNeeded()
         settingsViewModel.restoreNagModeWorkIfEnabled()
+        settingsViewModel.restoreWeedWhackerWork()
     }
 
     private fun seedInitialDataIfNeeded() {

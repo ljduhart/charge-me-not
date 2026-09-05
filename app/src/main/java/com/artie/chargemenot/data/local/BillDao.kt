@@ -44,6 +44,18 @@ interface BillDao {
 
     @Query(
         """
+        SELECT * FROM bills
+        WHERE category = 'SUBSCRIPTIONS' AND isPaid = 0
+        ORDER BY name ASC
+        """
+    )
+    fun getActiveSubscriptions(): Flow<List<BillEntity>>
+
+    @Query("SELECT * FROM bills WHERE id = :billId")
+    suspend fun getBillByIdOnce(billId: Long): BillEntity?
+
+    @Query(
+        """
         SELECT COUNT(*) FROM bills
         WHERE isPaid = 0 AND dueDate <= :today
         """

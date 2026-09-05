@@ -13,5 +13,7 @@ data class BillEntity(
     val amount: Double,
     val dueDate: LocalDate,
     val category: BillCategory,
-    val isPaid: Boolean = false
+    val isPaid: Boolean = false,
+    val usageCount: Int = 0,
+    val auditPromptCount: Int = 0
 )

@@ -8,7 +8,9 @@ fun BillEntity.toDomain(): Bill = Bill(
     amount = amount,
     dueDate = dueDate,
     category = category,
-    isPaid = isPaid
+    isPaid = isPaid,
+    usageCount = usageCount,
+    auditPromptCount = auditPromptCount
 )
 
 fun Bill.toEntity(): BillEntity = BillEntity(
@@ -17,5 +19,7 @@ fun Bill.toEntity(): BillEntity = BillEntity(
     amount = amount,
     dueDate = dueDate,
     category = category,
-    isPaid = isPaid
+    isPaid = isPaid,
+    usageCount = usageCount,
+    auditPromptCount = auditPromptCount
 )

@@ -5,6 +5,7 @@ import com.artie.chargemenot.data.local.UserSettingsEntity
 import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.repository.NagModeScheduler
 import com.artie.chargemenot.domain.repository.NotificationPermissionGateway
+import com.artie.chargemenot.domain.repository.WeedWhackerScheduler
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
@@ -18,6 +19,36 @@ class SettingsViewModelTest {
 
   private val testDispatcher = UnconfinedTestDispatcher()
   private val testScope = TestScope(testDispatcher)
+
+  @Test
+  fun init_schedulesWeedWhackerAudits() {
+    val weedWhackerScheduler = FakeWeedWhackerScheduler()
+    createViewModel(
+      scheduler = FakeNagModeScheduler(),
+      weedWhackerScheduler = weedWhackerScheduler,
+      permissionGateway = FakeNotificationPermissionGateway(granted = true)
+    )
+    testScope.advanceUntilIdle()
+
+    assertTrue(weedWhackerScheduler.isEnabled)
+  }
+
+  @Test
+  fun restoreWeedWhackerWork_schedulesPeriodicAudits() {
+    val weedWhackerScheduler = FakeWeedWhackerScheduler()
+    val viewModel = createViewModel(
+      scheduler = FakeNagModeScheduler(),
+      weedWhackerScheduler = weedWhackerScheduler,
+      permissionGateway = FakeNotificationPermissionGateway(granted = true)
+    )
+    testScope.advanceUntilIdle()
+
+    weedWhackerScheduler.isEnabled = false
+    viewModel.restoreWeedWhackerWork()
+    testScope.advanceUntilIdle()
+
+    assertTrue(weedWhackerScheduler.isEnabled)
+  }
 
   @Test
   fun onNagModeToggleRequested_enablesSchedulerWhenPermissionGranted() {
@@ -126,11 +157,13 @@ class SettingsViewModelTest {
 
   private fun createViewModel(
     scheduler: FakeNagModeScheduler,
+    weedWhackerScheduler: FakeWeedWhackerScheduler = FakeWeedWhackerScheduler(),
     permissionGateway: FakeNotificationPermissionGateway
   ): SettingsViewModel {
     return SettingsViewModel(
       userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
       nagModeScheduler = scheduler,
+      weedWhackerScheduler = weedWhackerScheduler,
       notificationPermissionGateway = permissionGateway,
       coroutineScope = testScope,
       ioDispatcher = testDispatcher
@@ -147,6 +180,14 @@ class SettingsViewModelTest {
 
     override fun disableNagMode() {
       isEnabled = false
+    }
+  }
+
+  private class FakeWeedWhackerScheduler : WeedWhackerScheduler {
+    var isEnabled: Boolean = false
+
+    override fun enablePeriodicAudits() {
+      isEnabled = true
     }
   }
 

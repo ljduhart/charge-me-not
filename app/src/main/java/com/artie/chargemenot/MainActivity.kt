@@ -1,5 +1,6 @@
 package com.artie.chargemenot
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,7 +12,10 @@ import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -24,15 +28,19 @@ import com.artie.chargemenot.ui.theme.MeadowWhite
 
 class MainActivity : ComponentActivity() {
 
+    private var pendingNavigationRoute by mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        pendingNavigationRoute = intent.getStringExtra(EXTRA_NAVIGATION_ROUTE)
 
         val app = application as ChargeMeNotApplication
         val dashboardViewModel = app.dashboardViewModel
         val scannerViewModel = app.scannerViewModel
         val settingsViewModel = app.settingsViewModel
         val pruningViewModel = app.pruningViewModel
+        val weedWhackerViewModel = app.weedWhackerViewModel
 
         setContent {
             ChargeMeNotTheme {
@@ -44,6 +52,18 @@ class MainActivity : ComponentActivity() {
                 val scannerUiState by scannerViewModel.uiState.collectAsStateWithLifecycle()
                 val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
                 val pruningUiState by pruningViewModel.uiState.collectAsStateWithLifecycle()
+                val weedWhackerUiState by weedWhackerViewModel.uiState.collectAsStateWithLifecycle()
+
+                LaunchedEffect(pendingNavigationRoute) {
+                    val route = pendingNavigationRoute
+                    if (route != null) {
+                        navController.navigate(route) {
+                            launchSingleTop = true
+                        }
+                        pendingNavigationRoute = null
+                        intent.removeExtra(EXTRA_NAVIGATION_ROUTE)
+                    }
+                }
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
@@ -85,6 +105,12 @@ class MainActivity : ComponentActivity() {
                                 launchSingleTop = true
                             }
                         },
+                        onNavigateToWeedWhacker = {
+                            weedWhackerViewModel.restartAuditSession()
+                            navController.navigate(AppRoutes.WEED_WHACKER) {
+                                launchSingleTop = true
+                            }
+                        },
                         onToggleBillStatus = pruningViewModel::toggleBillStatus,
                         onResetSandbox = pruningViewModel::resetSandbox,
                         onScanResult = scannerViewModel::onScanResult,
@@ -103,10 +129,26 @@ class MainActivity : ComponentActivity() {
                         onPruningNavigateBack = {
                             navController.popBackStack()
                         },
+                        weedWhackerUiState = weedWhackerUiState,
+                        onRecordAuditResponse = weedWhackerViewModel::recordAuditResponse,
+                        onRestartAuditSession = weedWhackerViewModel::restartAuditSession,
+                        onWeedWhackerNavigateBack = {
+                            navController.popBackStack()
+                        },
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pendingNavigationRoute = intent.getStringExtra(EXTRA_NAVIGATION_ROUTE)
+    }
+
+    companion object {
+        const val EXTRA_NAVIGATION_ROUTE = "extra_navigation_route"
     }
 }

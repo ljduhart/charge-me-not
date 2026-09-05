@@ -15,9 +15,11 @@ import com.artie.chargemenot.ui.dashboard.DashboardUiState
 import com.artie.chargemenot.ui.screens.DashboardScreen
 import com.artie.chargemenot.ui.screens.PruningSimulatorScreen
 import com.artie.chargemenot.ui.screens.ScannerScreen
+import com.artie.chargemenot.ui.screens.WeedWhackerScreen
 import com.artie.chargemenot.ui.viewmodels.PruningUiState
 import com.artie.chargemenot.ui.viewmodels.ScannerUiState
 import com.artie.chargemenot.ui.viewmodels.SettingsUiState
+import com.artie.chargemenot.ui.viewmodels.WeedWhackerUiState
 import com.artie.chargemenot.data.model.CrossPollinationPayload
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.scanner.OcrScanResult
@@ -78,6 +80,11 @@ fun ChargeMeNotNavHost(
     onDiscardPollen: () -> Unit,
     onScannerNavigateBack: () -> Unit,
     onPruningNavigateBack: () -> Unit,
+    weedWhackerUiState: WeedWhackerUiState,
+    onRecordAuditResponse: (Long, Boolean) -> Unit,
+    onRestartAuditSession: () -> Unit,
+    onWeedWhackerNavigateBack: () -> Unit,
+    onNavigateToWeedWhacker: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -102,7 +109,23 @@ fun ChargeMeNotNavHost(
                 onNotificationPermissionResult = onNotificationPermissionResult,
                 onNotificationPermissionRequestHandled = onNotificationPermissionRequestHandled,
                 onRefreshNotificationPermissionState = onRefreshNotificationPermissionState,
-                onNavigateToPruningSimulator = onNavigateToPruningSimulator
+                onNavigateToPruningSimulator = onNavigateToPruningSimulator,
+                onNavigateToWeedWhacker = onNavigateToWeedWhacker
+            )
+        }
+
+        composable(
+            route = AppRoutes.WEED_WHACKER,
+            enterTransition = { meadowEnterTransition },
+            exitTransition = { meadowExitTransition },
+            popEnterTransition = { meadowPopEnterTransition },
+            popExitTransition = { meadowPopExitTransition }
+        ) {
+            WeedWhackerScreen(
+                uiState = weedWhackerUiState,
+                onRecordAuditResponse = onRecordAuditResponse,
+                onRestartAuditSession = onRestartAuditSession,
+                onNavigateBack = onWeedWhackerNavigateBack
             )
         }
 

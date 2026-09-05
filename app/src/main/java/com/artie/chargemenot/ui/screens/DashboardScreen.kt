@@ -58,6 +58,7 @@ import java.util.Locale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.filled.ContentCut
+import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
@@ -85,6 +86,7 @@ fun DashboardScreen(
     onNotificationPermissionRequestHandled: () -> Unit,
     onRefreshNotificationPermissionState: () -> Unit,
     onNavigateToPruningSimulator: () -> Unit,
+    onNavigateToWeedWhacker: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
@@ -140,6 +142,14 @@ fun DashboardScreen(
         item {
             PruningSimulatorEntryCard(
                 onNavigateToPruningSimulator = onNavigateToPruningSimulator
+            )
+        }
+
+        item { Spacer(modifier = Modifier.height(16.dp)) }
+
+        item {
+            WeedWhackerEntryCard(
+                onNavigateToWeedWhacker = onNavigateToWeedWhacker
             )
         }
 
@@ -326,6 +336,56 @@ private fun GreetingHeader(
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeedWhackerEntryCard(
+    onNavigateToWeedWhacker: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = WeedRed.copy(alpha = 0.1f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 18.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.weed_whacker_entry),
+                style = MaterialTheme.typography.titleMedium,
+                color = MeadowGreenDark,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = stringResource(R.string.weed_whacker_entry_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+            )
+            Button(
+                onClick = onNavigateToWeedWhacker,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MeadowGreen,
+                    contentColor = MeadowWhite
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Grass,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.weed_whacker_entry))
             }
         }
     }
@@ -751,7 +811,8 @@ private fun DashboardScreenPreview() {
             onNotificationPermissionResult = {},
             onNotificationPermissionRequestHandled = {},
             onRefreshNotificationPermissionState = {},
-            onNavigateToPruningSimulator = {}
+            onNavigateToPruningSimulator = {},
+            onNavigateToWeedWhacker = {}
         )
     }
 }
@@ -774,7 +835,8 @@ private fun DashboardScreenEmptyPreview() {
             onNotificationPermissionResult = {},
             onNotificationPermissionRequestHandled = {},
             onRefreshNotificationPermissionState = {},
-            onNavigateToPruningSimulator = {}
+            onNavigateToPruningSimulator = {},
+            onNavigateToWeedWhacker = {}
         )
     }
 }

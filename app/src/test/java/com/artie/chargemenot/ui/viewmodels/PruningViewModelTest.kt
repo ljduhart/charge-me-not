@@ -9,6 +9,7 @@ import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.domain.model.UserSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -116,6 +117,16 @@ class PruningViewModelTest {
     override suspend fun deleteBillById(billId: Long) = Unit
 
     override suspend fun getBillCount(): Int = bills.value.size
+
+    override fun getActiveSubscriptions(): Flow<List<BillEntity>> =
+      bills.map { items ->
+        items.filter { bill ->
+          bill.category == BillCategory.SUBSCRIPTIONS && !bill.isPaid
+        }
+      }
+
+    override suspend fun getBillByIdOnce(billId: Long): BillEntity? =
+      bills.value.firstOrNull { it.id == billId }
 
     override suspend fun getOverdueOrDueTodayUnpaidBillCount(today: LocalDate): Int = 0
   }
