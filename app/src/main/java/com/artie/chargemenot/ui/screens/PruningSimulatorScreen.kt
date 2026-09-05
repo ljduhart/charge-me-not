@@ -41,6 +41,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -163,8 +166,8 @@ private fun PruningBloomSection(
     uiState: PruningUiState,
     modifier: Modifier = Modifier
 ) {
-    val animatedCategoryTotals = animateCategoryTotals(uiState.projectedCategoryTotals)
-    val animatedCategoryAlphas = animateCategoryAlphas(uiState.categoryAlphas)
+    val animatedCategoryTotals = rememberAnimatedCategoryTotals(uiState.projectedCategoryTotals)
+    val animatedCategoryAlphas = rememberAnimatedCategoryAlphas(uiState.categoryAlphas)
 
     Card(
         modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -201,33 +204,43 @@ private fun PruningBloomSection(
 }
 
 @Composable
-private fun animateCategoryTotals(
+private fun rememberAnimatedCategoryTotals(
     targetTotals: Map<BillCategory, Double>
 ): Map<BillCategory, Double> {
-    return BillCategory.entries.associateWith { category ->
-        val target = (targetTotals[category] ?: 0.0).toFloat()
-        val animated by animateFloatAsState(
-            targetValue = target,
-            animationSpec = tween(durationMillis = 450),
-            label = "pruningCategoryTotal_${category.name}"
-        )
-        animated.toDouble()
-    }.filterValues { amount -> amount > 0.0 }
+    val amounts = remember { mutableStateMapOf<BillCategory, Float>() }
+    BillCategory.entries.forEach { category ->
+        key(category) {
+            val target = (targetTotals[category] ?: 0.0).toFloat()
+            val animated by animateFloatAsState(
+                targetValue = target,
+                animationSpec = tween(durationMillis = 450),
+                label = "pruningCategoryTotal_${category.name}"
+            )
+            amounts[category] = animated
+        }
+    }
+    return amounts
+        .filterValues { value -> value > 0f }
+        .mapValues { (_, value) -> value.toDouble() }
 }
 
 @Composable
-private fun animateCategoryAlphas(
+private fun rememberAnimatedCategoryAlphas(
     targetAlphas: Map<BillCategory, Float>
 ): Map<BillCategory, Float> {
-    return BillCategory.entries.associateWith { category ->
-        val target = targetAlphas[category] ?: 1f
-        val animated by animateFloatAsState(
-            targetValue = target,
-            animationSpec = tween(durationMillis = 450),
-            label = "pruningCategoryAlpha_${category.name}"
-        )
-        animated
+    val alphas = remember { mutableStateMapOf<BillCategory, Float>() }
+    BillCategory.entries.forEach { category ->
+        key(category) {
+            val target = targetAlphas[category] ?: 1f
+            val animated by animateFloatAsState(
+                targetValue = target,
+                animationSpec = tween(durationMillis = 450),
+                label = "pruningCategoryAlpha_${category.name}"
+            )
+            alphas[category] = animated
+        }
     }
+    return alphas.toMap()
 }
 
 @Composable

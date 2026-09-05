@@ -86,6 +86,7 @@ class PruningViewModel(
 
     fun resetSandbox() {
         coroutineScope.launch(ioDispatcher) {
+            hasLoadedSnapshot.value = false
             loadSnapshotFromRoom()
         }
     }
