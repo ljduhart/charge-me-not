@@ -41,4 +41,12 @@ interface BillDao {
 
     @Query("SELECT COUNT(*) FROM bills")
     suspend fun getBillCount(): Int
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM bills
+        WHERE isPaid = 0 AND dueDate <= :today
+        """
+    )
+    suspend fun getOverdueOrDueTodayUnpaidBillCount(today: LocalDate = LocalDate.now()): Int
 }

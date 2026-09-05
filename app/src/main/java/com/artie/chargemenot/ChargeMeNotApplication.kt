@@ -2,12 +2,16 @@ package com.artie.chargemenot
 
 import android.app.Application
 import com.artie.chargemenot.data.local.AppDatabase
+import com.artie.chargemenot.data.nagmode.WorkManagerNagModeScheduler
+import com.artie.chargemenot.data.notification.AndroidNotificationPermissionGateway
 import com.artie.chargemenot.data.repository.BillRepository
 import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.notification.NagModeNotificationHelper
 import com.artie.chargemenot.ui.dashboard.DashboardViewModel
 import com.artie.chargemenot.ui.viewmodels.ScannerViewModel
+import com.artie.chargemenot.ui.viewmodels.SettingsViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,6 +26,10 @@ class ChargeMeNotApplication : Application() {
     private val billRepository by lazy { BillRepository(database.billDao()) }
     private val userSettingsRepository by lazy {
         UserSettingsRepository(database.userSettingsDao())
+    }
+    private val nagModeScheduler by lazy { WorkManagerNagModeScheduler(this) }
+    private val notificationPermissionGateway by lazy {
+        AndroidNotificationPermissionGateway(this)
     }
 
     val dashboardViewModel: DashboardViewModel by lazy {
@@ -40,9 +48,20 @@ class ChargeMeNotApplication : Application() {
         )
     }
 
+    val settingsViewModel: SettingsViewModel by lazy {
+        SettingsViewModel(
+            userSettingsRepository = userSettingsRepository,
+            nagModeScheduler = nagModeScheduler,
+            notificationPermissionGateway = notificationPermissionGateway,
+            coroutineScope = applicationScope
+        )
+    }
+
     override fun onCreate() {
         super.onCreate()
+        NagModeNotificationHelper.createNotificationChannel(this)
         seedInitialDataIfNeeded()
+        settingsViewModel.restoreNagModeWorkIfEnabled()
     }
 
     private fun seedInitialDataIfNeeded() {

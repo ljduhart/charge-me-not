@@ -7,7 +7,8 @@ import androidx.room.PrimaryKey
 data class UserSettingsEntity(
     @PrimaryKey
     val id: Int = SETTINGS_ID,
-    val monthlyBudget: Double
+    val monthlyBudget: Double,
+    val isNagModeEnabled: Boolean = false
 ) {
     companion object {
         const val SETTINGS_ID = 1

@@ -34,9 +34,11 @@ import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.ui.components.FinancialBloomCanvas
+import com.artie.chargemenot.ui.components.NagModeCard
 import com.artie.chargemenot.ui.components.categoryColor
 import com.artie.chargemenot.ui.components.categoryDisplayName
 import com.artie.chargemenot.ui.dashboard.DashboardUiState
+import com.artie.chargemenot.ui.viewmodels.SettingsUiState
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.LeafGreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
@@ -64,9 +66,14 @@ import com.artie.chargemenot.domain.model.UserSettings
 @Composable
 fun DashboardScreen(
     uiState: DashboardUiState,
+    settingsUiState: SettingsUiState,
     onKeepSubscription: (Bill) -> Unit,
     onPullSubscription: (Bill) -> Unit,
     onMonthlyBudgetChange: (String) -> Unit,
+    onNagModeToggleRequested: (Boolean) -> Unit,
+    onNotificationPermissionResult: (Boolean) -> Unit,
+    onNotificationPermissionRequestHandled: () -> Unit,
+    onRefreshNotificationPermissionState: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
@@ -85,6 +92,16 @@ fun DashboardScreen(
             monthlyBudget = uiState.monthlyBudget,
             currencyFormat = currencyFormat,
             onMonthlyBudgetChange = onMonthlyBudgetChange
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        NagModeCard(
+            uiState = settingsUiState,
+            onNagModeToggleRequested = onNagModeToggleRequested,
+            onNotificationPermissionResult = onNotificationPermissionResult,
+            onNotificationPermissionRequestHandled = onNotificationPermissionRequestHandled,
+            onRefreshPermissionState = onRefreshNotificationPermissionState
         )
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -494,9 +511,14 @@ private fun DashboardScreenPreview() {
                 categoryTotals = categoryTotals,
                 isLoading = false
             ),
+            settingsUiState = SettingsUiState(isNagModeEnabled = true),
             onKeepSubscription = {},
             onPullSubscription = {},
-            onMonthlyBudgetChange = {}
+            onMonthlyBudgetChange = {},
+            onNagModeToggleRequested = {},
+            onNotificationPermissionResult = {},
+            onNotificationPermissionRequestHandled = {},
+            onRefreshNotificationPermissionState = {}
         )
     }
 }
@@ -511,9 +533,14 @@ private fun DashboardScreenEmptyPreview() {
                 totalUpcoming = 0.0,
                 isLoading = false
             ),
+            settingsUiState = SettingsUiState(),
             onKeepSubscription = {},
             onPullSubscription = {},
-            onMonthlyBudgetChange = {}
+            onMonthlyBudgetChange = {},
+            onNagModeToggleRequested = {},
+            onNotificationPermissionResult = {},
+            onNotificationPermissionRequestHandled = {},
+            onRefreshNotificationPermissionState = {}
         )
     }
 }

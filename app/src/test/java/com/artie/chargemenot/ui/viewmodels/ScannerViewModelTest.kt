@@ -107,6 +107,9 @@ class ScannerViewModelTest {
 
     override suspend fun upsertSettings(settings: UserSettingsEntity) = Unit
 
+    override suspend fun getSettings(settingsId: Int): UserSettingsEntity? =
+      UserSettingsEntity(monthlyBudget = UserSettings.DEFAULT_MONTHLY_BUDGET)
+
     override suspend fun getSettingsCount(settingsId: Int): Int = 1
   }
 }

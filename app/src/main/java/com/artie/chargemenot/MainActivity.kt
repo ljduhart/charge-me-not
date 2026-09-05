@@ -34,6 +34,7 @@ class MainActivity : ComponentActivity() {
         val app = application as ChargeMeNotApplication
         val dashboardViewModel = app.dashboardViewModel
         val scannerViewModel = app.scannerViewModel
+        val settingsViewModel = app.settingsViewModel
 
         setContent {
             ChargeMeNotTheme {
@@ -43,6 +44,7 @@ class MainActivity : ComponentActivity() {
 
                 val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
                 val scannerUiState by scannerViewModel.uiState.collectAsStateWithLifecycle()
+                val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
@@ -75,9 +77,14 @@ class MainActivity : ComponentActivity() {
                         composable(AppRoutes.DASHBOARD) {
                             DashboardScreen(
                                 uiState = dashboardUiState,
+                                settingsUiState = settingsUiState,
                                 onKeepSubscription = dashboardViewModel::keepSubscription,
                                 onPullSubscription = dashboardViewModel::pullSubscription,
-                                onMonthlyBudgetChange = dashboardViewModel::updateMonthlyBudget
+                                onMonthlyBudgetChange = dashboardViewModel::updateMonthlyBudget,
+                                onNagModeToggleRequested = settingsViewModel::onNagModeToggleRequested,
+                                onNotificationPermissionResult = settingsViewModel::onNotificationPermissionResult,
+                                onNotificationPermissionRequestHandled = settingsViewModel::onNotificationPermissionRequestHandled,
+                                onRefreshNotificationPermissionState = settingsViewModel::refreshNotificationPermissionState
                             )
                         }
 

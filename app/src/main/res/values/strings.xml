@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">Charge-me Not</string>
+
+    <string name="nag_mode_channel_name">Nag Mode Reminders</string>
+    <string name="nag_mode_channel_description">Local reminders for overdue and due-today bills in your garden</string>
+    <string name="nag_mode_notification_title">Tend your financial garden</string>
+    <plurals name="nag_mode_notification_body">
+        <item quantity="one">You have %d unpaid weed in your garden!</item>
+        <item quantity="other">You have %d unpaid weeds in your garden!</item>
+    </plurals>
+
+    <string name="nag_mode_card_title">Nag Mode</string>
+    <string name="nag_mode_card_subtitle">Get local reminders when bills are due or overdue</string>
+    <string name="nag_mode_permission_warning">Notification permission is required for Nag Mode reminders. Enable notifications to continue.</string>
 </resources>
