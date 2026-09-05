@@ -26,11 +26,24 @@ class BillRepository(private val billDao: BillDao) {
     }
 
     suspend fun deleteBill(bill: Bill) {
-        billDao.deleteBill(bill.toEntity())
+        val entity = bill.toEntity()
+        orphanChildrenOf(entity.id)
+        billDao.deleteBill(entity)
     }
 
     suspend fun deleteBillById(billId: Long) {
+        orphanChildrenOf(billId)
         billDao.deleteBillById(billId)
+    }
+
+    private suspend fun orphanChildrenOf(deletedParentId: Long) {
+        val children = billDao.getAllBills()
+            .first()
+            .filter { bill -> bill.parentBillId == deletedParentId }
+
+        children.forEach { child ->
+            billDao.updateBill(child.copy(parentBillId = null))
+        }
     }
 
     fun getChildrenForParent(parentId: Long): Flow<List<Bill>> =

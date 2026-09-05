@@ -335,10 +335,7 @@ private fun PruningBillRow(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .alpha(rowAlpha)
-            .clickable(enabled = hasRootChildren) {
-                onToggleRootExpansion(bill.id)
-            },
+            .alpha(rowAlpha),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -368,7 +365,17 @@ private fun PruningBillRow(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (hasRootChildren) {
+                            Modifier.clickable { onToggleRootExpansion(bill.id) }
+                        } else {
+                            Modifier
+                        }
+                    )
+            ) {
                 Text(
                     text = bill.name,
                     style = MaterialTheme.typography.titleMedium,

@@ -82,6 +82,10 @@ class PruningViewModel(
         }
     }
 
+    fun clearRootExpansion() {
+        expandedRootBillId.value = null
+    }
+
     fun adjustBillAmount(billId: Long, newAmount: Double) {
         val sanitizedAmount = newAmount.coerceAtLeast(0.0)
         sandboxState.update { bills ->

@@ -131,6 +131,7 @@ class MainActivity : ComponentActivity() {
                             navController.popBackStack()
                         },
                         onPruningNavigateBack = {
+                            pruningViewModel.clearRootExpansion()
                             navController.popBackStack()
                         },
                         weedWhackerUiState = weedWhackerUiState,
