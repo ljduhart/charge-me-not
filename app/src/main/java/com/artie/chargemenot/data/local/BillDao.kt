@@ -70,4 +70,15 @@ interface BillDao {
         """
     )
     fun getChildrenForParent(parentId: Long): Flow<List<BillEntity>>
+
+    @Query(
+        """
+        SELECT bills.*, compost_table.rawText AS matchedText
+        FROM compost_table
+        JOIN bills ON bills.id = compost_table.billId
+        WHERE compost_table MATCH :query
+        ORDER BY bills.dueDate DESC
+        """
+    )
+    fun searchCompost(query: String): Flow<List<BillWithCompost>>
 }

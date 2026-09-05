@@ -62,6 +62,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.Nature
+import androidx.compose.material.icons.filled.Recycling
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
@@ -90,6 +91,7 @@ fun DashboardScreen(
     onRefreshNotificationPermissionState: () -> Unit,
     onNavigateToPruningSimulator: () -> Unit,
     onNavigateToWeedWhacker: () -> Unit,
+    onNavigateToCompostBin: () -> Unit,
     onLinkBillToParent: (Long, Long?) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -169,6 +171,14 @@ fun DashboardScreen(
         item {
             WeedWhackerEntryCard(
                 onNavigateToWeedWhacker = onNavigateToWeedWhacker
+            )
+        }
+
+        item { Spacer(modifier = Modifier.height(16.dp)) }
+
+        item {
+            CompostBinEntryCard(
+                onNavigateToCompostBin = onNavigateToCompostBin
             )
         }
 
@@ -457,6 +467,56 @@ private fun PruningSimulatorEntryCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(stringResource(R.string.pruning_simulator_entry))
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompostBinEntryCard(
+    onNavigateToCompostBin: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MeadowEarth.copy(alpha = 0.16f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 18.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.compost_bin_entry),
+                style = MaterialTheme.typography.titleMedium,
+                color = MeadowGreenDark,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = stringResource(R.string.compost_bin_entry_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+            )
+            Button(
+                onClick = onNavigateToCompostBin,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MeadowEarth,
+                    contentColor = MeadowWhite
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Recycling,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.compost_bin_entry))
             }
         }
     }
@@ -871,6 +931,7 @@ private fun DashboardScreenPreview() {
             onRefreshNotificationPermissionState = {},
             onNavigateToPruningSimulator = {},
             onNavigateToWeedWhacker = {},
+            onNavigateToCompostBin = {},
             onLinkBillToParent = { _, _ -> }
         )
     }
@@ -896,6 +957,7 @@ private fun DashboardScreenEmptyPreview() {
             onRefreshNotificationPermissionState = {},
             onNavigateToPruningSimulator = {},
             onNavigateToWeedWhacker = {},
+            onNavigateToCompostBin = {},
             onLinkBillToParent = { _, _ -> }
         )
     }

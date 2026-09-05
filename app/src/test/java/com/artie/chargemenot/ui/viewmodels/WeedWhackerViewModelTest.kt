@@ -3,7 +3,9 @@ package com.artie.chargemenot.ui.viewmodels
 import com.artie.chargemenot.data.local.BillDao
 import com.artie.chargemenot.data.local.BillEntity
 import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.data.local.BillWithCompost
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -275,5 +277,8 @@ class WeedWhackerViewModelTest {
 
         override fun getChildrenForParent(parentId: Long): Flow<List<BillEntity>> =
             bills.map { items -> items.filter { bill -> bill.parentBillId == parentId } }
+
+        override fun searchCompost(query: String): Flow<List<BillWithCompost>> =
+            flowOf(emptyList())
     }
 }

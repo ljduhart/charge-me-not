@@ -86,7 +86,9 @@ class BillOcrAnalyzer(
 
         textRecognizer().process(inputImage)
             .addOnSuccessListener { visionText ->
-                val result = extractBillData(visionText.text)
+                val fullRawText = visionText.text
+                val receiptBitmap = ImageProxyConverter.toBitmap(imageProxy)
+                val result = extractBillData(fullRawText).copy(receiptBitmap = receiptBitmap)
                 if (result.hasActionableData) {
                     onScanResult(result)
                 }

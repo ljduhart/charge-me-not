@@ -70,4 +70,14 @@
     <string name="link_roots_icon">Link roots</string>
     <string name="pruning_simulator_roots_tap">Tap to reveal root connections</string>
     <string name="pruning_simulator_roots_expanded">Root system visible — tap to hide</string>
+
+    <string name="compost_bin_title">The Compost Bin</string>
+    <string name="compost_bin_back">Back to dashboard</string>
+    <string name="compost_bin_entry">The Compost Bin</string>
+    <string name="compost_bin_entry_subtitle">Search archived receipt text and revisit scanned bill memories</string>
+    <string name="compost_bin_search_hint">Dig through the compost…</string>
+    <string name="compost_bin_empty_prompt">Type to search your archived receipt compost for matching bill text.</string>
+    <string name="compost_bin_no_results">No receipt compost matches that search yet.</string>
+    <string name="compost_bin_receipt_image">Receipt thumbnail</string>
+    <string name="scanner_save_into_garden">Plant Scanned Bill in Garden</string>
 </resources>

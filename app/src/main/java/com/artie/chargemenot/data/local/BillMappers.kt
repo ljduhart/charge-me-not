@@ -11,7 +11,8 @@ fun BillEntity.toDomain(): Bill = Bill(
     isPaid = isPaid,
     usageCount = usageCount,
     auditPromptCount = auditPromptCount,
-    parentBillId = parentBillId
+    parentBillId = parentBillId,
+    receiptImagePath = receiptImagePath
 )
 
 fun Bill.toEntity(): BillEntity = BillEntity(
@@ -23,5 +24,6 @@ fun Bill.toEntity(): BillEntity = BillEntity(
     isPaid = isPaid,
     usageCount = usageCount,
     auditPromptCount = auditPromptCount,
-    parentBillId = parentBillId
+    parentBillId = parentBillId,
+    receiptImagePath = receiptImagePath
 )

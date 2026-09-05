@@ -24,7 +24,7 @@ class PruningViewModel(
 ) {
 
     private val sandboxState = MutableStateFlow<List<BillEntity>>(emptyList())
-    private val prunedBillIds = MutableStateFlow<Set<Long>>(emptySet())
+    private val pruneStates = MutableStateFlow<Map<Long, SandboxPruneState>>(emptyMap())
     private val expandedRootBillId = MutableStateFlow<Long?>(null)
     private val monthlyBudgetState = MutableStateFlow(UserSettings.DEFAULT_MONTHLY_BUDGET)
     private val hasLoadedSnapshot = MutableStateFlow(false)
@@ -46,11 +46,15 @@ class PruningViewModel(
         coroutineScope.launch(ioDispatcher) {
             combine(
                 sandboxState,
-                prunedBillIds,
+                pruneStates,
                 expandedRootBillId,
                 monthlyBudgetState,
                 hasLoadedSnapshot
-            ) { bills, prunedIds, expandedRootId, monthlyBudget, hasLoaded ->
+            ) { bills, pruneStateMap, expandedRootId, monthlyBudget, hasLoaded ->
+                val prunedIds = pruneStateMap
+                    .filter { (_, state) -> state.isPruned }
+                    .keys
+
                 buildUiState(
                     bills = bills,
                     prunedIds = prunedIds,
@@ -66,13 +70,28 @@ class PruningViewModel(
 
     fun toggleBillStatus(billId: Long, isPruned: Boolean) {
         val bills = sandboxState.value
-        val affectedIds = collectDescendantIds(billId, bills) + billId
-        prunedBillIds.update { current ->
+        val descendantIds = collectDescendantIds(billId, bills)
+
+        pruneStates.update { current ->
+            val updated = current.toMutableMap()
             if (isPruned) {
-                current + affectedIds
+                val toggledState = updated[billId] ?: SandboxPruneState()
+                updated[billId] = toggledState.copy(manualPrune = true)
+                descendantIds.forEach { descendantId ->
+                    val descendantState = updated[descendantId] ?: SandboxPruneState()
+                    updated[descendantId] = descendantState.copy(cascadePrune = true)
+                }
             } else {
-                current - affectedIds
+                val toggledState = updated[billId] ?: SandboxPruneState()
+                updated[billId] = toggledState.copy(manualPrune = false, cascadePrune = false)
+                descendantIds.forEach { descendantId ->
+                    val descendantState = updated[descendantId] ?: SandboxPruneState()
+                    if (!descendantState.manualPrune) {
+                        updated[descendantId] = descendantState.copy(cascadePrune = false)
+                    }
+                }
             }
+            updated
         }
     }
 
@@ -113,7 +132,7 @@ class PruningViewModel(
             .filter { bill -> !bill.isPaid }
 
         sandboxState.value = snapshot
-        prunedBillIds.value = emptySet()
+        pruneStates.value = emptyMap()
         hasLoadedSnapshot.value = true
     }
 

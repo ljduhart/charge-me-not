@@ -12,10 +12,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.artie.chargemenot.ui.dashboard.DashboardUiState
+import com.artie.chargemenot.ui.screens.CompostBinScreen
 import com.artie.chargemenot.ui.screens.DashboardScreen
 import com.artie.chargemenot.ui.screens.PruningSimulatorScreen
 import com.artie.chargemenot.ui.screens.ScannerScreen
 import com.artie.chargemenot.ui.screens.WeedWhackerScreen
+import com.artie.chargemenot.ui.viewmodels.CompostBinUiState
 import com.artie.chargemenot.ui.viewmodels.PruningUiState
 import com.artie.chargemenot.ui.viewmodels.ScannerUiState
 import com.artie.chargemenot.ui.viewmodels.SettingsUiState
@@ -74,7 +76,7 @@ fun ChargeMeNotNavHost(
     onToggleBillStatus: (Long, Boolean) -> Unit,
     onToggleRootExpansion: (Long) -> Unit,
     onResetSandbox: () -> Unit,
-    onScanResult: (OcrScanResult) -> Unit,
+    onScanResult: (OcrScanResult, String?) -> Unit,
     onQrPayloadDetected: (CrossPollinationPayload) -> Unit,
     onCategorySelected: (BillCategory) -> Unit,
     onAcceptPollinatedBill: () -> Unit,
@@ -87,6 +89,11 @@ fun ChargeMeNotNavHost(
     onWeedWhackerNavigateBack: () -> Unit,
     onNavigateToWeedWhacker: () -> Unit,
     onLinkBillToParent: (Long, Long?) -> Unit,
+    onNavigateToCompostBin: () -> Unit,
+    onSaveScannedBill: () -> Unit,
+    compostBinUiState: CompostBinUiState,
+    onCompostSearchQueryChanged: (String) -> Unit,
+    onCompostBinNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -113,6 +120,7 @@ fun ChargeMeNotNavHost(
                 onRefreshNotificationPermissionState = onRefreshNotificationPermissionState,
                 onNavigateToPruningSimulator = onNavigateToPruningSimulator,
                 onNavigateToWeedWhacker = onNavigateToWeedWhacker,
+                onNavigateToCompostBin = onNavigateToCompostBin,
                 onLinkBillToParent = onLinkBillToParent
             )
         }
@@ -162,7 +170,22 @@ fun ChargeMeNotNavHost(
                 onCategorySelected = onCategorySelected,
                 onAcceptPollinatedBill = onAcceptPollinatedBill,
                 onDiscardPollen = onDiscardPollen,
+                onSaveScannedBill = onSaveScannedBill,
                 onNavigateBack = onScannerNavigateBack
+            )
+        }
+
+        composable(
+            route = AppRoutes.COMPOST_BIN,
+            enterTransition = { meadowEnterTransition },
+            exitTransition = { meadowExitTransition },
+            popEnterTransition = { meadowPopEnterTransition },
+            popExitTransition = { meadowPopExitTransition }
+        ) {
+            CompostBinScreen(
+                uiState = compostBinUiState,
+                onSearchQueryChanged = onCompostSearchQueryChanged,
+                onNavigateBack = onCompostBinNavigateBack
             )
         }
     }

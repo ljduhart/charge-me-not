@@ -7,7 +7,9 @@ import com.artie.chargemenot.data.local.UserSettingsEntity
 import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.domain.model.UserSettings
+import com.artie.chargemenot.data.local.BillWithCompost
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.TestScope
@@ -133,6 +135,38 @@ class PruningViewModelTest {
     assertEquals("Car Insurance", relationships[1L]?.first()?.name)
   }
 
+  @Test
+  fun unpruneParent_preservesManuallyPrunedChild() {
+    val today = LocalDate.of(2026, 9, 5)
+    val bills = listOf(
+      BillEntity(1, "Car Payment", 450.0, today.plusDays(5), BillCategory.TRANSPORTATION),
+      BillEntity(
+        id = 2,
+        name = "Car Insurance",
+        amount = 120.0,
+        dueDate = today.plusDays(6),
+        category = BillCategory.HEALTHCARE,
+        parentBillId = 1L
+      )
+    )
+    val viewModel = createViewModel(FakeBillDao(bills))
+    testScope.advanceUntilIdle()
+
+    viewModel.toggleBillStatus(billId = 2L, isPruned = true)
+    testScope.advanceUntilIdle()
+    assertTrue(viewModel.uiState.value.prunedBillIds.contains(2L))
+
+    viewModel.toggleBillStatus(billId = 1L, isPruned = true)
+    testScope.advanceUntilIdle()
+    assertTrue(viewModel.uiState.value.prunedBillIds.containsAll(setOf(1L, 2L)))
+
+    viewModel.toggleBillStatus(billId = 1L, isPruned = false)
+    testScope.advanceUntilIdle()
+
+    assertFalse(viewModel.uiState.value.prunedBillIds.contains(1L))
+    assertTrue(viewModel.uiState.value.prunedBillIds.contains(2L))
+  }
+
   private fun createViewModel(billDao: FakeBillDao): PruningViewModel {
     return PruningViewModel(
       billDao = billDao,
@@ -189,6 +223,9 @@ class PruningViewModelTest {
 
     override fun getChildrenForParent(parentId: Long): Flow<List<BillEntity>> =
       bills.map { items -> items.filter { bill -> bill.parentBillId == parentId } }
+
+    override fun searchCompost(query: String): Flow<List<BillWithCompost>> =
+      flowOf(emptyList())
   }
 
   private class FakeUserSettingsDao : UserSettingsDao {

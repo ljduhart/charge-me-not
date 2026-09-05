@@ -7,8 +7,8 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
 @Database(
-    entities = [BillEntity::class, UserSettingsEntity::class],
-    version = 5,
+    entities = [BillEntity::class, UserSettingsEntity::class, CompostEntity::class],
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -18,6 +18,8 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun userSettingsDao(): UserSettingsDao
 
+    abstract fun compostDao(): CompostDao
+
     companion object {
         private const val DATABASE_NAME = "charge_me_not.db"
 
@@ -26,7 +28,7 @@ abstract class AppDatabase : RoomDatabase() {
 
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?:                 Room.databaseBuilder(
+                INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     DATABASE_NAME
@@ -35,7 +37,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_1_2,
                         MIGRATION_2_3,
                         MIGRATION_3_4,
-                        MIGRATION_4_5
+                        MIGRATION_4_5,
+                        MIGRATION_5_6
                     )
                     .build().also { INSTANCE = it }
             }

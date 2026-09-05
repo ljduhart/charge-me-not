@@ -16,5 +16,6 @@ data class BillEntity(
     val isPaid: Boolean = false,
     val usageCount: Int = 0,
     val auditPromptCount: Int = 0,
-    val parentBillId: Long? = null
+    val parentBillId: Long? = null,
+    val receiptImagePath: String? = null
 )

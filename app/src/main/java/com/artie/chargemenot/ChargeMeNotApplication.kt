@@ -12,6 +12,7 @@ import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.notification.NagModeNotificationHelper
 import com.artie.chargemenot.notification.WeedWhackerNotificationHelper
 import com.artie.chargemenot.ui.dashboard.DashboardViewModel
+import com.artie.chargemenot.ui.viewmodels.CompostBinViewModel
 import com.artie.chargemenot.ui.viewmodels.PruningViewModel
 import com.artie.chargemenot.ui.viewmodels.ScannerViewModel
 import com.artie.chargemenot.ui.viewmodels.SettingsViewModel
@@ -27,7 +28,12 @@ class ChargeMeNotApplication : Application() {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val database by lazy { AppDatabase.getInstance(this) }
-    private val billRepository by lazy { BillRepository(database.billDao()) }
+    private val billRepository by lazy {
+        BillRepository(
+            billDao = database.billDao(),
+            compostDao = database.compostDao()
+        )
+    }
     private val userSettingsRepository by lazy {
         UserSettingsRepository(database.userSettingsDao())
     }
@@ -74,6 +80,13 @@ class ChargeMeNotApplication : Application() {
     val weedWhackerViewModel: WeedWhackerViewModel by lazy {
         WeedWhackerViewModel(
             billDao = database.billDao(),
+            coroutineScope = applicationScope
+        )
+    }
+
+    val compostBinViewModel: CompostBinViewModel by lazy {
+        CompostBinViewModel(
+            billRepository = billRepository,
             coroutineScope = applicationScope
         )
     }

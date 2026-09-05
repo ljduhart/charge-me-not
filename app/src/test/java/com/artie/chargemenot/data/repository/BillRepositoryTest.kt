@@ -2,22 +2,48 @@ package com.artie.chargemenot.data.repository
 
 import com.artie.chargemenot.data.local.BillDao
 import com.artie.chargemenot.data.local.BillEntity
+import com.artie.chargemenot.data.local.BillWithCompost
+import com.artie.chargemenot.data.local.CompostDao
+import com.artie.chargemenot.data.local.CompostEntity
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 
 class BillRepositoryTest {
 
     @Test
+    fun insertScannedBill_persistsCompostEntry() = runTest {
+        val billDao = InMemoryBillDao(emptyList())
+        val compostDao = InMemoryCompostDao()
+        val repository = BillRepository(billDao, compostDao)
+
+        val billId = repository.insertScannedBill(
+            bill = Bill(
+                name = "Scanned Utility Bill",
+                amount = 84.50,
+                dueDate = LocalDate.of(2026, 9, 12),
+                category = BillCategory.UTILITIES,
+                receiptImagePath = "/data/receipt.jpg"
+            ),
+            rawText = "PACIFIC GAS electric total due 84.50"
+        )
+
+        assertEquals(1, compostDao.entries.size)
+        assertEquals(billId, compostDao.entries.first().billId)
+        assertTrue(compostDao.entries.first().rawText.contains("PACIFIC GAS"))
+    }
+
+    @Test
     fun linkBillToParent_rejectsCycles() = runTest {
-        val today = LocalDate.of(2026, 9, 5)
         val dao = InMemoryBillDao(
             listOf(
                 bill(id = 1L, name = "Car Payment"),
@@ -25,7 +51,7 @@ class BillRepositoryTest {
                 bill(id = 3L, name = "Roadside Assistance", parentBillId = 2L)
             )
         )
-        val repository = BillRepository(dao)
+        val repository = BillRepository(dao, InMemoryCompostDao())
 
         repository.linkBillToParent(childBillId = 1L, parentBillId = 3L)
 
@@ -40,7 +66,7 @@ class BillRepositoryTest {
                 bill(id = 2L, name = "Car Insurance")
             )
         )
-        val repository = BillRepository(dao)
+        val repository = BillRepository(dao, InMemoryCompostDao())
 
         repository.linkBillToParent(childBillId = 2L, parentBillId = 1L)
 
@@ -56,7 +82,7 @@ class BillRepositoryTest {
                 bill(id = 3L, name = "Roadside Assistance", parentBillId = 2L)
             )
         )
-        val repository = BillRepository(dao)
+        val repository = BillRepository(dao, InMemoryCompostDao())
 
         repository.deleteBill(
             Bill(
@@ -104,8 +130,14 @@ class BillRepositoryTest {
             MutableStateFlow(bills.value.firstOrNull { it.id == billId })
 
         override suspend fun insertBill(bill: BillEntity): Long {
-            bills.value = bills.value + bill
-            return bill.id
+            val assignedId = if (bill.id == 0L) {
+                (bills.value.maxOfOrNull { it.id } ?: 0L) + 1L
+            } else {
+                bill.id
+            }
+            val persisted = bill.copy(id = assignedId)
+            bills.value = bills.value + persisted
+            return assignedId
         }
 
         override suspend fun updateBill(bill: BillEntity) {
@@ -133,5 +165,20 @@ class BillRepositoryTest {
 
         override fun getChildrenForParent(parentId: Long): Flow<List<BillEntity>> =
             MutableStateFlow(bills.value.filter { it.parentBillId == parentId })
+
+        override fun searchCompost(query: String): Flow<List<BillWithCompost>> =
+            flowOf(emptyList())
+    }
+
+    private class InMemoryCompostDao : CompostDao {
+        val entries = mutableListOf<CompostEntity>()
+
+        override suspend fun insertCompost(compost: CompostEntity) {
+            entries.add(compost)
+        }
+
+        override suspend fun deleteCompostForBill(billId: Long) {
+            entries.removeAll { entry -> entry.billId == billId }
+        }
     }
 }

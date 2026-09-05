@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity() {
         val settingsViewModel = app.settingsViewModel
         val pruningViewModel = app.pruningViewModel
         val weedWhackerViewModel = app.weedWhackerViewModel
+        val compostBinViewModel = app.compostBinViewModel
 
         setContent {
             ChargeMeNotTheme {
@@ -53,6 +54,7 @@ class MainActivity : ComponentActivity() {
                 val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
                 val pruningUiState by pruningViewModel.uiState.collectAsStateWithLifecycle()
                 val weedWhackerUiState by weedWhackerViewModel.uiState.collectAsStateWithLifecycle()
+                val compostBinUiState by compostBinViewModel.uiState.collectAsStateWithLifecycle()
 
                 LaunchedEffect(pendingNavigationRoute) {
                     val route = pendingNavigationRoute
@@ -114,10 +116,17 @@ class MainActivity : ComponentActivity() {
                                 launchSingleTop = true
                             }
                         },
+                        onNavigateToCompostBin = {
+                            navController.navigate(AppRoutes.COMPOST_BIN) {
+                                launchSingleTop = true
+                            }
+                        },
                         onToggleBillStatus = pruningViewModel::toggleBillStatus,
                         onToggleRootExpansion = pruningViewModel::toggleRootExpansion,
                         onResetSandbox = pruningViewModel::resetSandbox,
-                        onScanResult = scannerViewModel::onScanResult,
+                        onScanResult = { result, receiptImagePath ->
+                            scannerViewModel.onScanResult(result, receiptImagePath)
+                        },
                         onQrPayloadDetected = scannerViewModel::onQrPayloadDetected,
                         onCategorySelected = scannerViewModel::selectCategory,
                         onAcceptPollinatedBill = {
@@ -141,6 +150,16 @@ class MainActivity : ComponentActivity() {
                             navController.popBackStack()
                         },
                         onLinkBillToParent = dashboardViewModel::linkBillToParent,
+                        onSaveScannedBill = {
+                            scannerViewModel.saveScannedBill {
+                                navController.popBackStack()
+                            }
+                        },
+                        compostBinUiState = compostBinUiState,
+                        onCompostSearchQueryChanged = compostBinViewModel::onSearchQueryChanged,
+                        onCompostBinNavigateBack = {
+                            navController.popBackStack()
+                        },
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

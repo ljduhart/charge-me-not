@@ -5,7 +5,9 @@ import java.time.LocalDate
 
 data class ScannedBillData(
     val amount: Double? = null,
-    val dueDate: LocalDate? = null
+    val dueDate: LocalDate? = null,
+    val rawText: String = "",
+    val receiptImagePath: String? = null
 )
 
 data class PredictiveImpact(
@@ -32,5 +34,7 @@ data class ScannerUiState(
     val scanStatusMessage: String = "Point camera at your bill to scan",
     val budgetSummary: String = "Scan a bill to preview budget impact",
     val pollenReceived: PollenReceivedState? = null,
-    val detectionBannerMessage: String = "Ready to scan paper bills or partner QR codes"
+    val detectionBannerMessage: String = "Ready to scan paper bills or partner QR codes",
+    val canSaveScannedBill: Boolean = false,
+    val isSavingScannedBill: Boolean = false
 )

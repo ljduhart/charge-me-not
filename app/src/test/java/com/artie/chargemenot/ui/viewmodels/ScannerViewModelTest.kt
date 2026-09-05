@@ -2,6 +2,9 @@ package com.artie.chargemenot.ui.viewmodels
 
 import com.artie.chargemenot.data.local.BillDao
 import com.artie.chargemenot.data.local.BillEntity
+import com.artie.chargemenot.data.local.BillWithCompost
+import com.artie.chargemenot.data.local.CompostDao
+import com.artie.chargemenot.data.local.CompostEntity
 import com.artie.chargemenot.data.local.UserSettingsDao
 import com.artie.chargemenot.data.local.UserSettingsEntity
 import com.artie.chargemenot.data.repository.BillRepository
@@ -12,6 +15,7 @@ import com.artie.chargemenot.data.model.CrossPollinationPayload
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -116,7 +120,7 @@ class ScannerViewModelTest {
   fun acceptPollinatedBill_insertsBillAndResetsSession() {
     val billDao = TrackingBillDao()
     val viewModel = ScannerViewModel(
-      billRepository = BillRepository(billDao),
+      billRepository = BillRepository(billDao, FakeCompostDao()),
       userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
       coroutineScope = testScope,
       ioDispatcher = testDispatcher
@@ -163,7 +167,7 @@ class ScannerViewModelTest {
   fun acceptPollinatedBill_preventsDuplicateInsertsOnDoubleTap() {
     val billDao = TrackingBillDao()
     val viewModel = ScannerViewModel(
-      billRepository = BillRepository(billDao),
+      billRepository = BillRepository(billDao, FakeCompostDao()),
       userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
       coroutineScope = testScope,
       ioDispatcher = testDispatcher
@@ -206,7 +210,7 @@ class ScannerViewModelTest {
 
   private fun createViewModel(): ScannerViewModel {
     return ScannerViewModel(
-      billRepository = BillRepository(FakeBillDao()),
+      billRepository = BillRepository(FakeBillDao(), FakeCompostDao()),
       userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
       coroutineScope = testScope,
       ioDispatcher = testDispatcher
@@ -245,6 +249,15 @@ class ScannerViewModelTest {
 
     override fun getChildrenForParent(parentId: Long): Flow<List<BillEntity>> =
       MutableStateFlow(emptyList())
+
+    override fun searchCompost(query: String): Flow<List<BillWithCompost>> =
+      flowOf(emptyList())
+  }
+
+  private class FakeCompostDao : CompostDao {
+    override suspend fun insertCompost(compost: CompostEntity) = Unit
+
+    override suspend fun deleteCompostForBill(billId: Long) = Unit
   }
 
   private class FakeBillDao : BillDao {
@@ -274,6 +287,9 @@ class ScannerViewModelTest {
 
     override fun getChildrenForParent(parentId: Long): Flow<List<BillEntity>> =
       MutableStateFlow(emptyList())
+
+    override fun searchCompost(query: String): Flow<List<BillWithCompost>> =
+      flowOf(emptyList())
   }
 
   private class FakeUserSettingsDao : UserSettingsDao {

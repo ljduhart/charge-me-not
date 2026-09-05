@@ -36,6 +36,7 @@ class ScannerViewModel(
     val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
 
     private val isAcceptingPollen = AtomicBoolean(false)
+    private val isSavingScannedBill = AtomicBoolean(false)
     private var qrSuppressedUntilMs = 0L
 
     init {
@@ -68,19 +69,22 @@ class ScannerViewModel(
                         categoryTotals = categoryTotals,
                         monthlyBudget = monthlyBudget,
                         predictiveImpact = recalculatedImpact,
-                        budgetSummary = buildBudgetSummary(recalculatedImpact, monthlyBudget)
+                        budgetSummary = buildBudgetSummary(recalculatedImpact, monthlyBudget),
+                        canSaveScannedBill = current.scannedBill.amount != null &&
+                            current.scannedBill.dueDate != null &&
+                            current.pollenReceived == null
                     )
                 }
             }
         }
     }
 
-    fun onScanResult(result: OcrScanResult) {
+    fun onScanResult(result: OcrScanResult, receiptImagePath: String? = null) {
         if (_uiState.value.pollenReceived != null) {
             return
         }
 
-        val mergedScan = _uiState.value.scannedBill.merge(result)
+        val mergedScan = _uiState.value.scannedBill.merge(result, receiptImagePath)
         val monthlyBudget = _uiState.value.monthlyBudget
         val impact = mergedScan.amount?.let { amount ->
             calculatePredictiveImpact(
@@ -96,7 +100,10 @@ class ScannerViewModel(
                 scannedBill = mergedScan,
                 predictiveImpact = impact,
                 scanStatusMessage = buildScanStatusMessage(mergedScan),
-                budgetSummary = buildBudgetSummary(impact, monthlyBudget)
+                budgetSummary = buildBudgetSummary(impact, monthlyBudget),
+                canSaveScannedBill = mergedScan.amount != null &&
+                    mergedScan.dueDate != null &&
+                    current.pollenReceived == null
             )
         }
     }
@@ -140,7 +147,8 @@ class ScannerViewModel(
                     category = billEntity.category
                 ),
                 scanStatusMessage = "Partner QR detected: ${billEntity.name}",
-                detectionBannerMessage = "Cross-pollination pollen received — review before planting"
+                detectionBannerMessage = "Cross-pollination pollen received — review before planting",
+                canSaveScannedBill = false
             )
         }
     }
@@ -148,10 +156,12 @@ class ScannerViewModel(
     fun discardPollen() {
         qrSuppressedUntilMs = System.currentTimeMillis() + QR_SUPPRESSION_MS
         _uiState.update { current ->
+            val scanned = current.scannedBill
             current.copy(
                 pollenReceived = null,
                 scanStatusMessage = "Point camera at your bill to scan",
-                detectionBannerMessage = DEFAULT_DETECTION_BANNER
+                detectionBannerMessage = DEFAULT_DETECTION_BANNER,
+                canSaveScannedBill = scanned.amount != null && scanned.dueDate != null
             )
         }
     }
@@ -182,6 +192,41 @@ class ScannerViewModel(
         }
     }
 
+    fun saveScannedBill(onSaved: () -> Unit) {
+        val scanned = _uiState.value.scannedBill
+        val amount = scanned.amount ?: return
+        val dueDate = scanned.dueDate ?: return
+        if (!isSavingScannedBill.compareAndSet(false, true)) {
+            return
+        }
+
+        coroutineScope.launch(ioDispatcher) {
+            try {
+                _uiState.update { it.copy(isSavingScannedBill = true) }
+                billRepository.insertScannedBill(
+                    bill = Bill(
+                        name = deriveBillName(
+                            category = _uiState.value.selectedCategory,
+                            rawText = scanned.rawText
+                        ),
+                        amount = amount,
+                        dueDate = dueDate,
+                        category = _uiState.value.selectedCategory,
+                        receiptImagePath = scanned.receiptImagePath
+                    ),
+                    rawText = scanned.rawText
+                )
+                resetScanSession()
+                withContext(Dispatchers.Main) {
+                    onSaved()
+                }
+            } finally {
+                isSavingScannedBill.set(false)
+                _uiState.update { it.copy(isSavingScannedBill = false) }
+            }
+        }
+    }
+
     fun resetScanSession() {
         _uiState.update { current ->
             current.copy(
@@ -191,7 +236,9 @@ class ScannerViewModel(
                 pollenReceived = null,
                 scanStatusMessage = "Point camera at your bill to scan",
                 detectionBannerMessage = DEFAULT_DETECTION_BANNER,
-                budgetSummary = buildBudgetSummary(null, current.monthlyBudget)
+                budgetSummary = buildBudgetSummary(null, current.monthlyBudget),
+                canSaveScannedBill = false,
+                isSavingScannedBill = false
             )
         }
     }
@@ -217,11 +264,37 @@ class ScannerViewModel(
         )
     }
 
-    private fun ScannedBillData.merge(result: OcrScanResult): ScannedBillData {
+    private fun ScannedBillData.merge(
+        result: OcrScanResult,
+        receiptImagePath: String?
+    ): ScannedBillData {
         return copy(
             amount = result.amount ?: amount,
-            dueDate = result.dueDate ?: dueDate
+            dueDate = result.dueDate ?: dueDate,
+            rawText = if (result.rawText.isNotBlank()) result.rawText else rawText,
+            receiptImagePath = receiptImagePath ?: this.receiptImagePath
         )
+    }
+
+    private fun deriveBillName(category: BillCategory, rawText: String): String {
+        val firstLine = rawText.lineSequence()
+            .map { line -> line.trim() }
+            .firstOrNull { line -> line.isNotBlank() && line.length <= 60 }
+
+        if (firstLine != null) {
+            return firstLine
+        }
+
+        return when (category) {
+            BillCategory.RENT -> "Scanned Rent Bill"
+            BillCategory.FOOD -> "Scanned Grocery Bill"
+            BillCategory.UTILITIES -> "Scanned Utility Bill"
+            BillCategory.SUBSCRIPTIONS -> "Scanned Subscription Bill"
+            BillCategory.TRANSPORTATION -> "Scanned Transportation Bill"
+            BillCategory.HEALTHCARE -> "Scanned Healthcare Bill"
+            BillCategory.ENTERTAINMENT -> "Scanned Entertainment Bill"
+            BillCategory.OTHER -> "Scanned Bill"
+        }
     }
 
     private fun buildScanStatusMessage(scannedBill: ScannedBillData): String {

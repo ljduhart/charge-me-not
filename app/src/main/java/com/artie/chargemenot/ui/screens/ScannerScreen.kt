@@ -84,6 +84,7 @@ import androidx.compose.ui.res.stringResource
 import com.artie.chargemenot.R
 import com.artie.chargemenot.data.model.CrossPollinationPayload
 import com.artie.chargemenot.ui.theme.MeadowSage
+import com.artie.chargemenot.util.ImageStorageUtil
 import com.artie.chargemenot.ui.viewmodels.PollenReceivedState
 import com.artie.chargemenot.ui.viewmodels.PredictiveImpact
 import com.artie.chargemenot.ui.viewmodels.ScannerUiState
@@ -100,11 +101,12 @@ import java.util.concurrent.Executors
 @Composable
 fun ScannerScreen(
     uiState: ScannerUiState,
-    onScanResult: (OcrScanResult) -> Unit,
+    onScanResult: (OcrScanResult, String?) -> Unit,
     onQrPayloadDetected: (CrossPollinationPayload) -> Unit,
     onCategorySelected: (BillCategory) -> Unit,
     onAcceptPollinatedBill: () -> Unit,
     onDiscardPollen: () -> Unit,
+    onSaveScannedBill: () -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -219,6 +221,7 @@ fun ScannerScreen(
                     PredictiveImpactCard(
                         uiState = uiState,
                         onCategorySelected = onCategorySelected,
+                        onSaveScannedBill = onSaveScannedBill,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -266,7 +269,7 @@ private fun PulsingScanReticle(
 
 @Composable
 private fun CameraPreviewSection(
-    onScanResult: (OcrScanResult) -> Unit,
+    onScanResult: (OcrScanResult, String?) -> Unit,
     onQrPayloadDetected: (CrossPollinationPayload) -> Unit,
     scanningPaused: Boolean
 ) {
@@ -280,7 +283,17 @@ private fun CameraPreviewSection(
         BillOcrAnalyzer(
             onScanResult = { result ->
                 if (!scanningPausedState.value) {
-                    currentOnScanResult(result)
+                    val receiptImagePath = result.receiptBitmap?.let { bitmap ->
+                        val filename = "receipt_${System.currentTimeMillis()}.jpg"
+                        ImageStorageUtil.saveBitmapToInternalStorage(
+                            context = context,
+                            bitmap = bitmap,
+                            filename = filename
+                        ).also { bitmap.recycle() }
+                    }
+                    currentOnScanResult(result, receiptImagePath)
+                } else {
+                    result.receiptBitmap?.recycle()
                 }
             },
             onQrPayloadDetected = { payload ->
@@ -486,6 +499,7 @@ private fun AcceptPollinatedBillCard(
 private fun PredictiveImpactCard(
     uiState: ScannerUiState,
     onCategorySelected: (BillCategory) -> Unit,
+    onSaveScannedBill: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
@@ -552,6 +566,21 @@ private fun PredictiveImpactCard(
                 selectedCategory = uiState.selectedCategory,
                 onCategorySelected = onCategorySelected
             )
+
+            if (uiState.canSaveScannedBill) {
+                Button(
+                    onClick = onSaveScannedBill,
+                    enabled = !uiState.isSavingScannedBill,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MeadowGreen,
+                        contentColor = MeadowWhite
+                    )
+                ) {
+                    Text(stringResource(R.string.scanner_save_into_garden))
+                }
+            }
         }
     }
 }
@@ -683,11 +712,12 @@ private fun ScannerScreenPreview() {
                 monthlyBudget = 3_000.0,
                 budgetSummary = "Adding this bill keeps you within your $3,000.00 monthly budget."
             ),
-            onScanResult = {},
+            onScanResult = { _, _ -> },
             onQrPayloadDetected = {},
             onCategorySelected = {},
             onAcceptPollinatedBill = {},
             onDiscardPollen = {},
+            onSaveScannedBill = {},
             onNavigateBack = {}
         )
     }
