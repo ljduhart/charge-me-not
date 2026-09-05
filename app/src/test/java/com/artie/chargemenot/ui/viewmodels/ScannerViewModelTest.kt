@@ -242,6 +242,9 @@ class ScannerViewModelTest {
     override suspend fun getBillByIdOnce(billId: Long): BillEntity? = null
 
     override suspend fun getOverdueOrDueTodayUnpaidBillCount(today: LocalDate): Int = 0
+
+    override fun getChildrenForParent(parentId: Long): Flow<List<BillEntity>> =
+      MutableStateFlow(emptyList())
   }
 
   private class FakeBillDao : BillDao {
@@ -268,6 +271,9 @@ class ScannerViewModelTest {
     override suspend fun getBillByIdOnce(billId: Long): BillEntity? = null
 
     override suspend fun getOverdueOrDueTodayUnpaidBillCount(today: LocalDate): Int = 0
+
+    override fun getChildrenForParent(parentId: Long): Flow<List<BillEntity>> =
+      MutableStateFlow(emptyList())
   }
 
   private class FakeUserSettingsDao : UserSettingsDao {

@@ -72,6 +72,7 @@ fun ChargeMeNotNavHost(
     onRefreshNotificationPermissionState: () -> Unit,
     onNavigateToPruningSimulator: () -> Unit,
     onToggleBillStatus: (Long, Boolean) -> Unit,
+    onToggleRootExpansion: (Long) -> Unit,
     onResetSandbox: () -> Unit,
     onScanResult: (OcrScanResult) -> Unit,
     onQrPayloadDetected: (CrossPollinationPayload) -> Unit,
@@ -85,6 +86,7 @@ fun ChargeMeNotNavHost(
     onRestartAuditSession: () -> Unit,
     onWeedWhackerNavigateBack: () -> Unit,
     onNavigateToWeedWhacker: () -> Unit,
+    onLinkBillToParent: (Long, Long?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -110,7 +112,8 @@ fun ChargeMeNotNavHost(
                 onNotificationPermissionRequestHandled = onNotificationPermissionRequestHandled,
                 onRefreshNotificationPermissionState = onRefreshNotificationPermissionState,
                 onNavigateToPruningSimulator = onNavigateToPruningSimulator,
-                onNavigateToWeedWhacker = onNavigateToWeedWhacker
+                onNavigateToWeedWhacker = onNavigateToWeedWhacker,
+                onLinkBillToParent = onLinkBillToParent
             )
         }
 
@@ -139,6 +142,7 @@ fun ChargeMeNotNavHost(
             PruningSimulatorScreen(
                 uiState = pruningUiState,
                 onToggleBillStatus = onToggleBillStatus,
+                onToggleRootExpansion = onToggleRootExpansion,
                 onResetSandbox = onResetSandbox,
                 onNavigateBack = onPruningNavigateBack
             )

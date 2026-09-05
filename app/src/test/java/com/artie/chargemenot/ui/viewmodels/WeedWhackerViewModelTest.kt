@@ -272,5 +272,8 @@ class WeedWhackerViewModelTest {
             bills.value.firstOrNull { bill -> bill.id == billId }
 
         override suspend fun getOverdueOrDueTodayUnpaidBillCount(today: LocalDate): Int = 0
+
+        override fun getChildrenForParent(parentId: Long): Flow<List<BillEntity>> =
+            bills.map { items -> items.filter { bill -> bill.parentBillId == parentId } }
     }
 }

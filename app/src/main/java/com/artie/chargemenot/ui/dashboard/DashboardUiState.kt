@@ -9,6 +9,7 @@ data class DashboardUiState(
     val monthlyBudget: Double = UserSettings.DEFAULT_MONTHLY_BUDGET,
     val upcomingBills: List<Bill> = emptyList(),
     val subscriptionBills: List<Bill> = emptyList(),
+    val allBills: List<Bill> = emptyList(),
     val categoryTotals: Map<com.artie.chargemenot.domain.model.BillCategory, Double> = emptyMap(),
     val isLoading: Boolean = true
 )

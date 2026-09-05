@@ -48,6 +48,7 @@ class DashboardViewModel(
                     monthlyBudget = monthlyBudget,
                     upcomingBills = upcoming,
                     subscriptionBills = subscriptions,
+                    allBills = all,
                     categoryTotals = categoryTotals,
                     isLoading = false
                 )
@@ -66,6 +67,12 @@ class DashboardViewModel(
     fun pullSubscription(bill: Bill) {
         coroutineScope.launch(ioDispatcher) {
             billRepository.deleteBill(bill)
+        }
+    }
+
+    fun linkBillToParent(childBillId: Long, parentBillId: Long?) {
+        coroutineScope.launch(ioDispatcher) {
+            billRepository.linkBillToParent(childBillId, parentBillId)
         }
     }
 

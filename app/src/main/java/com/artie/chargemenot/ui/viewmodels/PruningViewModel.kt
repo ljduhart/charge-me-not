@@ -25,6 +25,7 @@ class PruningViewModel(
 
     private val sandboxState = MutableStateFlow<List<BillEntity>>(emptyList())
     private val prunedBillIds = MutableStateFlow<Set<Long>>(emptySet())
+    private val expandedRootBillId = MutableStateFlow<Long?>(null)
     private val monthlyBudgetState = MutableStateFlow(UserSettings.DEFAULT_MONTHLY_BUDGET)
     private val hasLoadedSnapshot = MutableStateFlow(false)
 
@@ -46,12 +47,14 @@ class PruningViewModel(
             combine(
                 sandboxState,
                 prunedBillIds,
+                expandedRootBillId,
                 monthlyBudgetState,
                 hasLoadedSnapshot
-            ) { bills, prunedIds, monthlyBudget, hasLoaded ->
+            ) { bills, prunedIds, expandedRootId, monthlyBudget, hasLoaded ->
                 buildUiState(
                     bills = bills,
                     prunedIds = prunedIds,
+                    expandedRootBillId = expandedRootId,
                     monthlyBudget = monthlyBudget,
                     isLoading = !hasLoaded
                 )
@@ -62,12 +65,20 @@ class PruningViewModel(
     }
 
     fun toggleBillStatus(billId: Long, isPruned: Boolean) {
+        val bills = sandboxState.value
+        val affectedIds = collectDescendantIds(billId, bills) + billId
         prunedBillIds.update { current ->
             if (isPruned) {
-                current + billId
+                current + affectedIds
             } else {
-                current - billId
+                current - affectedIds
             }
+        }
+    }
+
+    fun toggleRootExpansion(billId: Long) {
+        expandedRootBillId.update { current ->
+            if (current == billId) null else billId
         }
     }
 
@@ -87,6 +98,7 @@ class PruningViewModel(
     fun resetSandbox() {
         coroutineScope.launch(ioDispatcher) {
             hasLoadedSnapshot.value = false
+            expandedRootBillId.value = null
             loadSnapshotFromRoom()
         }
     }
@@ -101,9 +113,19 @@ class PruningViewModel(
         hasLoadedSnapshot.value = true
     }
 
+    private fun collectDescendantIds(parentId: Long, bills: List<BillEntity>): Set<Long> {
+        return bills
+            .filter { bill -> bill.parentBillId == parentId }
+            .flatMap { child ->
+                setOf(child.id) + collectDescendantIds(child.id, bills)
+            }
+            .toSet()
+    }
+
     private fun buildUiState(
         bills: List<BillEntity>,
         prunedIds: Set<Long>,
+        expandedRootBillId: Long?,
         monthlyBudget: Double,
         isLoading: Boolean
     ): PruningUiState {
@@ -126,9 +148,15 @@ class PruningViewModel(
             }
         }
 
+        val childRelationships = bills
+            .filter { bill -> bill.parentBillId != null }
+            .groupBy { bill -> bill.parentBillId!! }
+
         return PruningUiState(
             bills = bills,
             prunedBillIds = prunedIds,
+            childRelationships = childRelationships,
+            expandedRootBillId = expandedRootBillId,
             originalCategoryTotals = originalCategoryTotals,
             projectedCategoryTotals = projectedCategoryTotals,
             categoryAlphas = categoryAlphas,

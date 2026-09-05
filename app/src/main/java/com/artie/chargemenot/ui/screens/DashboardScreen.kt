@@ -38,6 +38,7 @@ import com.artie.chargemenot.domain.model.UserSettings
 import androidx.compose.material.icons.filled.LocalFlorist
 import com.artie.chargemenot.ui.components.CrossPollinateShareDialog
 import com.artie.chargemenot.ui.components.FinancialBloomCanvas
+import com.artie.chargemenot.ui.components.LinkRootBottomSheet
 import com.artie.chargemenot.ui.components.MeadowTickerAmount
 import com.artie.chargemenot.ui.components.NagModeCard
 import com.artie.chargemenot.ui.components.categoryColor
@@ -46,6 +47,7 @@ import com.artie.chargemenot.ui.dashboard.DashboardUiState
 import com.artie.chargemenot.ui.viewmodels.SettingsUiState
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.LeafGreen
+import com.artie.chargemenot.ui.theme.MeadowEarth
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowGreenLight
 import com.artie.chargemenot.ui.theme.MeadowSage
@@ -59,6 +61,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Grass
+import androidx.compose.material.icons.filled.Nature
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
@@ -87,16 +90,32 @@ fun DashboardScreen(
     onRefreshNotificationPermissionState: () -> Unit,
     onNavigateToPruningSimulator: () -> Unit,
     onNavigateToWeedWhacker: () -> Unit,
+    onLinkBillToParent: (Long, Long?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
     val dateFormat = DateTimeFormatter.ofPattern("MMM d")
     var billToShare by remember { mutableStateOf<Bill?>(null) }
+    var billToLink by remember { mutableStateOf<Bill?>(null) }
 
     billToShare?.let { bill ->
         CrossPollinateShareDialog(
             bill = bill,
             onDismiss = { billToShare = null }
+        )
+    }
+
+    billToLink?.let { bill ->
+        LinkRootBottomSheet(
+            bill = bill,
+            availableParents = eligibleParentBills(
+                childBill = bill,
+                allBills = uiState.allBills
+            ),
+            onLinkToParent = { parentId ->
+                onLinkBillToParent(bill.id, parentId)
+            },
+            onDismiss = { billToLink = null }
         )
     }
 
@@ -173,6 +192,7 @@ fun DashboardScreen(
                     currencyFormat = currencyFormat,
                     dateFormat = dateFormat,
                     onShare = { billToShare = bill },
+                    onLinkRoots = { billToLink = bill },
                     modifier = Modifier
                         .padding(top = 10.dp)
                         .animateItem()
@@ -202,6 +222,7 @@ fun DashboardScreen(
                     onKeep = { onKeepSubscription(bill) },
                     onPull = { onPullSubscription(bill) },
                     onShare = { billToShare = bill },
+                    onLinkRoots = { billToLink = bill },
                     modifier = Modifier
                         .padding(top = 10.dp)
                         .animateItem()
@@ -584,6 +605,7 @@ private fun UpcomingBillCard(
     currencyFormat: NumberFormat,
     dateFormat: DateTimeFormatter,
     onShare: () -> Unit,
+    onLinkRoots: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -633,6 +655,15 @@ private fun UpcomingBillCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Medium
+                )
+            }
+
+            IconButton(onClick = onLinkRoots) {
+                Icon(
+                    imageVector = Icons.Default.Nature,
+                    contentDescription = stringResource(R.string.link_roots_icon),
+                    tint = MeadowEarth,
+                    modifier = Modifier.size(24.dp)
                 )
             }
 
@@ -693,6 +724,7 @@ private fun SubscriptionBillCard(
     onKeep: () -> Unit,
     onPull: () -> Unit,
     onShare: () -> Unit,
+    onLinkRoots: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -739,6 +771,15 @@ private fun SubscriptionBillCard(
                 )
             }
 
+            IconButton(onClick = onLinkRoots) {
+                Icon(
+                    imageVector = Icons.Default.Nature,
+                    contentDescription = stringResource(R.string.link_roots_icon),
+                    tint = MeadowEarth,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
             IconButton(onClick = onShare) {
                 Icon(
                     imageVector = Icons.Default.LocalFlorist,
@@ -767,6 +808,22 @@ private fun SubscriptionBillCard(
             }
         }
     }
+}
+
+private fun eligibleParentBills(childBill: Bill, allBills: List<Bill>): List<Bill> {
+    val descendantIds = collectDescendantBillIds(childBill.id, allBills)
+    return allBills.filter { bill ->
+        bill.id != childBill.id && bill.id !in descendantIds
+    }
+}
+
+private fun collectDescendantBillIds(parentId: Long, bills: List<Bill>): Set<Long> {
+    return bills
+        .filter { bill -> bill.parentBillId == parentId }
+        .flatMap { child ->
+            setOf(child.id) + collectDescendantBillIds(child.id, bills)
+        }
+        .toSet()
 }
 
 private fun previewDummyBills(): List<Bill> {
@@ -800,6 +857,7 @@ private fun DashboardScreenPreview() {
                 totalUpcoming = bills.sumOf { it.amount },
                 upcomingBills = bills,
                 subscriptionBills = bills.filter { it.category == BillCategory.SUBSCRIPTIONS },
+                allBills = bills,
                 categoryTotals = categoryTotals,
                 isLoading = false
             ),
@@ -812,7 +870,8 @@ private fun DashboardScreenPreview() {
             onNotificationPermissionRequestHandled = {},
             onRefreshNotificationPermissionState = {},
             onNavigateToPruningSimulator = {},
-            onNavigateToWeedWhacker = {}
+            onNavigateToWeedWhacker = {},
+            onLinkBillToParent = { _, _ -> }
         )
     }
 }
@@ -836,7 +895,8 @@ private fun DashboardScreenEmptyPreview() {
             onNotificationPermissionRequestHandled = {},
             onRefreshNotificationPermissionState = {},
             onNavigateToPruningSimulator = {},
-            onNavigateToWeedWhacker = {}
+            onNavigateToWeedWhacker = {},
+            onLinkBillToParent = { _, _ -> }
         )
     }
 }

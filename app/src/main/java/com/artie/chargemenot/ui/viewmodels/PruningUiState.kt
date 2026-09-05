@@ -7,6 +7,8 @@ import com.artie.chargemenot.domain.model.UserSettings
 data class PruningUiState(
     val bills: List<BillEntity> = emptyList(),
     val prunedBillIds: Set<Long> = emptySet(),
+    val childRelationships: Map<Long, List<BillEntity>> = emptyMap(),
+    val expandedRootBillId: Long? = null,
     val originalCategoryTotals: Map<BillCategory, Double> = emptyMap(),
     val projectedCategoryTotals: Map<BillCategory, Double> = emptyMap(),
     val categoryAlphas: Map<BillCategory, Float> = emptyMap(),

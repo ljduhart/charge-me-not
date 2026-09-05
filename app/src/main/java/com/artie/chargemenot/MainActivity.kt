@@ -115,6 +115,7 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                         onToggleBillStatus = pruningViewModel::toggleBillStatus,
+                        onToggleRootExpansion = pruningViewModel::toggleRootExpansion,
                         onResetSandbox = pruningViewModel::resetSandbox,
                         onScanResult = scannerViewModel::onScanResult,
                         onQrPayloadDetected = scannerViewModel::onQrPayloadDetected,
@@ -138,6 +139,7 @@ class MainActivity : ComponentActivity() {
                         onWeedWhackerNavigateBack = {
                             navController.popBackStack()
                         },
+                        onLinkBillToParent = dashboardViewModel::linkBillToParent,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

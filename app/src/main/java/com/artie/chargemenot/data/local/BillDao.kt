@@ -61,4 +61,13 @@ interface BillDao {
         """
     )
     suspend fun getOverdueOrDueTodayUnpaidBillCount(today: LocalDate = LocalDate.now()): Int
+
+    @Query(
+        """
+        SELECT * FROM bills
+        WHERE parentBillId = :parentId
+        ORDER BY name ASC
+        """
+    )
+    fun getChildrenForParent(parentId: Long): Flow<List<BillEntity>>
 }

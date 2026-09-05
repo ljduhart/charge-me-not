@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,6 +57,7 @@ import com.artie.chargemenot.data.local.BillEntity
 import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.ui.components.FinancialBloomCanvas
 import com.artie.chargemenot.ui.components.MeadowTickerCurrencyLine
+import com.artie.chargemenot.ui.components.RootSystemCanvas
 import com.artie.chargemenot.ui.components.categoryColor
 import com.artie.chargemenot.ui.components.categoryDisplayName
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
@@ -77,6 +79,7 @@ import java.util.Locale
 fun PruningSimulatorScreen(
     uiState: PruningUiState,
     onToggleBillStatus: (Long, Boolean) -> Unit,
+    onToggleRootExpansion: (Long) -> Unit,
     onResetSandbox: () -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
@@ -148,9 +151,12 @@ fun PruningSimulatorScreen(
             PruningBillsList(
                 bills = uiState.bills,
                 prunedBillIds = uiState.prunedBillIds,
+                childRelationships = uiState.childRelationships,
+                expandedRootBillId = uiState.expandedRootBillId,
                 currencyFormat = currencyFormat,
                 dateFormat = dateFormat,
                 onToggleBillStatus = onToggleBillStatus,
+                onToggleRootExpansion = onToggleRootExpansion,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(0.58f)
@@ -241,9 +247,12 @@ private fun PruningSummarySection(
 private fun PruningBillsList(
     bills: List<BillEntity>,
     prunedBillIds: Set<Long>,
+    childRelationships: Map<Long, List<BillEntity>>,
+    expandedRootBillId: Long?,
     currencyFormat: NumberFormat,
     dateFormat: DateTimeFormatter,
     onToggleBillStatus: (Long, Boolean) -> Unit,
+    onToggleRootExpansion: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -274,14 +283,32 @@ private fun PruningBillsList(
                 items = bills,
                 key = { bill -> bill.id }
             ) { bill ->
+                val children = childRelationships[bill.id] ?: emptyList()
+                val isExpanded = expandedRootBillId == bill.id
+
                 PruningBillRow(
                     bill = bill,
                     isPruned = bill.id in prunedBillIds,
+                    hasRootChildren = children.isNotEmpty(),
+                    isRootExpanded = isExpanded,
                     currencyFormat = currencyFormat,
                     dateFormat = dateFormat,
                     onToggleBillStatus = onToggleBillStatus,
+                    onToggleRootExpansion = onToggleRootExpansion,
                     modifier = Modifier.animateItem()
                 )
+
+                if (isExpanded && children.isNotEmpty()) {
+                    RootSystemCanvas(
+                        parentBill = bill,
+                        childBills = children,
+                        isParentPruned = bill.id in prunedBillIds,
+                        prunedBillIds = prunedBillIds,
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .animateItem()
+                    )
+                }
             }
         }
     }
@@ -291,9 +318,12 @@ private fun PruningBillsList(
 private fun PruningBillRow(
     bill: BillEntity,
     isPruned: Boolean,
+    hasRootChildren: Boolean,
+    isRootExpanded: Boolean,
     currencyFormat: NumberFormat,
     dateFormat: DateTimeFormatter,
     onToggleBillStatus: (Long, Boolean) -> Unit,
+    onToggleRootExpansion: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val rowAlpha by animateFloatAsState(
@@ -305,7 +335,10 @@ private fun PruningBillRow(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .alpha(rowAlpha),
+            .alpha(rowAlpha)
+            .clickable(enabled = hasRootChildren) {
+                onToggleRootExpansion(bill.id)
+            },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -352,6 +385,20 @@ private fun PruningBillRow(
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Medium
                 )
+                if (hasRootChildren) {
+                    Text(
+                        text = stringResource(
+                            if (isRootExpanded) {
+                                R.string.pruning_simulator_roots_expanded
+                            } else {
+                                R.string.pruning_simulator_roots_tap
+                            }
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MeadowGreenDark.copy(alpha = 0.75f),
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
             }
 
             Switch(
@@ -441,6 +488,7 @@ private fun PruningSimulatorScreenPreview() {
                 isLoading = false
             ),
             onToggleBillStatus = { _, _ -> },
+            onToggleRootExpansion = {},
             onResetSandbox = {},
             onNavigateBack = {}
         )

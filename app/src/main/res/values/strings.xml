@@ -60,4 +60,14 @@
     <string name="weed_whacker_cost_per_use">Cost per use: %1$s</string>
     <string name="weed_whacker_usage_stats">Uses: %1$d · Audits: %2$d</string>
     <string name="weed_whacker_prime_weed_warning">Prime weed — consider pulling this to save money.</string>
+
+    <string name="link_roots_title">Link Root Systems</string>
+    <string name="link_roots_subtitle">Choose a parent plant for %1$s</string>
+    <string name="link_roots_parent_label">Parent Plant</string>
+    <string name="link_roots_no_parent">No parent (standalone plant)</string>
+    <string name="link_roots_save">Plant the Connection</string>
+    <string name="link_roots_cancel">Cancel</string>
+    <string name="link_roots_icon">Link roots</string>
+    <string name="pruning_simulator_roots_tap">Tap to reveal root connections</string>
+    <string name="pruning_simulator_roots_expanded">Root system visible — tap to hide</string>
 </resources>

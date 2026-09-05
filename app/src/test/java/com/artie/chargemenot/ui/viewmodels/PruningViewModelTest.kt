@@ -76,6 +76,63 @@ class PruningViewModelTest {
     assertEquals(seedBills().size, viewModel.uiState.value.bills.size)
   }
 
+  @Test
+  fun toggleBillStatus_recursivelyPrunesChildBills() {
+    val today = LocalDate.of(2026, 9, 5)
+    val bills = listOf(
+      BillEntity(1, "Car Payment", 450.0, today.plusDays(5), BillCategory.TRANSPORTATION),
+      BillEntity(
+        id = 2,
+        name = "Car Insurance",
+        amount = 120.0,
+        dueDate = today.plusDays(6),
+        category = BillCategory.HEALTHCARE,
+        parentBillId = 1L
+      ),
+      BillEntity(
+        id = 3,
+        name = "Roadside Assistance",
+        amount = 8.0,
+        dueDate = today.plusDays(7),
+        category = BillCategory.SUBSCRIPTIONS,
+        parentBillId = 2L
+      )
+    )
+    val billDao = FakeBillDao(bills)
+    val viewModel = createViewModel(billDao)
+    testScope.advanceUntilIdle()
+
+    viewModel.toggleBillStatus(billId = 1L, isPruned = true)
+    testScope.advanceUntilIdle()
+
+    val state = viewModel.uiState.value
+    assertTrue(state.prunedBillIds.containsAll(setOf(1L, 2L, 3L)))
+    assertEquals(1, state.childRelationships[1L]?.size)
+    assertEquals("Car Insurance", state.childRelationships[1L]?.first()?.name)
+  }
+
+  @Test
+  fun childRelationships_mapsParentToChildren() {
+    val today = LocalDate.of(2026, 9, 5)
+    val bills = listOf(
+      BillEntity(1, "Car Payment", 450.0, today.plusDays(5), BillCategory.TRANSPORTATION),
+      BillEntity(
+        id = 2,
+        name = "Car Insurance",
+        amount = 120.0,
+        dueDate = today.plusDays(6),
+        category = BillCategory.HEALTHCARE,
+        parentBillId = 1L
+      )
+    )
+    val viewModel = createViewModel(FakeBillDao(bills))
+    testScope.advanceUntilIdle()
+
+    val relationships = viewModel.uiState.value.childRelationships
+    assertEquals(1, relationships[1L]?.size)
+    assertEquals("Car Insurance", relationships[1L]?.first()?.name)
+  }
+
   private fun createViewModel(billDao: FakeBillDao): PruningViewModel {
     return PruningViewModel(
       billDao = billDao,
@@ -129,6 +186,9 @@ class PruningViewModelTest {
       bills.value.firstOrNull { it.id == billId }
 
     override suspend fun getOverdueOrDueTodayUnpaidBillCount(today: LocalDate): Int = 0
+
+    override fun getChildrenForParent(parentId: Long): Flow<List<BillEntity>> =
+      bills.map { items -> items.filter { bill -> bill.parentBillId == parentId } }
   }
 
   private class FakeUserSettingsDao : UserSettingsDao {
