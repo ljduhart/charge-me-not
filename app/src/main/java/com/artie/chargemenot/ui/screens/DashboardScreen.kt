@@ -2,6 +2,7 @@ package com.artie.chargemenot.ui.screens
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,10 +11,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Eco
@@ -37,6 +38,7 @@ import com.artie.chargemenot.domain.model.UserSettings
 import androidx.compose.material.icons.filled.LocalFlorist
 import com.artie.chargemenot.ui.components.CrossPollinateShareDialog
 import com.artie.chargemenot.ui.components.FinancialBloomCanvas
+import com.artie.chargemenot.ui.components.MeadowTickerAmount
 import com.artie.chargemenot.ui.components.NagModeCard
 import com.artie.chargemenot.ui.components.categoryColor
 import com.artie.chargemenot.ui.components.categoryDisplayName
@@ -96,69 +98,113 @@ fun DashboardScreen(
         )
     }
 
-    Column(
+    LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 24.dp)
+            .background(MaterialTheme.colorScheme.background),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
-        GreetingHeader(
-            greeting = uiState.greeting,
-            totalUpcoming = currencyFormat.format(uiState.totalUpcoming),
-            monthlyBudget = uiState.monthlyBudget,
-            currencyFormat = currencyFormat,
-            onMonthlyBudgetChange = onMonthlyBudgetChange
-        )
+        item {
+            GreetingHeader(
+                greeting = uiState.greeting,
+                totalUpcoming = uiState.totalUpcoming,
+                monthlyBudget = uiState.monthlyBudget,
+                currencyFormat = currencyFormat,
+                onMonthlyBudgetChange = onMonthlyBudgetChange
+            )
+        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        item { Spacer(modifier = Modifier.height(16.dp)) }
 
-        NagModeCard(
-            uiState = settingsUiState,
-            onNagModeToggleRequested = onNagModeToggleRequested,
-            onNotificationPermissionResult = onNotificationPermissionResult,
-            onNotificationPermissionRequestHandled = onNotificationPermissionRequestHandled,
-            onRefreshPermissionState = onRefreshNotificationPermissionState
-        )
+        item {
+            NagModeCard(
+                uiState = settingsUiState,
+                onNagModeToggleRequested = onNagModeToggleRequested,
+                onNotificationPermissionResult = onNotificationPermissionResult,
+                onNotificationPermissionRequestHandled = onNotificationPermissionRequestHandled,
+                onRefreshPermissionState = onRefreshNotificationPermissionState
+            )
+        }
 
-        Spacer(modifier = Modifier.height(28.dp))
+        item { Spacer(modifier = Modifier.height(28.dp)) }
 
-        FinancialBloomSection(
-            categoryTotals = uiState.categoryTotals
-        )
+        item {
+            FinancialBloomSection(
+                categoryTotals = uiState.categoryTotals
+            )
+        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        item { Spacer(modifier = Modifier.height(16.dp)) }
 
-        PruningSimulatorEntryCard(
-            onNavigateToPruningSimulator = onNavigateToPruningSimulator
-        )
+        item {
+            PruningSimulatorEntryCard(
+                onNavigateToPruningSimulator = onNavigateToPruningSimulator
+            )
+        }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        item { Spacer(modifier = Modifier.height(32.dp)) }
 
-        UpcomingBillsSection(
-            bills = uiState.upcomingBills,
-            currencyFormat = currencyFormat,
-            dateFormat = dateFormat,
-            onShareBill = { bill -> billToShare = bill }
-        )
+        item {
+            UpcomingBillsSectionHeader()
+        }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        if (uiState.upcomingBills.isEmpty()) {
+            item {
+                UpcomingBillsEmptyCard()
+            }
+        } else {
+            items(
+                items = uiState.upcomingBills,
+                key = { bill -> bill.id }
+            ) { bill ->
+                UpcomingBillCard(
+                    bill = bill,
+                    currencyFormat = currencyFormat,
+                    dateFormat = dateFormat,
+                    onShare = { billToShare = bill },
+                    modifier = Modifier
+                        .padding(top = 10.dp)
+                        .animateItem()
+                )
+            }
+        }
 
-        SubscriptionsSection(
-            subscriptions = uiState.subscriptionBills,
-            currencyFormat = currencyFormat,
-            dateFormat = dateFormat,
-            onKeep = onKeepSubscription,
-            onPull = onPullSubscription,
-            onShareBill = { bill -> billToShare = bill }
-        )
+        item { Spacer(modifier = Modifier.height(32.dp)) }
+
+        item {
+            SubscriptionsSectionHeader()
+        }
+
+        if (uiState.subscriptionBills.isEmpty()) {
+            item {
+                SubscriptionsEmptyCard()
+            }
+        } else {
+            items(
+                items = uiState.subscriptionBills,
+                key = { bill -> bill.id }
+            ) { bill ->
+                SubscriptionBillCard(
+                    bill = bill,
+                    currencyFormat = currencyFormat,
+                    dateFormat = dateFormat,
+                    onKeep = { onKeepSubscription(bill) },
+                    onPull = { onPullSubscription(bill) },
+                    onShare = { billToShare = bill },
+                    modifier = Modifier
+                        .padding(top = 10.dp)
+                        .animateItem()
+                )
+            }
+        }
     }
 }
 
 @Composable
 private fun GreetingHeader(
     greeting: String,
-    totalUpcoming: String,
+    totalUpcoming: Double,
     monthlyBudget: Double,
     currencyFormat: NumberFormat,
     onMonthlyBudgetChange: (String) -> Unit
@@ -203,8 +249,9 @@ private fun GreetingHeader(
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = totalUpcoming,
+                MeadowTickerAmount(
+                    amount = totalUpcoming,
+                    formatter = currencyFormat,
                     style = MaterialTheme.typography.displayLarge,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     fontWeight = FontWeight.Bold
@@ -435,12 +482,7 @@ private fun CategoryLegend(
 }
 
 @Composable
-private fun UpcomingBillsSection(
-    bills: List<Bill>,
-    currencyFormat: NumberFormat,
-    dateFormat: DateTimeFormatter,
-    onShareBill: (Bill) -> Unit
-) {
+private fun UpcomingBillsSectionHeader() {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = stringResource(R.string.upcoming_bills_title),
@@ -452,36 +494,27 @@ private fun UpcomingBillsSection(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        Spacer(modifier = Modifier.height(6.dp))
+    }
+}
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (bills.isEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                )
-            ) {
-                Text(
-                    text = "No upcoming bills — your garden is clear!",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(20.dp)
-                )
-            }
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                bills.forEach { bill ->
-                    UpcomingBillCard(
-                        bill = bill,
-                        currencyFormat = currencyFormat,
-                        dateFormat = dateFormat,
-                        onShare = { onShareBill(bill) }
-                    )
-                }
-            }
-        }
+@Composable
+private fun UpcomingBillsEmptyCard() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 10.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Text(
+            text = "No upcoming bills — your garden is clear!",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(20.dp)
+        )
     }
 }
 
@@ -490,10 +523,11 @@ private fun UpcomingBillCard(
     bill: Bill,
     currencyFormat: NumberFormat,
     dateFormat: DateTimeFormatter,
-    onShare: () -> Unit
+    onShare: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -555,14 +589,7 @@ private fun UpcomingBillCard(
 }
 
 @Composable
-private fun SubscriptionsSection(
-    subscriptions: List<Bill>,
-    currencyFormat: NumberFormat,
-    dateFormat: DateTimeFormatter,
-    onKeep: (Bill) -> Unit,
-    onPull: (Bill) -> Unit,
-    onShareBill: (Bill) -> Unit
-) {
+private fun SubscriptionsSectionHeader() {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "Subscriptions: Weeds or Flowers?",
@@ -574,38 +601,27 @@ private fun SubscriptionsSection(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        Spacer(modifier = Modifier.height(6.dp))
+    }
+}
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (subscriptions.isEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                )
-            ) {
-                Text(
-                    text = "No subscriptions sprouting — your garden is clear!",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(20.dp)
-                )
-            }
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                subscriptions.forEach { bill ->
-                    SubscriptionBillCard(
-                        bill = bill,
-                        currencyFormat = currencyFormat,
-                        dateFormat = dateFormat,
-                        onKeep = { onKeep(bill) },
-                        onPull = { onPull(bill) },
-                        onShare = { onShareBill(bill) }
-                    )
-                }
-            }
-        }
+@Composable
+private fun SubscriptionsEmptyCard() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 10.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Text(
+            text = "No subscriptions sprouting — your garden is clear!",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(20.dp)
+        )
     }
 }
 
@@ -616,10 +632,11 @@ private fun SubscriptionBillCard(
     dateFormat: DateTimeFormatter,
     onKeep: () -> Unit,
     onPull: () -> Unit,
-    onShare: () -> Unit
+    onShare: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface

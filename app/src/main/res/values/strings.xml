@@ -16,6 +16,7 @@
     <string name="pruning_simulator_title">Pruning Simulator</string>
     <string name="pruning_simulator_back">Back to dashboard</string>
     <string name="pruning_simulator_summary">If you prune these weeds, your new monthly total is: %1$s</string>
+    <string name="pruning_simulator_summary_prefix">If you prune these weeds, your new monthly total is:</string>
     <string name="pruning_simulator_bills_header">Bills in your sandbox garden</string>
     <string name="pruning_simulator_empty_garden">Your garden has no unpaid bills to prune right now.</string>
     <string name="pruning_simulator_reset">Reset Garden</string>

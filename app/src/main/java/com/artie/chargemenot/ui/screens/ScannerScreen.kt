@@ -2,6 +2,16 @@ package com.artie.chargemenot.ui.screens
 
 import android.Manifest
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview as CameraPreview
@@ -46,7 +56,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -144,6 +156,9 @@ fun ScannerScreen(
                         onQrPayloadDetected = onQrPayloadDetected,
                         scanningPaused = uiState.pollenReceived != null
                     )
+                    PulsingScanReticle(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
                 } else {
                     CameraPermissionPlaceholder()
                 }
@@ -163,26 +178,95 @@ fun ScannerScreen(
                 )
             }
 
-            if (uiState.pollenReceived != null) {
-                AcceptPollinatedBillCard(
-                    pollen = uiState.pollenReceived,
-                    onAccept = onAcceptPollinatedBill,
-                    onDiscard = onDiscardPollen,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                )
-            } else {
+            val showPollinatedCard = uiState.pollenReceived != null
+            val showPredictiveCard = !showPollinatedCard && uiState.hasActionableScanData()
+
+            AnimatedVisibility(
+                visible = showPollinatedCard,
+                enter = slideInVertically(
+                    animationSpec = tween(360),
+                    initialOffsetY = { fullHeight -> fullHeight }
+                ) + fadeIn(animationSpec = tween(360)),
+                exit = slideOutVertically(
+                    animationSpec = tween(280),
+                    targetOffsetY = { fullHeight -> fullHeight }
+                ) + fadeOut(animationSpec = tween(280)),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                uiState.pollenReceived?.let { pollen ->
+                    AcceptPollinatedBillCard(
+                        pollen = pollen,
+                        onAccept = onAcceptPollinatedBill,
+                        onDiscard = onDiscardPollen,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+
+            AnimatedVisibility(
+                visible = showPredictiveCard,
+                enter = slideInVertically(
+                    animationSpec = tween(360),
+                    initialOffsetY = { fullHeight -> fullHeight }
+                ) + fadeIn(animationSpec = tween(360)),
+                exit = slideOutVertically(
+                    animationSpec = tween(280),
+                    targetOffsetY = { fullHeight -> fullHeight }
+                ) + fadeOut(animationSpec = tween(280)),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
                 PredictiveImpactCard(
                     uiState = uiState,
                     onCategorySelected = onCategorySelected,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
+                    modifier = Modifier.fillMaxSize()
                 )
             }
         }
     }
+}
+
+private fun ScannerUiState.hasActionableScanData(): Boolean =
+    scannedBill.amount != null || scannedBill.dueDate != null
+
+@Composable
+private fun PulsingScanReticle(
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "scanReticlePulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 0.94f,
+        targetValue = 1.04f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1_400),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scanReticleScale"
+    )
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.55f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1_400),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scanReticleAlpha"
+    )
+
+    Box(
+        modifier = modifier
+            .size(240.dp)
+            .scale(pulseScale)
+            .alpha(pulseAlpha)
+            .border(
+                width = 3.dp,
+                color = Color.White,
+                shape = RoundedCornerShape(20.dp)
+            )
+    )
 }
 
 @Composable

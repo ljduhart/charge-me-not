@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -41,9 +40,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +55,7 @@ import com.artie.chargemenot.R
 import com.artie.chargemenot.data.local.BillEntity
 import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.ui.components.FinancialBloomCanvas
+import com.artie.chargemenot.ui.components.MeadowTickerCurrencyLine
 import com.artie.chargemenot.ui.components.categoryColor
 import com.artie.chargemenot.ui.components.categoryDisplayName
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
@@ -141,7 +138,8 @@ fun PruningSimulatorScreen(
             )
 
             PruningSummarySection(
-                newMonthlyTotal = currencyFormat.format(uiState.newMonthlyTotal),
+                newMonthlyTotal = uiState.newMonthlyTotal,
+                currencyFormat = currencyFormat,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 12.dp)
@@ -166,9 +164,6 @@ private fun PruningBloomSection(
     uiState: PruningUiState,
     modifier: Modifier = Modifier
 ) {
-    val animatedCategoryTotals = rememberAnimatedCategoryTotals(uiState.projectedCategoryTotals)
-    val animatedCategoryAlphas = rememberAnimatedCategoryAlphas(uiState.categoryAlphas)
-
     Card(
         modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         shape = RoundedCornerShape(24.dp),
@@ -191,8 +186,8 @@ private fun PruningBloomSection(
         ) {
             FinancialBloomCanvas(
                 categoryTotals = uiState.originalCategoryTotals,
-                projectedCategoryTotals = animatedCategoryTotals,
-                categoryAlphas = animatedCategoryAlphas,
+                projectedCategoryTotals = uiState.projectedCategoryTotals,
+                categoryAlphas = uiState.categoryAlphas,
                 monthlyBudget = uiState.monthlyBudget,
                 sizeByMonthlyBudget = true,
                 modifier = Modifier
@@ -204,48 +199,9 @@ private fun PruningBloomSection(
 }
 
 @Composable
-private fun rememberAnimatedCategoryTotals(
-    targetTotals: Map<BillCategory, Double>
-): Map<BillCategory, Double> {
-    val amounts = remember { mutableStateMapOf<BillCategory, Float>() }
-    BillCategory.entries.forEach { category ->
-        key(category) {
-            val target = (targetTotals[category] ?: 0.0).toFloat()
-            val animated by animateFloatAsState(
-                targetValue = target,
-                animationSpec = tween(durationMillis = 450),
-                label = "pruningCategoryTotal_${category.name}"
-            )
-            amounts[category] = animated
-        }
-    }
-    return amounts
-        .filterValues { value -> value > 0f }
-        .mapValues { (_, value) -> value.toDouble() }
-}
-
-@Composable
-private fun rememberAnimatedCategoryAlphas(
-    targetAlphas: Map<BillCategory, Float>
-): Map<BillCategory, Float> {
-    val alphas = remember { mutableStateMapOf<BillCategory, Float>() }
-    BillCategory.entries.forEach { category ->
-        key(category) {
-            val target = targetAlphas[category] ?: 1f
-            val animated by animateFloatAsState(
-                targetValue = target,
-                animationSpec = tween(durationMillis = 450),
-                label = "pruningCategoryAlpha_${category.name}"
-            )
-            alphas[category] = animated
-        }
-    }
-    return alphas.toMap()
-}
-
-@Composable
 private fun PruningSummarySection(
-    newMonthlyTotal: String,
+    newMonthlyTotal: Double,
+    currencyFormat: NumberFormat,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -255,16 +211,29 @@ private fun PruningSummarySection(
             containerColor = MeadowSage.copy(alpha = 0.22f)
         )
     ) {
-        Text(
-            text = stringResource(R.string.pruning_simulator_summary, newMonthlyTotal),
-            style = MaterialTheme.typography.titleMedium,
-            color = MeadowGreenDark,
-            fontWeight = FontWeight.SemiBold,
-            textAlign = TextAlign.Center,
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp)
-        )
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(R.string.pruning_simulator_summary_prefix),
+                style = MaterialTheme.typography.titleMedium,
+                color = MeadowGreenDark,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center
+            )
+            MeadowTickerCurrencyLine(
+                amount = newMonthlyTotal,
+                formatter = currencyFormat,
+                prefix = "",
+                style = MaterialTheme.typography.titleLarge,
+                color = MeadowGreenDark,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
     }
 }
 
@@ -310,7 +279,8 @@ private fun PruningBillsList(
                     isPruned = bill.id in prunedBillIds,
                     currencyFormat = currencyFormat,
                     dateFormat = dateFormat,
-                    onToggleBillStatus = onToggleBillStatus
+                    onToggleBillStatus = onToggleBillStatus,
+                    modifier = Modifier.animateItem()
                 )
             }
         }
@@ -323,7 +293,8 @@ private fun PruningBillRow(
     isPruned: Boolean,
     currencyFormat: NumberFormat,
     dateFormat: DateTimeFormatter,
-    onToggleBillStatus: (Long, Boolean) -> Unit
+    onToggleBillStatus: (Long, Boolean) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val rowAlpha by animateFloatAsState(
         targetValue = if (isPruned) 0.45f else 1f,
@@ -332,7 +303,7 @@ private fun PruningBillRow(
     )
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .alpha(rowAlpha),
         shape = RoundedCornerShape(16.dp),

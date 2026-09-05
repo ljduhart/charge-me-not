@@ -14,14 +14,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.artie.chargemenot.ui.navigation.AppRoutes
-import com.artie.chargemenot.ui.screens.DashboardScreen
-import com.artie.chargemenot.ui.screens.PruningSimulatorScreen
-import com.artie.chargemenot.ui.screens.ScannerScreen
+import com.artie.chargemenot.ui.navigation.ChargeMeNotNavHost
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.MeadowGreen
 import com.artie.chargemenot.ui.theme.MeadowWhite
@@ -70,63 +66,45 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 ) { innerPadding ->
-                    NavHost(
+                    ChargeMeNotNavHost(
                         navController = navController,
-                        startDestination = AppRoutes.DASHBOARD,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                    ) {
-                        composable(AppRoutes.DASHBOARD) {
-                            DashboardScreen(
-                                uiState = dashboardUiState,
-                                settingsUiState = settingsUiState,
-                                onKeepSubscription = dashboardViewModel::keepSubscription,
-                                onPullSubscription = dashboardViewModel::pullSubscription,
-                                onMonthlyBudgetChange = dashboardViewModel::updateMonthlyBudget,
-                                onNagModeToggleRequested = settingsViewModel::onNagModeToggleRequested,
-                                onNotificationPermissionResult = settingsViewModel::onNotificationPermissionResult,
-                                onNotificationPermissionRequestHandled = settingsViewModel::onNotificationPermissionRequestHandled,
-                                onRefreshNotificationPermissionState = settingsViewModel::refreshNotificationPermissionState,
-                                onNavigateToPruningSimulator = {
-                                    pruningViewModel.resetSandbox()
-                                    navController.navigate(AppRoutes.PRUNING_SIMULATOR) {
-                                        launchSingleTop = true
-                                    }
-                                }
-                            )
-                        }
-
-                        composable(AppRoutes.PRUNING_SIMULATOR) {
-                            PruningSimulatorScreen(
-                                uiState = pruningUiState,
-                                onToggleBillStatus = pruningViewModel::toggleBillStatus,
-                                onResetSandbox = pruningViewModel::resetSandbox,
-                                onNavigateBack = {
-                                    navController.popBackStack()
-                                }
-                            )
-                        }
-
-                        composable(AppRoutes.SCANNER) {
-                            ScannerScreen(
-                                uiState = scannerUiState,
-                                onScanResult = scannerViewModel::onScanResult,
-                                onQrPayloadDetected = scannerViewModel::onQrPayloadDetected,
-                                onCategorySelected = scannerViewModel::selectCategory,
-                                onAcceptPollinatedBill = {
-                                    scannerViewModel.acceptPollinatedBill {
-                                        navController.popBackStack()
-                                    }
-                                },
-                                onDiscardPollen = scannerViewModel::discardPollen,
-                                onNavigateBack = {
-                                    scannerViewModel.resetScanSession()
-                                    navController.popBackStack()
-                                }
-                            )
-                        }
-                    }
+                        dashboardUiState = dashboardUiState,
+                        scannerUiState = scannerUiState,
+                        settingsUiState = settingsUiState,
+                        pruningUiState = pruningUiState,
+                        onKeepSubscription = dashboardViewModel::keepSubscription,
+                        onPullSubscription = dashboardViewModel::pullSubscription,
+                        onMonthlyBudgetChange = dashboardViewModel::updateMonthlyBudget,
+                        onNagModeToggleRequested = settingsViewModel::onNagModeToggleRequested,
+                        onNotificationPermissionResult = settingsViewModel::onNotificationPermissionResult,
+                        onNotificationPermissionRequestHandled = settingsViewModel::onNotificationPermissionRequestHandled,
+                        onRefreshNotificationPermissionState = settingsViewModel::refreshNotificationPermissionState,
+                        onNavigateToPruningSimulator = {
+                            pruningViewModel.resetSandbox()
+                            navController.navigate(AppRoutes.PRUNING_SIMULATOR) {
+                                launchSingleTop = true
+                            }
+                        },
+                        onToggleBillStatus = pruningViewModel::toggleBillStatus,
+                        onResetSandbox = pruningViewModel::resetSandbox,
+                        onScanResult = scannerViewModel::onScanResult,
+                        onQrPayloadDetected = scannerViewModel::onQrPayloadDetected,
+                        onCategorySelected = scannerViewModel::selectCategory,
+                        onAcceptPollinatedBill = {
+                            scannerViewModel.acceptPollinatedBill {
+                                navController.popBackStack()
+                            }
+                        },
+                        onDiscardPollen = scannerViewModel::discardPollen,
+                        onScannerNavigateBack = {
+                            scannerViewModel.resetScanSession()
+                            navController.popBackStack()
+                        },
+                        onPruningNavigateBack = {
+                            navController.popBackStack()
+                        },
+                        modifier = Modifier.padding(innerPadding)
+                    )
                 }
             }
         }

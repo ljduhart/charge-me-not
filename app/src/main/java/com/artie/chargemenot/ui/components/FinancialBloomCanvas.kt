@@ -1,7 +1,17 @@
 package com.artie.chargemenot.ui.components
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -22,6 +32,11 @@ import com.artie.chargemenot.ui.theme.MeadowSunflower
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import kotlin.math.min
 
+private val meadowPetalSpring = spring<Float>(
+    dampingRatio = Spring.DampingRatioMediumBouncy,
+    stiffness = Spring.StiffnessLow
+)
+
 @Composable
 fun FinancialBloomCanvas(
     categoryTotals: Map<BillCategory, Double>,
@@ -38,11 +53,25 @@ fun FinancialBloomCanvas(
         categoryTotals
     }
 
-    val entries = displayTotals.entries
-        .filter { (_, amount) -> amount > 0.0 }
+    var bloomTriggered by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        bloomTriggered = true
+    }
+
+    val bloomProgress by animateFloatAsState(
+        targetValue = if (bloomTriggered) 1f else 0f,
+        animationSpec = meadowPetalSpring,
+        label = "financialBloomProgress"
+    )
+
+    val animatedAmounts = rememberAnimatedPetalAmounts(displayTotals)
+    val animatedAlphas = rememberAnimatedCategoryAlphas(categoryAlphas)
+
+    val entries = animatedAmounts.entries
+        .filter { (_, amount) -> amount > 0f }
         .sortedBy { (category, _) -> category.ordinal }
 
-    val totalAmount = entries.sumOf { it.value }.coerceAtLeast(1.0)
+    val totalAmount = entries.sumOf { it.value.toDouble() }.coerceAtLeast(1.0)
     val safeBudget = monthlyBudget.coerceAtLeast(1.0)
 
     Canvas(modifier = modifier) {
@@ -50,15 +79,15 @@ fun FinancialBloomCanvas(
         val maxRadius = min(size.width, size.height) / 2f * 0.85f
 
         drawCircle(
-            color = MeadowGreen.copy(alpha = 0.12f),
-            radius = maxRadius * 1.05f,
+            color = MeadowGreen.copy(alpha = 0.12f * bloomProgress),
+            radius = maxRadius * 1.05f * bloomProgress,
             center = center
         )
 
         if (entries.isEmpty()) {
             drawCircle(
-                color = MeadowSage.copy(alpha = 0.4f),
-                radius = maxRadius * 0.3f,
+                color = MeadowSage.copy(alpha = 0.4f * bloomProgress),
+                radius = maxRadius * 0.3f * bloomProgress,
                 center = center
             )
             return@Canvas
@@ -72,10 +101,11 @@ fun FinancialBloomCanvas(
             } else {
                 (amount / totalAmount).toFloat()
             }.coerceIn(0.12f, 1f)
-            val petalLength = maxRadius * (0.45f + proportion * 0.55f)
-            val petalWidth = maxRadius * 0.34f * proportion.coerceAtLeast(0.35f)
+            val petalLength = maxRadius * (0.45f + proportion * 0.55f) * bloomProgress
+            val petalWidth = maxRadius * 0.34f * proportion.coerceAtLeast(0.35f) * bloomProgress
             val angle = index * angleStep - 90f
             val isHighlighted = category == highlightedCategory
+            val alphaScale = (animatedAlphas[category] ?: 1f) * bloomProgress
 
             rotate(angle, center) {
                 drawPetal(
@@ -84,22 +114,60 @@ fun FinancialBloomCanvas(
                     width = petalWidth,
                     color = categoryColor(category),
                     highlighted = isHighlighted,
-                    alphaScale = categoryAlphas[category] ?: 1f
+                    alphaScale = alphaScale
                 )
             }
         }
 
         drawCircle(
-            color = MeadowSunflower,
-            radius = maxRadius * 0.14f,
+            color = MeadowSunflower.copy(alpha = bloomProgress),
+            radius = maxRadius * 0.14f * bloomProgress,
             center = center
         )
         drawCircle(
-            color = MeadowEarth,
-            radius = maxRadius * 0.06f,
+            color = MeadowEarth.copy(alpha = bloomProgress),
+            radius = maxRadius * 0.06f * bloomProgress,
             center = center
         )
     }
+}
+
+@Composable
+private fun rememberAnimatedPetalAmounts(
+    targetTotals: Map<BillCategory, Double>
+): Map<BillCategory, Float> {
+    val amounts = remember { mutableStateMapOf<BillCategory, Float>() }
+    BillCategory.entries.forEach { category ->
+        key(category) {
+            val target = (targetTotals[category] ?: 0.0).toFloat()
+            val animated by animateFloatAsState(
+                targetValue = target,
+                animationSpec = meadowPetalSpring,
+                label = "petalAmount_${category.name}"
+            )
+            amounts[category] = animated
+        }
+    }
+    return amounts.toMap()
+}
+
+@Composable
+private fun rememberAnimatedCategoryAlphas(
+    targetAlphas: Map<BillCategory, Float>
+): Map<BillCategory, Float> {
+    val alphas = remember { mutableStateMapOf<BillCategory, Float>() }
+    BillCategory.entries.forEach { category ->
+        key(category) {
+            val target = targetAlphas[category] ?: 1f
+            val animated by animateFloatAsState(
+                targetValue = target,
+                animationSpec = meadowPetalSpring,
+                label = "petalAlpha_${category.name}"
+            )
+            alphas[category] = animated
+        }
+    }
+    return alphas.toMap()
 }
 
 private fun DrawScope.drawPetal(
@@ -110,6 +178,10 @@ private fun DrawScope.drawPetal(
     highlighted: Boolean,
     alphaScale: Float = 1f
 ) {
+    if (length <= 0f || width <= 0f || alphaScale <= 0f) {
+        return
+    }
+
     val path = Path().apply {
         val tipY = center.y - length
         val controlOffset = width * 0.6f
