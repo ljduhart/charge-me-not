@@ -1,5 +1,10 @@
 package com.artie.chargemenot.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -41,6 +46,7 @@ import com.artie.chargemenot.ui.components.FinancialBloomCanvas
 import com.artie.chargemenot.ui.components.LinkRootBottomSheet
 import com.artie.chargemenot.ui.components.MeadowTickerAmount
 import com.artie.chargemenot.ui.components.NagModeCard
+import com.artie.chargemenot.ui.components.WeatherForecastCard
 import com.artie.chargemenot.ui.components.categoryColor
 import com.artie.chargemenot.ui.components.categoryDisplayName
 import com.artie.chargemenot.ui.dashboard.DashboardUiState
@@ -156,6 +162,21 @@ fun DashboardScreen(
             FinancialBloomSection(
                 categoryTotals = uiState.categoryTotals
             )
+        }
+
+        item {
+            AnimatedVisibility(
+                visible = uiState.forecastResult != null,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                uiState.forecastResult?.let { forecast ->
+                    WeatherForecastCard(
+                        forecastResult = forecast,
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+                }
+            }
         }
 
         item { Spacer(modifier = Modifier.height(16.dp)) }

@@ -9,6 +9,7 @@ import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.data.weedwhacker.WorkManagerWeedWhackerScheduler
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.usecase.ForecastUseCase
 import com.artie.chargemenot.notification.NagModeNotificationHelper
 import com.artie.chargemenot.notification.WeedWhackerNotificationHelper
 import com.artie.chargemenot.ui.dashboard.DashboardViewModel
@@ -43,10 +44,15 @@ class ChargeMeNotApplication : Application() {
         AndroidNotificationPermissionGateway(this)
     }
 
+    private val forecastUseCase by lazy {
+        ForecastUseCase(billDao = database.billDao())
+    }
+
     val dashboardViewModel: DashboardViewModel by lazy {
         DashboardViewModel(
             billRepository = billRepository,
             userSettingsRepository = userSettingsRepository,
+            forecastUseCase = forecastUseCase,
             coroutineScope = applicationScope
         )
     }
@@ -108,6 +114,10 @@ class ChargeMeNotApplication : Application() {
 
             val today = LocalDate.now()
             val seedBills = listOf(
+                Bill(name = "Pacific Gas & Electric", amount = 78.40, dueDate = today.minusMonths(2).withDayOfMonth(12), category = BillCategory.UTILITIES),
+                Bill(name = "Trader Joe's", amount = 142.18, dueDate = today.minusMonths(2).withDayOfMonth(18), category = BillCategory.FOOD),
+                Bill(name = "Pacific Gas & Electric", amount = 86.25, dueDate = today.minusMonths(1).withDayOfMonth(10), category = BillCategory.UTILITIES),
+                Bill(name = "Whole Foods Groceries", amount = 168.90, dueDate = today.minusMonths(1).withDayOfMonth(20), category = BillCategory.FOOD),
                 Bill(name = "Maple Street Apartment", amount = 1_450.00, dueDate = today.plusDays(3), category = BillCategory.RENT),
                 Bill(name = "Whole Foods Groceries", amount = 186.42, dueDate = today.plusDays(5), category = BillCategory.FOOD),
                 Bill(name = "Pacific Gas & Electric", amount = 94.17, dueDate = today.plusDays(8), category = BillCategory.UTILITIES),
