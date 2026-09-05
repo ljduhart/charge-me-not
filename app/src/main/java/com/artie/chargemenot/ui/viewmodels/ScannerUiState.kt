@@ -20,6 +20,7 @@ data class ScannerUiState(
     val scannedBill: ScannedBillData = ScannedBillData(),
     val selectedCategory: BillCategory = BillCategory.UTILITIES,
     val categoryTotals: Map<BillCategory, Double> = emptyMap(),
+    val monthlyBudget: Double = com.artie.chargemenot.domain.model.UserSettings.DEFAULT_MONTHLY_BUDGET,
     val predictiveImpact: PredictiveImpact? = null,
     val scanStatusMessage: String = "Point camera at your bill to scan",
     val budgetSummary: String = "Scan a bill to preview budget impact"

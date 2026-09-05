@@ -1,22 +1,24 @@
 package com.artie.chargemenot.ui.dashboard
 
 import com.artie.chargemenot.data.repository.BillRepository
+import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.UserSettings
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.CoroutineScope
 import java.time.LocalDate
 import java.time.LocalTime
 
 class DashboardViewModel(
     private val billRepository: BillRepository,
+    private val userSettingsRepository: UserSettingsRepository,
     private val coroutineScope: CoroutineScope,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
@@ -32,8 +34,9 @@ class DashboardViewModel(
         coroutineScope.launch(ioDispatcher) {
             combine(
                 billRepository.getUpcomingBills(),
-                billRepository.getAllBills()
-            ) { upcoming, all ->
+                billRepository.getAllBills(),
+                userSettingsRepository.observeMonthlyBudget()
+            ) { upcoming, all, monthlyBudget ->
                 val subscriptions = all.filter { it.category == BillCategory.SUBSCRIPTIONS && !it.isPaid }
                 val categoryTotals = upcoming
                     .groupBy { it.category }
@@ -42,6 +45,7 @@ class DashboardViewModel(
                 DashboardUiState(
                     greeting = resolveGreeting(),
                     totalUpcoming = upcoming.sumOf { it.amount },
+                    monthlyBudget = monthlyBudget,
                     upcomingBills = upcoming,
                     subscriptionBills = subscriptions,
                     categoryTotals = categoryTotals,
@@ -62,6 +66,18 @@ class DashboardViewModel(
     fun pullSubscription(bill: Bill) {
         coroutineScope.launch(ioDispatcher) {
             billRepository.deleteBill(bill)
+        }
+    }
+
+    fun updateMonthlyBudget(rawBudgetInput: String) {
+        val parsedBudget = rawBudgetInput
+            .replace(",", "")
+            .replace("$", "")
+            .trim()
+            .toDoubleOrNull() ?: return
+
+        coroutineScope.launch(ioDispatcher) {
+            userSettingsRepository.updateMonthlyBudget(parsedBudget)
         }
     }
 

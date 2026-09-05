@@ -1,6 +1,7 @@
 package com.artie.chargemenot.ui.screens
 
 import android.Manifest
+import androidx.activity.compose.BackHandler
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
@@ -40,9 +41,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,7 +66,6 @@ import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import com.artie.chargemenot.ui.viewmodels.PredictiveImpact
 import com.artie.chargemenot.ui.viewmodels.ScannerUiState
-import com.artie.chargemenot.ui.viewmodels.ScannerViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -85,19 +84,14 @@ fun ScannerScreen(
     modifier: Modifier = Modifier
 ) {
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (!granted) {
-            onNavigateBack()
-        }
-    }
 
     LaunchedEffect(Unit) {
         if (!cameraPermissionState.status.isGranted) {
-            permissionLauncher.launch(Manifest.permission.CAMERA)
+            cameraPermissionState.launchPermissionRequest()
         }
     }
+
+    BackHandler(onBack = onNavigateBack)
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -162,18 +156,16 @@ private fun CameraPreviewSection(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
-    val analyzer = remember { BillOcrAnalyzer(onScanResult) }
+    val currentOnScanResult by rememberUpdatedState(onScanResult)
+    val analyzer = remember {
+        BillOcrAnalyzer { result -> currentOnScanResult(result) }
+    }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
 
-    DisposableEffect(lifecycleOwner, analyzer) {
-        onDispose {
-            analyzer.close()
-            cameraExecutor.shutdown()
-        }
-    }
+    DisposableEffect(lifecycleOwner, analyzer, previewView) {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+        val cameraProvider = cameraProviderFuture.get()
 
-    LaunchedEffect(lifecycleOwner) {
-        val cameraProvider = ProcessCameraProvider.getInstance(context).get()
         val preview = Preview.Builder()
             .build()
             .also { it.surfaceProvider = previewView.surfaceProvider }
@@ -185,13 +177,18 @@ private fun CameraPreviewSection(
                 analysis.setAnalyzer(cameraExecutor, analyzer)
             }
 
-        cameraProvider.unbindAll()
         cameraProvider.bindToLifecycle(
             lifecycleOwner,
             CameraSelector.DEFAULT_BACK_CAMERA,
             preview,
             imageAnalysis
         )
+
+        onDispose {
+            cameraProvider.unbindAll()
+            analyzer.close()
+            cameraExecutor.shutdown()
+        }
     }
 
     AndroidView(
@@ -281,7 +278,7 @@ private fun PredictiveImpactCard(
                     categoryTotals = uiState.categoryTotals,
                     projectedCategoryTotals = projectedTotals,
                     highlightedCategory = uiState.selectedCategory,
-                    monthlyBudget = ScannerViewModel.MONTHLY_BUDGET,
+                    monthlyBudget = uiState.monthlyBudget,
                     sizeByMonthlyBudget = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -435,7 +432,8 @@ private fun ScannerScreenPreview() {
                     totalProjectedSpend = 1_897.06
                 ),
                 scanStatusMessage = "Scanned Details Captured! Date: Sep 12, 2026, Amount: $94.17",
-                budgetSummary = "Adding this bill keeps you within your budget."
+                monthlyBudget = 3_000.0,
+                budgetSummary = "Adding this bill keeps you within your $3,000.00 monthly budget."
             ),
             onScanResult = {},
             onCategorySelected = {},

@@ -42,6 +42,7 @@ fun FinancialBloomCanvas(
         .sortedBy { (category, _) -> category.ordinal }
 
     val totalAmount = entries.sumOf { it.value }.coerceAtLeast(1.0)
+    val safeBudget = monthlyBudget.coerceAtLeast(1.0)
 
     Canvas(modifier = modifier) {
         val center = Offset(size.width / 2f, size.height / 2f)
@@ -66,7 +67,7 @@ fun FinancialBloomCanvas(
 
         entries.forEachIndexed { index, (category, amount) ->
             val proportion = if (sizeByMonthlyBudget) {
-                (amount / monthlyBudget).toFloat()
+                (amount / safeBudget).toFloat()
             } else {
                 (amount / totalAmount).toFloat()
             }.coerceIn(0.12f, 1f)

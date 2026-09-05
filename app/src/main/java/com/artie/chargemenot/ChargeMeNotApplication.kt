@@ -3,6 +3,7 @@ package com.artie.chargemenot
 import android.app.Application
 import com.artie.chargemenot.data.local.AppDatabase
 import com.artie.chargemenot.data.repository.BillRepository
+import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.ui.dashboard.DashboardViewModel
@@ -19,10 +20,14 @@ class ChargeMeNotApplication : Application() {
 
     private val database by lazy { AppDatabase.getInstance(this) }
     private val billRepository by lazy { BillRepository(database.billDao()) }
+    private val userSettingsRepository by lazy {
+        UserSettingsRepository(database.userSettingsDao())
+    }
 
     val dashboardViewModel: DashboardViewModel by lazy {
         DashboardViewModel(
             billRepository = billRepository,
+            userSettingsRepository = userSettingsRepository,
             coroutineScope = applicationScope
         )
     }
@@ -30,6 +35,7 @@ class ChargeMeNotApplication : Application() {
     val scannerViewModel: ScannerViewModel by lazy {
         ScannerViewModel(
             billRepository = billRepository,
+            userSettingsRepository = userSettingsRepository,
             coroutineScope = applicationScope
         )
     }
@@ -41,6 +47,8 @@ class ChargeMeNotApplication : Application() {
 
     private fun seedInitialDataIfNeeded() {
         applicationScope.launch {
+            userSettingsRepository.ensureDefaultSettingsIfNeeded()
+
             if (database.billDao().getBillCount() > 0) return@launch
 
             val today = LocalDate.now()

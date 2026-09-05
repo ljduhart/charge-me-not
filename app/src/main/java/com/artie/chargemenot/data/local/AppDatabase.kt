@@ -7,14 +7,16 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
 @Database(
-    entities = [BillEntity::class],
-    version = 1,
+    entities = [BillEntity::class, UserSettingsEntity::class],
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun billDao(): BillDao
+
+    abstract fun userSettingsDao(): UserSettingsDao
 
     companion object {
         private const val DATABASE_NAME = "charge_me_not.db"
@@ -24,11 +26,13 @@ abstract class AppDatabase : RoomDatabase() {
 
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: Room.databaseBuilder(
+                INSTANCE ?:                 Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     DATABASE_NAME
-                ).build().also { INSTANCE = it }
+                )
+                    .addMigrations(MIGRATION_1_2)
+                    .build().also { INSTANCE = it }
             }
         }
     }

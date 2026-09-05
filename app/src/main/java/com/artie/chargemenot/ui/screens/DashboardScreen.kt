@@ -50,12 +50,23 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import com.artie.chargemenot.domain.model.UserSettings
 
 @Composable
 fun DashboardScreen(
     uiState: DashboardUiState,
     onKeepSubscription: (Bill) -> Unit,
     onPullSubscription: (Bill) -> Unit,
+    onMonthlyBudgetChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
@@ -70,7 +81,10 @@ fun DashboardScreen(
     ) {
         GreetingHeader(
             greeting = uiState.greeting,
-            totalUpcoming = currencyFormat.format(uiState.totalUpcoming)
+            totalUpcoming = currencyFormat.format(uiState.totalUpcoming),
+            monthlyBudget = uiState.monthlyBudget,
+            currencyFormat = currencyFormat,
+            onMonthlyBudgetChange = onMonthlyBudgetChange
         )
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -94,8 +108,16 @@ fun DashboardScreen(
 @Composable
 private fun GreetingHeader(
     greeting: String,
-    totalUpcoming: String
+    totalUpcoming: String,
+    monthlyBudget: Double,
+    currencyFormat: NumberFormat,
+    onMonthlyBudgetChange: (String) -> Unit
 ) {
+    var isEditingBudget by remember { mutableStateOf(false) }
+    var budgetInput by remember(monthlyBudget) {
+        mutableStateOf(monthlyBudget.toInt().toString())
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -137,6 +159,76 @@ private fun GreetingHeader(
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     fontWeight = FontWeight.Bold
                 )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "MONTHLY BUDGET",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (!isEditingBudget) {
+                            Text(
+                                text = currencyFormat.format(monthlyBudget),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                    IconButton(onClick = {
+                        if (isEditingBudget) {
+                            onMonthlyBudgetChange(budgetInput)
+                            isEditingBudget = false
+                        } else {
+                            budgetInput = monthlyBudget.toInt().toString()
+                            isEditingBudget = true
+                        }
+                    }) {
+                        Icon(
+                            imageVector = if (isEditingBudget) Icons.Default.Check else Icons.Default.Edit,
+                            contentDescription = if (isEditingBudget) "Save monthly budget" else "Edit monthly budget"
+                        )
+                    }
+                }
+
+                if (isEditingBudget) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = budgetInput,
+                        onValueChange = { budgetInput = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Monthly budget") },
+                        prefix = { Text("$") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true
+                    )
+                    Text(
+                        text = "Minimum ${currencyFormat.format(UserSettings.MIN_MONTHLY_BUDGET)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
         }
     }
@@ -403,7 +495,8 @@ private fun DashboardScreenPreview() {
                 isLoading = false
             ),
             onKeepSubscription = {},
-            onPullSubscription = {}
+            onPullSubscription = {},
+            onMonthlyBudgetChange = {}
         )
     }
 }
@@ -419,7 +512,8 @@ private fun DashboardScreenEmptyPreview() {
                 isLoading = false
             ),
             onKeepSubscription = {},
-            onPullSubscription = {}
+            onPullSubscription = {},
+            onMonthlyBudgetChange = {}
         )
     }
 }

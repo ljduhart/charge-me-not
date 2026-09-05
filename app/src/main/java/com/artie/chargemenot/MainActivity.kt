@@ -49,7 +49,11 @@ class MainActivity : ComponentActivity() {
                     floatingActionButton = {
                         if (currentRoute == AppRoutes.DASHBOARD) {
                             FloatingActionButton(
-                                onClick = { navController.navigate(AppRoutes.SCANNER) },
+                                onClick = {
+                                    navController.navigate(AppRoutes.SCANNER) {
+                                        launchSingleTop = true
+                                    }
+                                },
                                 containerColor = MeadowGreen,
                                 contentColor = MeadowWhite
                             ) {
@@ -72,7 +76,8 @@ class MainActivity : ComponentActivity() {
                             DashboardScreen(
                                 uiState = dashboardUiState,
                                 onKeepSubscription = dashboardViewModel::keepSubscription,
-                                onPullSubscription = dashboardViewModel::pullSubscription
+                                onPullSubscription = dashboardViewModel::pullSubscription,
+                                onMonthlyBudgetChange = dashboardViewModel::updateMonthlyBudget
                             )
                         }
 
@@ -81,7 +86,10 @@ class MainActivity : ComponentActivity() {
                                 uiState = scannerUiState,
                                 onScanResult = scannerViewModel::onScanResult,
                                 onCategorySelected = scannerViewModel::selectCategory,
-                                onNavigateBack = { navController.popBackStack() }
+                                onNavigateBack = {
+                                    scannerViewModel.resetScanSession()
+                                    navController.popBackStack()
+                                }
                             )
                         }
                     }

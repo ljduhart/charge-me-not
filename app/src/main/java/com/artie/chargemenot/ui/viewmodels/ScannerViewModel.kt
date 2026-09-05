@@ -1,7 +1,9 @@
 package com.artie.chargemenot.ui.viewmodels
 
 import com.artie.chargemenot.data.repository.BillRepository
+import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.UserSettings
 import com.artie.chargemenot.scanner.OcrScanResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -9,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -17,9 +20,9 @@ import java.util.Locale
 
 class ScannerViewModel(
     private val billRepository: BillRepository,
+    private val userSettingsRepository: UserSettingsRepository,
     private val coroutineScope: CoroutineScope,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val monthlyBudget: Double = MONTHLY_BUDGET
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
 
     private val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
@@ -29,29 +32,36 @@ class ScannerViewModel(
     val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
 
     init {
-        observeCategoryTotals()
+        observeScannerData()
     }
 
-    private fun observeCategoryTotals() {
+    private fun observeScannerData() {
         coroutineScope.launch(ioDispatcher) {
-            billRepository.getUpcomingBills().collect { upcomingBills ->
+            combine(
+                billRepository.getUpcomingBills(),
+                userSettingsRepository.observeMonthlyBudget()
+            ) { upcomingBills, monthlyBudget ->
                 val categoryTotals = upcomingBills
                     .groupBy { bill -> bill.category }
                     .mapValues { (_, bills) -> bills.sumOf { bill -> bill.amount } }
 
+                categoryTotals to monthlyBudget
+            }.collect { (categoryTotals, monthlyBudget) ->
                 _uiState.update { current ->
                     val recalculatedImpact = current.scannedBill.amount?.let { amount ->
                         calculatePredictiveImpact(
                             category = current.selectedCategory,
                             scannedAmount = amount,
-                            categoryTotals = categoryTotals
+                            categoryTotals = categoryTotals,
+                            monthlyBudget = monthlyBudget
                         )
                     }
 
                     current.copy(
                         categoryTotals = categoryTotals,
+                        monthlyBudget = monthlyBudget,
                         predictiveImpact = recalculatedImpact,
-                        budgetSummary = buildBudgetSummary(recalculatedImpact)
+                        budgetSummary = buildBudgetSummary(recalculatedImpact, monthlyBudget)
                     )
                 }
             }
@@ -60,11 +70,13 @@ class ScannerViewModel(
 
     fun onScanResult(result: OcrScanResult) {
         val mergedScan = _uiState.value.scannedBill.merge(result)
+        val monthlyBudget = _uiState.value.monthlyBudget
         val impact = mergedScan.amount?.let { amount ->
             calculatePredictiveImpact(
                 category = _uiState.value.selectedCategory,
                 scannedAmount = amount,
-                categoryTotals = _uiState.value.categoryTotals
+                categoryTotals = _uiState.value.categoryTotals,
+                monthlyBudget = monthlyBudget
             )
         }
 
@@ -73,24 +85,38 @@ class ScannerViewModel(
                 scannedBill = mergedScan,
                 predictiveImpact = impact,
                 scanStatusMessage = buildScanStatusMessage(mergedScan),
-                budgetSummary = buildBudgetSummary(impact)
+                budgetSummary = buildBudgetSummary(impact, monthlyBudget)
             )
         }
     }
 
     fun selectCategory(category: BillCategory) {
         val scannedAmount = _uiState.value.scannedBill.amount ?: return
+        val monthlyBudget = _uiState.value.monthlyBudget
         val impact = calculatePredictiveImpact(
             category = category,
             scannedAmount = scannedAmount,
-            categoryTotals = _uiState.value.categoryTotals
+            categoryTotals = _uiState.value.categoryTotals,
+            monthlyBudget = monthlyBudget
         )
 
         _uiState.update { current ->
             current.copy(
                 selectedCategory = category,
                 predictiveImpact = impact,
-                budgetSummary = buildBudgetSummary(impact)
+                budgetSummary = buildBudgetSummary(impact, monthlyBudget)
+            )
+        }
+    }
+
+    fun resetScanSession() {
+        _uiState.update { current ->
+            current.copy(
+                scannedBill = ScannedBillData(),
+                selectedCategory = BillCategory.UTILITIES,
+                predictiveImpact = null,
+                scanStatusMessage = "Point camera at your bill to scan",
+                budgetSummary = buildBudgetSummary(null, current.monthlyBudget)
             )
         }
     }
@@ -98,18 +124,20 @@ class ScannerViewModel(
     fun calculatePredictiveImpact(
         category: BillCategory,
         scannedAmount: Double,
-        categoryTotals: Map<BillCategory, Double>
+        categoryTotals: Map<BillCategory, Double>,
+        monthlyBudget: Double
     ): PredictiveImpact {
+        val safeBudget = monthlyBudget.coerceAtLeast(UserSettings.MIN_MONTHLY_BUDGET)
         val currentCategorySpend = categoryTotals[category] ?: 0.0
         val newCategorySpend = currentCategorySpend + scannedAmount
-        val newPetalSizePercent = (newCategorySpend / monthlyBudget) * PERCENT_SCALE
+        val newPetalSizePercent = (newCategorySpend / safeBudget) * PERCENT_SCALE
         val totalProjectedSpend = categoryTotals.values.sum() + scannedAmount
 
         return PredictiveImpact(
             category = category,
             newPetalSizePercent = newPetalSizePercent,
             scannedAmount = scannedAmount,
-            withinBudget = totalProjectedSpend <= monthlyBudget,
+            withinBudget = totalProjectedSpend <= safeBudget,
             totalProjectedSpend = totalProjectedSpend
         )
     }
@@ -127,20 +155,20 @@ class ScannerViewModel(
         return "Scanned Details Captured! Date: $dateText, Amount: $amountText"
     }
 
-    private fun buildBudgetSummary(impact: PredictiveImpact?): String {
+    private fun buildBudgetSummary(impact: PredictiveImpact?, monthlyBudget: Double): String {
         if (impact == null) {
             return "Scan a bill to preview budget impact"
         }
 
+        val formattedBudget = currencyFormat.format(monthlyBudget.coerceAtLeast(UserSettings.MIN_MONTHLY_BUDGET))
         return if (impact.withinBudget) {
-            "Adding this bill keeps you within your budget."
+            "Adding this bill keeps you within your $formattedBudget monthly budget."
         } else {
-            "Adding this bill exceeds your $${monthlyBudget.toInt()} monthly budget."
+            "Adding this bill exceeds your $formattedBudget monthly budget."
         }
     }
 
     companion object {
-        const val MONTHLY_BUDGET = 2_500.0
         private const val PERCENT_SCALE = 100.0
     }
 }

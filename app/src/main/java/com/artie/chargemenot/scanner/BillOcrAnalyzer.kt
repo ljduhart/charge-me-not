@@ -45,6 +45,9 @@ class BillOcrAnalyzer(
                     onScanResult(result)
                 }
             }
+            .addOnFailureListener {
+                // Frame failed OCR processing; continue scanning.
+            }
             .addOnCompleteListener {
                 isProcessing.set(false)
                 imageProxy.close()
