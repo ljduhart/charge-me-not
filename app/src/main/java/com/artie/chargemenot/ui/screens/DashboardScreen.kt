@@ -1,8 +1,5 @@
 package com.artie.chargemenot.ui.screens
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,36 +27,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.ui.components.FinancialBloomCanvas
+import com.artie.chargemenot.ui.components.categoryColor
+import com.artie.chargemenot.ui.components.categoryDisplayName
 import com.artie.chargemenot.ui.dashboard.DashboardUiState
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.LeafGreen
-import com.artie.chargemenot.ui.theme.MeadowBlush
-import com.artie.chargemenot.ui.theme.MeadowEarth
-import com.artie.chargemenot.ui.theme.MeadowGreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowGreenLight
-import com.artie.chargemenot.ui.theme.MeadowLavender
-import com.artie.chargemenot.ui.theme.MeadowRose
 import com.artie.chargemenot.ui.theme.MeadowSage
-import com.artie.chargemenot.ui.theme.MeadowSky
-import com.artie.chargemenot.ui.theme.MeadowSunflower
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import com.artie.chargemenot.ui.theme.WeedRed
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import kotlin.math.min
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 
 @Composable
 fun DashboardScreen(
@@ -187,7 +177,7 @@ private fun FinancialBloomSection(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                        brush = Brush.verticalGradient(
                             colors = listOf(
                                 MeadowSage.copy(alpha = 0.15f),
                                 MeadowGreenLight.copy(alpha = 0.08f),
@@ -211,104 +201,6 @@ private fun FinancialBloomSection(
             CategoryLegend(categoryTotals = categoryTotals)
         }
     }
-}
-
-@Composable
-private fun FinancialBloomCanvas(
-    categoryTotals: Map<BillCategory, Double>,
-    modifier: Modifier = Modifier
-) {
-    val entries = categoryTotals.entries.toList()
-    val totalAmount = entries.sumOf { it.value }.coerceAtLeast(1.0)
-
-    Canvas(modifier = modifier) {
-        val center = Offset(size.width / 2f, size.height / 2f)
-        val maxRadius = min(size.width, size.height) / 2f * 0.85f
-
-        drawCircle(
-            color = MeadowGreen.copy(alpha = 0.12f),
-            radius = maxRadius * 1.05f,
-            center = center
-        )
-
-        if (entries.isEmpty()) {
-            drawCircle(
-                color = MeadowSage.copy(alpha = 0.4f),
-                radius = maxRadius * 0.3f,
-                center = center
-            )
-            return@Canvas
-        }
-
-        val petalCount = entries.size
-        val angleStep = 360f / petalCount
-
-        entries.forEachIndexed { index, (category, amount) ->
-            val proportion = (amount / totalAmount).toFloat().coerceIn(0.15f, 1f)
-            val petalLength = maxRadius * (0.5f + proportion * 0.5f)
-            val petalWidth = maxRadius * 0.35f * proportion.coerceAtLeast(0.4f)
-            val angle = index * angleStep - 90f
-
-            rotate(angle, center) {
-                drawPetal(
-                    center = center,
-                    length = petalLength,
-                    width = petalWidth,
-                    color = categoryColor(category)
-                )
-            }
-        }
-
-        drawCircle(
-            color = MeadowSunflower,
-            radius = maxRadius * 0.14f,
-            center = center
-        )
-        drawCircle(
-            color = MeadowEarth,
-            radius = maxRadius * 0.06f,
-            center = center
-        )
-    }
-}
-
-private fun DrawScope.drawPetal(
-    center: Offset,
-    length: Float,
-    width: Float,
-    color: Color
-) {
-    val path = Path().apply {
-        val tipY = center.y - length
-        val controlOffset = width * 0.6f
-
-        moveTo(center.x, center.y)
-        cubicTo(
-            center.x - controlOffset, center.y - length * 0.4f,
-            center.x - width * 0.3f, tipY + length * 0.15f,
-            center.x, tipY
-        )
-        cubicTo(
-            center.x + width * 0.3f, tipY + length * 0.15f,
-            center.x + controlOffset, center.y - length * 0.4f,
-            center.x, center.y
-        )
-        close()
-    }
-
-    drawPath(path = path, color = color.copy(alpha = 0.85f))
-    drawPath(path = path, color = color.copy(alpha = 0.3f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5f))
-}
-
-private fun categoryColor(category: BillCategory): Color = when (category) {
-    BillCategory.RENT -> MeadowRose
-    BillCategory.FOOD -> MeadowSunflower
-    BillCategory.UTILITIES -> MeadowSky
-    BillCategory.SUBSCRIPTIONS -> MeadowLavender
-    BillCategory.TRANSPORTATION -> MeadowEarth
-    BillCategory.HEALTHCARE -> MeadowBlush
-    BillCategory.ENTERTAINMENT -> MeadowGreenLight
-    BillCategory.OTHER -> MeadowSage
 }
 
 @Composable
@@ -429,7 +321,7 @@ private fun SubscriptionBillCard(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(MeadowLavender.copy(alpha = 0.3f)),
+                    .background(MeadowGreenLight.copy(alpha = 0.3f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -474,17 +366,6 @@ private fun SubscriptionBillCard(
             }
         }
     }
-}
-
-private fun categoryDisplayName(category: BillCategory): String = when (category) {
-    BillCategory.RENT -> "Rent"
-    BillCategory.FOOD -> "Food"
-    BillCategory.UTILITIES -> "Utilities"
-    BillCategory.SUBSCRIPTIONS -> "Subscriptions"
-    BillCategory.TRANSPORTATION -> "Transportation"
-    BillCategory.HEALTHCARE -> "Healthcare"
-    BillCategory.ENTERTAINMENT -> "Entertainment"
-    BillCategory.OTHER -> "Other"
 }
 
 private fun previewDummyBills(): List<Bill> {

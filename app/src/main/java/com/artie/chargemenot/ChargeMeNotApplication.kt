@@ -6,6 +6,7 @@ import com.artie.chargemenot.data.repository.BillRepository
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.ui.dashboard.DashboardViewModel
+import com.artie.chargemenot.ui.viewmodels.ScannerViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,6 +22,13 @@ class ChargeMeNotApplication : Application() {
 
     val dashboardViewModel: DashboardViewModel by lazy {
         DashboardViewModel(
+            billRepository = billRepository,
+            coroutineScope = applicationScope
+        )
+    }
+
+    val scannerViewModel: ScannerViewModel by lazy {
+        ScannerViewModel(
             billRepository = billRepository,
             coroutineScope = applicationScope
         )
