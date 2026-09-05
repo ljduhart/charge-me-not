@@ -12,8 +12,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import com.artie.chargemenot.data.model.CrossPollinationPayload
+import kotlinx.coroutines.test.advanceUntilIdle
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -71,6 +75,71 @@ class ScannerViewModelTest {
     assertEquals(7_500.0, impact.newPetalSizePercent, 0.001)
   }
 
+  @Test
+  fun onQrPayloadDetected_setsPollenReceivedState() {
+    val viewModel = createViewModel()
+    val payload = CrossPollinationPayload(
+      name = "Shared Electric",
+      amount = 84.50,
+      dueDate = "2026-10-01",
+      category = "UTILITIES"
+    )
+
+    viewModel.onQrPayloadDetected(payload)
+
+    val pollen = viewModel.uiState.value.pollenReceived
+    assertNotNull(pollen)
+    assertEquals("Shared Electric", pollen!!.name)
+    assertEquals(84.50, pollen.amount, 0.001)
+    assertEquals(BillCategory.UTILITIES, pollen.category)
+  }
+
+  @Test
+  fun acceptPollinatedBill_insertsBillAndResetsSession() {
+    val billDao = TrackingBillDao()
+    val viewModel = ScannerViewModel(
+      billRepository = BillRepository(billDao),
+      userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
+      coroutineScope = testScope,
+      ioDispatcher = testDispatcher
+    )
+    testScope.advanceUntilIdle()
+
+    viewModel.onQrPayloadDetected(
+      CrossPollinationPayload(
+        name = "Roommate Rent Split",
+        amount = 725.0,
+        dueDate = "2026-09-15",
+        category = "RENT"
+      )
+    )
+
+    var accepted = false
+    viewModel.acceptPollinatedBill { accepted = true }
+    testScope.advanceUntilIdle()
+
+    assertTrue(accepted)
+    assertEquals(1, billDao.insertedBills.size)
+    assertEquals("Roommate Rent Split", billDao.insertedBills.first().name)
+    assertNull(viewModel.uiState.value.pollenReceived)
+  }
+
+  @Test
+  fun discardPollen_clearsPollenReceivedState() {
+    val viewModel = createViewModel()
+    viewModel.onQrPayloadDetected(
+      CrossPollinationPayload(
+        name = "Spotify Premium",
+        amount = 11.99,
+        dueDate = "2026-09-12",
+        category = "SUBSCRIPTIONS"
+      )
+    )
+    viewModel.discardPollen()
+
+    assertNull(viewModel.uiState.value.pollenReceived)
+  }
+
   private fun createViewModel(): ScannerViewModel {
     return ScannerViewModel(
       billRepository = BillRepository(FakeBillDao()),
@@ -78,6 +147,32 @@ class ScannerViewModelTest {
       coroutineScope = testScope,
       ioDispatcher = testDispatcher
     )
+  }
+
+  private class TrackingBillDao : BillDao {
+    val insertedBills = mutableListOf<BillEntity>()
+
+    override fun getAllBills(): Flow<List<BillEntity>> = MutableStateFlow(emptyList())
+
+    override fun getUpcomingBills(today: LocalDate): Flow<List<BillEntity>> =
+      MutableStateFlow(emptyList())
+
+    override fun getBillById(billId: Long): Flow<BillEntity?> = MutableStateFlow(null)
+
+    override suspend fun insertBill(bill: BillEntity): Long {
+      insertedBills.add(bill)
+      return insertedBills.size.toLong()
+    }
+
+    override suspend fun updateBill(bill: BillEntity) = Unit
+
+    override suspend fun deleteBill(bill: BillEntity) = Unit
+
+    override suspend fun deleteBillById(billId: Long) = Unit
+
+    override suspend fun getBillCount(): Int = insertedBills.size
+
+    override suspend fun getOverdueOrDueTodayUnpaidBillCount(today: LocalDate): Int = 0
   }
 
   private class FakeBillDao : BillDao {

@@ -67,6 +67,8 @@ dependencies {
     implementation("androidx.camera:camera-view:$cameraXVersion")
 
     implementation("com.google.mlkit:text-recognition:16.0.0")
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+    implementation("com.google.zxing:core:3.5.3")
     implementation("com.google.accompanist:accompanist-permissions:0.36.0")
 
     implementation("androidx.room:room-runtime:2.6.1")
@@ -80,4 +82,5 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("org.json:json:20240303")
 }

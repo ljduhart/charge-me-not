@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -64,8 +65,18 @@ import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.MeadowGreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowWhite
+import androidx.compose.material.icons.filled.LocalFlorist
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.res.stringResource
+import com.artie.chargemenot.R
+import com.artie.chargemenot.data.model.CrossPollinationPayload
+import com.artie.chargemenot.ui.theme.MeadowSage
+import com.artie.chargemenot.ui.viewmodels.PollenReceivedState
 import com.artie.chargemenot.ui.viewmodels.PredictiveImpact
 import com.artie.chargemenot.ui.viewmodels.ScannerUiState
+import java.time.format.DateTimeFormatter
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -79,7 +90,10 @@ import java.util.concurrent.Executors
 fun ScannerScreen(
     uiState: ScannerUiState,
     onScanResult: (OcrScanResult) -> Unit,
+    onQrPayloadDetected: (com.artie.chargemenot.data.model.CrossPollinationPayload) -> Unit,
     onCategorySelected: (BillCategory) -> Unit,
+    onAcceptPollinatedBill: () -> Unit,
+    onDiscardPollen: () -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -125,10 +139,20 @@ fun ScannerScreen(
                     .fillMaxWidth()
             ) {
                 if (cameraPermissionState.status.isGranted) {
-                    CameraPreviewSection(onScanResult = onScanResult)
+                    CameraPreviewSection(
+                        onScanResult = onScanResult,
+                        onQrPayloadDetected = onQrPayloadDetected
+                    )
                 } else {
                     CameraPermissionPlaceholder()
                 }
+
+                ScanCaptureBanner(
+                    message = uiState.detectionBannerMessage,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                )
 
                 ScanCaptureBanner(
                     message = uiState.scanStatusMessage,
@@ -138,27 +162,43 @@ fun ScannerScreen(
                 )
             }
 
-            PredictiveImpactCard(
-                uiState = uiState,
-                onCategorySelected = onCategorySelected,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            )
+            if (uiState.pollenReceived != null) {
+                AcceptPollinatedBillCard(
+                    pollen = uiState.pollenReceived,
+                    onAccept = onAcceptPollinatedBill,
+                    onDiscard = onDiscardPollen,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                )
+            } else {
+                PredictiveImpactCard(
+                    uiState = uiState,
+                    onCategorySelected = onCategorySelected,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun CameraPreviewSection(
-    onScanResult: (OcrScanResult) -> Unit
+    onScanResult: (OcrScanResult) -> Unit,
+    onQrPayloadDetected: (CrossPollinationPayload) -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
     val currentOnScanResult by rememberUpdatedState(onScanResult)
+    val currentOnQrPayloadDetected by rememberUpdatedState(onQrPayloadDetected)
     val analyzer = remember {
-        BillOcrAnalyzer { result -> currentOnScanResult(result) }
+        BillOcrAnalyzer(
+            onScanResult = { result -> currentOnScanResult(result) },
+            onQrPayloadDetected = { payload -> currentOnQrPayloadDetected(payload) }
+        )
     }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
 
@@ -231,6 +271,124 @@ private fun ScanCaptureBanner(
             color = Color.White,
             fontWeight = FontWeight.Medium
         )
+    }
+}
+
+@Composable
+private fun AcceptPollinatedBillCard(
+    pollen: PollenReceivedState,
+    onAccept: () -> Unit,
+    onDiscard: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
+    val dateFormat = remember { DateTimeFormatter.ofPattern("MMM d, yyyy") }
+
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        colors = CardDefaults.cardColors(containerColor = MeadowWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocalFlorist,
+                    contentDescription = null,
+                    tint = MeadowGreen,
+                    modifier = Modifier.size(24.dp)
+                )
+                Text(
+                    text = stringResource(R.string.scanner_accept_pollinated_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MeadowGreenDark,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Text(
+                text = stringResource(R.string.scanner_accept_pollinated_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MeadowSage.copy(alpha = 0.22f)
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = pollen.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MeadowGreenDark,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = categoryDisplayName(pollen.category),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = currencyFormat.format(pollen.amount),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "Due ${pollen.dueDate.format(dateFormat)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onDiscard,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text(stringResource(R.string.scanner_discard_pollen))
+                }
+
+                Button(
+                    onClick = onAccept,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MeadowGreen,
+                        contentColor = MeadowWhite
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocalFlorist,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(stringResource(R.string.scanner_accept_into_garden))
+                }
+            }
+        }
     }
 }
 
@@ -436,7 +594,10 @@ private fun ScannerScreenPreview() {
                 budgetSummary = "Adding this bill keeps you within your $3,000.00 monthly budget."
             ),
             onScanResult = {},
+            onQrPayloadDetected = {},
             onCategorySelected = {},
+            onAcceptPollinatedBill = {},
+            onDiscardPollen = {},
             onNavigateBack = {}
         )
     }

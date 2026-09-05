@@ -22,4 +22,17 @@
     <string name="pruning_simulator_looks_good">Looks Good</string>
     <string name="pruning_simulator_entry">Test Your Pruning Skills</string>
     <string name="pruning_simulator_entry_subtitle">Simulate pruning weeds without changing your real garden</string>
+
+    <string name="cross_pollinate_title">Cross-Pollinate Bill</string>
+    <string name="cross_pollinate_subtitle">Have your partner or roommate scan this from their Charge-me Not scanner.</string>
+    <string name="cross_pollinate_done">Done</string>
+    <string name="cross_pollinate_qr_content_description">Cross-pollination QR code</string>
+    <string name="cross_pollinate_share">Cross-pollinate bill</string>
+    <string name="upcoming_bills_title">Upcoming Garden Bills</string>
+    <string name="upcoming_bills_subtitle">Share any bill with a partner via offline QR code</string>
+    <string name="scanner_detection_banner">Ready to scan paper bills or partner QR codes</string>
+    <string name="scanner_accept_pollinated_title">Accept Pollinated Bill</string>
+    <string name="scanner_accept_pollinated_subtitle">A partner shared this bill with you offline.</string>
+    <string name="scanner_accept_into_garden">Accept into Garden</string>
+    <string name="scanner_discard_pollen">Discard</string>
 </resources>

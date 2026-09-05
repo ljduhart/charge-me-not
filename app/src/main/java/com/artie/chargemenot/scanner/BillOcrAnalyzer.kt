@@ -3,6 +3,11 @@ package com.artie.chargemenot.scanner
 import android.annotation.SuppressLint
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import com.artie.chargemenot.data.model.CrossPollinationPayload
+import com.google.mlkit.vision.barcode.BarcodeScanner
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
@@ -14,15 +19,25 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
 class BillOcrAnalyzer(
-    private val onScanResult: (OcrScanResult) -> Unit
+    private val onScanResult: (OcrScanResult) -> Unit,
+    private val onQrPayloadDetected: (CrossPollinationPayload) -> Unit
 ) : ImageAnalysis.Analyzer {
 
     private var textRecognizer: TextRecognizer? = null
+    private var barcodeScanner: BarcodeScanner? = null
     private val isProcessing = AtomicBoolean(false)
 
     private fun textRecognizer(): TextRecognizer {
         return textRecognizer ?: TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
             .also { textRecognizer = it }
+    }
+
+    private fun barcodeScanner(): BarcodeScanner {
+        return barcodeScanner ?: BarcodeScanning.getClient(
+            BarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+                .build()
+        ).also { barcodeScanner = it }
     }
 
     @SuppressLint("UnsafeOptInUsageError")
@@ -44,6 +59,31 @@ class BillOcrAnalyzer(
             imageProxy.imageInfo.rotationDegrees
         )
 
+        var pendingTasks = 2
+
+        fun completeTask() {
+            if (--pendingTasks == 0) {
+                isProcessing.set(false)
+                imageProxy.close()
+            }
+        }
+
+        barcodeScanner().process(inputImage)
+            .addOnSuccessListener { barcodes ->
+                for (barcode in barcodes) {
+                    val rawValue = barcode.rawValue ?: continue
+                    val payload = CrossPollinationPayload.fromJson(rawValue) ?: continue
+                    onQrPayloadDetected(payload)
+                    break
+                }
+            }
+            .addOnFailureListener {
+                // Frame failed barcode processing; continue scanning.
+            }
+            .addOnCompleteListener {
+                completeTask()
+            }
+
         textRecognizer().process(inputImage)
             .addOnSuccessListener { visionText ->
                 val result = extractBillData(visionText.text)
@@ -55,14 +95,15 @@ class BillOcrAnalyzer(
                 // Frame failed OCR processing; continue scanning.
             }
             .addOnCompleteListener {
-                isProcessing.set(false)
-                imageProxy.close()
+                completeTask()
             }
     }
 
     fun close() {
         textRecognizer?.close()
         textRecognizer = null
+        barcodeScanner?.close()
+        barcodeScanner = null
     }
 
     internal fun extractBillData(rawText: String): OcrScanResult {

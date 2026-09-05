@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.domain.model.UserSettings
+import androidx.compose.material.icons.filled.LocalFlorist
+import com.artie.chargemenot.ui.components.CrossPollinateShareDialog
 import com.artie.chargemenot.ui.components.FinancialBloomCanvas
 import com.artie.chargemenot.ui.components.NagModeCard
 import com.artie.chargemenot.ui.components.categoryColor
@@ -85,6 +87,14 @@ fun DashboardScreen(
 ) {
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
     val dateFormat = DateTimeFormatter.ofPattern("MMM d")
+    var billToShare by remember { mutableStateOf<Bill?>(null) }
+
+    billToShare?.let { bill ->
+        CrossPollinateShareDialog(
+            bill = bill,
+            onDismiss = { billToShare = null }
+        )
+    }
 
     Column(
         modifier = modifier
@@ -125,12 +135,22 @@ fun DashboardScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        UpcomingBillsSection(
+            bills = uiState.upcomingBills,
+            currencyFormat = currencyFormat,
+            dateFormat = dateFormat,
+            onShareBill = { bill -> billToShare = bill }
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
         SubscriptionsSection(
             subscriptions = uiState.subscriptionBills,
             currencyFormat = currencyFormat,
             dateFormat = dateFormat,
             onKeep = onKeepSubscription,
-            onPull = onPullSubscription
+            onPull = onPullSubscription,
+            onShareBill = { bill -> billToShare = bill }
         )
     }
 }
@@ -415,12 +435,133 @@ private fun CategoryLegend(
 }
 
 @Composable
+private fun UpcomingBillsSection(
+    bills: List<Bill>,
+    currencyFormat: NumberFormat,
+    dateFormat: DateTimeFormatter,
+    onShareBill: (Bill) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.upcoming_bills_title),
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = stringResource(R.string.upcoming_bills_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (bills.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                )
+            ) {
+                Text(
+                    text = "No upcoming bills — your garden is clear!",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(20.dp)
+                )
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                bills.forEach { bill ->
+                    UpcomingBillCard(
+                        bill = bill,
+                        currencyFormat = currencyFormat,
+                        dateFormat = dateFormat,
+                        onShare = { onShareBill(bill) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UpcomingBillCard(
+    bill: Bill,
+    currencyFormat: NumberFormat,
+    dateFormat: DateTimeFormatter,
+    onShare: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(categoryColor(bill.category).copy(alpha = 0.25f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = bill.name.first().uppercase(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MeadowGreenDark,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = bill.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "${categoryDisplayName(bill.category)} · Due ${bill.dueDate.format(dateFormat)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = currencyFormat.format(bill.amount),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            IconButton(onClick = onShare) {
+                Icon(
+                    imageVector = Icons.Default.LocalFlorist,
+                    contentDescription = stringResource(R.string.cross_pollinate_share),
+                    tint = MeadowGreen,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun SubscriptionsSection(
     subscriptions: List<Bill>,
     currencyFormat: NumberFormat,
     dateFormat: DateTimeFormatter,
     onKeep: (Bill) -> Unit,
-    onPull: (Bill) -> Unit
+    onPull: (Bill) -> Unit,
+    onShareBill: (Bill) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -459,7 +600,8 @@ private fun SubscriptionsSection(
                         currencyFormat = currencyFormat,
                         dateFormat = dateFormat,
                         onKeep = { onKeep(bill) },
-                        onPull = { onPull(bill) }
+                        onPull = { onPull(bill) },
+                        onShare = { onShareBill(bill) }
                     )
                 }
             }
@@ -473,7 +615,8 @@ private fun SubscriptionBillCard(
     currencyFormat: NumberFormat,
     dateFormat: DateTimeFormatter,
     onKeep: () -> Unit,
-    onPull: () -> Unit
+    onPull: () -> Unit,
+    onShare: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -516,6 +659,15 @@ private fun SubscriptionBillCard(
                     text = "Due ${bill.dueDate.format(dateFormat)} · ${currencyFormat.format(bill.amount)}/mo",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            IconButton(onClick = onShare) {
+                Icon(
+                    imageVector = Icons.Default.LocalFlorist,
+                    contentDescription = stringResource(R.string.cross_pollinate_share),
+                    tint = MeadowGreen,
+                    modifier = Modifier.size(24.dp)
                 )
             }
 

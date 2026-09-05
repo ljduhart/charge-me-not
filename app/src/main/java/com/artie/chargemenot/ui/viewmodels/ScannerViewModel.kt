@@ -1,6 +1,8 @@
 package com.artie.chargemenot.ui.viewmodels
 
+import com.artie.chargemenot.data.model.CrossPollinationPayload
 import com.artie.chargemenot.data.repository.BillRepository
+import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.domain.model.UserSettings
@@ -69,6 +71,10 @@ class ScannerViewModel(
     }
 
     fun onScanResult(result: OcrScanResult) {
+        if (_uiState.value.pollenReceived != null) {
+            return
+        }
+
         val mergedScan = _uiState.value.scannedBill.merge(result)
         val monthlyBudget = _uiState.value.monthlyBudget
         val impact = mergedScan.amount?.let { amount ->
@@ -109,13 +115,63 @@ class ScannerViewModel(
         }
     }
 
+    fun onQrPayloadDetected(payload: CrossPollinationPayload) {
+        if (_uiState.value.pollenReceived != null) {
+            return
+        }
+
+        val billEntity = payload.toBillEntity() ?: return
+
+        _uiState.update { current ->
+            current.copy(
+                pollenReceived = PollenReceivedState(
+                    name = billEntity.name,
+                    amount = billEntity.amount,
+                    dueDate = billEntity.dueDate,
+                    category = billEntity.category
+                ),
+                scanStatusMessage = "Partner QR detected: ${billEntity.name}",
+                detectionBannerMessage = "Cross-pollination pollen received — review before planting"
+            )
+        }
+    }
+
+    fun discardPollen() {
+        _uiState.update { current ->
+            current.copy(
+                pollenReceived = null,
+                scanStatusMessage = "Point camera at your bill to scan",
+                detectionBannerMessage = DEFAULT_DETECTION_BANNER
+            )
+        }
+    }
+
+    fun acceptPollinatedBill(onAccepted: () -> Unit) {
+        val pollen = _uiState.value.pollenReceived ?: return
+
+        coroutineScope.launch(ioDispatcher) {
+            billRepository.insertBill(
+                Bill(
+                    name = pollen.name,
+                    amount = pollen.amount,
+                    dueDate = pollen.dueDate,
+                    category = pollen.category
+                )
+            )
+            resetScanSession()
+            onAccepted()
+        }
+    }
+
     fun resetScanSession() {
         _uiState.update { current ->
             current.copy(
                 scannedBill = ScannedBillData(),
                 selectedCategory = BillCategory.UTILITIES,
                 predictiveImpact = null,
+                pollenReceived = null,
                 scanStatusMessage = "Point camera at your bill to scan",
+                detectionBannerMessage = DEFAULT_DETECTION_BANNER,
                 budgetSummary = buildBudgetSummary(null, current.monthlyBudget)
             )
         }
@@ -170,5 +226,6 @@ class ScannerViewModel(
 
     companion object {
         private const val PERCENT_SCALE = 100.0
+        private const val DEFAULT_DETECTION_BANNER = "Ready to scan paper bills or partner QR codes"
     }
 }

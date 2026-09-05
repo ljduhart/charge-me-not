@@ -16,6 +16,7 @@ A local-first personal finance app by **ART-ie LLC** that helps you tend your fi
 - **Your Financial Bloom** — a Canvas-drawn flower where each petal represents a spending category
 - **Subscriptions: Weeds or Flowers?** — manage recurring bills with Keep (leaf) and Pull (weed) actions
 - **Pruning Simulator** — ephemeral financial sandbox to test pruning bills without writing to Room
+- **Cross-Pollination** — offline P2P bill sharing via QR codes (no network required)
 - **Nag Mode** — local WorkManager reminders for due/overdue bills
 - **Bill Scanner** — CameraX OCR with predictive bloom impact
 

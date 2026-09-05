@@ -112,7 +112,14 @@ class MainActivity : ComponentActivity() {
                             ScannerScreen(
                                 uiState = scannerUiState,
                                 onScanResult = scannerViewModel::onScanResult,
+                                onQrPayloadDetected = scannerViewModel::onQrPayloadDetected,
                                 onCategorySelected = scannerViewModel::selectCategory,
+                                onAcceptPollinatedBill = {
+                                    scannerViewModel.acceptPollinatedBill {
+                                        navController.popBackStack()
+                                    }
+                                },
+                                onDiscardPollen = scannerViewModel::discardPollen,
                                 onNavigateBack = {
                                     scannerViewModel.resetScanSession()
                                     navController.popBackStack()

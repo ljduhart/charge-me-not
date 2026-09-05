@@ -7,7 +7,10 @@ import java.time.LocalDate
 
 class BillOcrAnalyzerTest {
 
-  private val analyzer = BillOcrAnalyzer {}
+  private val analyzer = BillOcrAnalyzer(
+    onScanResult = {},
+    onQrPayloadDetected = {}
+  )
 
   @Test
   fun extractBillData_findsLabeledTotalAndNumericDueDate() {
