@@ -29,7 +29,8 @@ fun FinancialBloomCanvas(
     highlightedCategory: BillCategory? = null,
     projectedCategoryTotals: Map<BillCategory, Double> = categoryTotals,
     monthlyBudget: Double = 2_500.0,
-    sizeByMonthlyBudget: Boolean = false
+    sizeByMonthlyBudget: Boolean = false,
+    categoryAlphas: Map<BillCategory, Float> = emptyMap()
 ) {
     val displayTotals = if (projectedCategoryTotals.isNotEmpty()) {
         projectedCategoryTotals
@@ -82,7 +83,8 @@ fun FinancialBloomCanvas(
                     length = petalLength,
                     width = petalWidth,
                     color = categoryColor(category),
-                    highlighted = isHighlighted
+                    highlighted = isHighlighted,
+                    alphaScale = categoryAlphas[category] ?: 1f
                 )
             }
         }
@@ -105,7 +107,8 @@ private fun DrawScope.drawPetal(
     length: Float,
     width: Float,
     color: Color,
-    highlighted: Boolean
+    highlighted: Boolean,
+    alphaScale: Float = 1f
 ) {
     val path = Path().apply {
         val tipY = center.y - length
@@ -125,7 +128,11 @@ private fun DrawScope.drawPetal(
         close()
     }
 
-    val fillAlpha = if (highlighted) 1f else 0.85f
+    val fillAlpha = if (highlighted) {
+        1f
+    } else {
+        (0.85f * alphaScale).coerceIn(0.12f, 1f)
+    }
     val strokeWidth = if (highlighted) 3f else 1.5f
     val strokeColor = if (highlighted) MeadowWhite else color.copy(alpha = 0.3f)
 

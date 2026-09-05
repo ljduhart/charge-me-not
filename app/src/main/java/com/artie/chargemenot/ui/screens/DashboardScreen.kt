@@ -33,6 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.UserSettings
 import com.artie.chargemenot.ui.components.FinancialBloomCanvas
 import com.artie.chargemenot.ui.components.NagModeCard
 import com.artie.chargemenot.ui.components.categoryColor
@@ -52,8 +53,9 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ContentCut
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,7 +63,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
-import com.artie.chargemenot.domain.model.UserSettings
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.ui.res.stringResource
+import com.artie.chargemenot.R
+import com.artie.chargemenot.ui.theme.MeadowGreen
 
 @Composable
 fun DashboardScreen(
@@ -74,6 +80,7 @@ fun DashboardScreen(
     onNotificationPermissionResult: (Boolean) -> Unit,
     onNotificationPermissionRequestHandled: () -> Unit,
     onRefreshNotificationPermissionState: () -> Unit,
+    onNavigateToPruningSimulator: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
@@ -108,6 +115,12 @@ fun DashboardScreen(
 
         FinancialBloomSection(
             categoryTotals = uiState.categoryTotals
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        PruningSimulatorEntryCard(
+            onNavigateToPruningSimulator = onNavigateToPruningSimulator
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -246,6 +259,56 @@ private fun GreetingHeader(
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PruningSimulatorEntryCard(
+    onNavigateToPruningSimulator: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MeadowSage.copy(alpha = 0.18f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 18.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.pruning_simulator_entry),
+                style = MaterialTheme.typography.titleMedium,
+                color = MeadowGreenDark,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = stringResource(R.string.pruning_simulator_entry_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+            )
+            Button(
+                onClick = onNavigateToPruningSimulator,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MeadowGreen,
+                    contentColor = MeadowWhite
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ContentCut,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.pruning_simulator_entry))
             }
         }
     }
@@ -518,7 +581,8 @@ private fun DashboardScreenPreview() {
             onNagModeToggleRequested = {},
             onNotificationPermissionResult = {},
             onNotificationPermissionRequestHandled = {},
-            onRefreshNotificationPermissionState = {}
+            onRefreshNotificationPermissionState = {},
+            onNavigateToPruningSimulator = {}
         )
     }
 }
@@ -540,7 +604,8 @@ private fun DashboardScreenEmptyPreview() {
             onNagModeToggleRequested = {},
             onNotificationPermissionResult = {},
             onNotificationPermissionRequestHandled = {},
-            onRefreshNotificationPermissionState = {}
+            onRefreshNotificationPermissionState = {},
+            onNavigateToPruningSimulator = {}
         )
     }
 }

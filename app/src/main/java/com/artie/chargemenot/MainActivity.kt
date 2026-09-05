@@ -20,6 +20,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.artie.chargemenot.ui.navigation.AppRoutes
 import com.artie.chargemenot.ui.screens.DashboardScreen
+import com.artie.chargemenot.ui.screens.PruningSimulatorScreen
 import com.artie.chargemenot.ui.screens.ScannerScreen
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.MeadowGreen
@@ -35,6 +36,7 @@ class MainActivity : ComponentActivity() {
         val dashboardViewModel = app.dashboardViewModel
         val scannerViewModel = app.scannerViewModel
         val settingsViewModel = app.settingsViewModel
+        val pruningViewModel = app.pruningViewModel
 
         setContent {
             ChargeMeNotTheme {
@@ -45,6 +47,7 @@ class MainActivity : ComponentActivity() {
                 val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
                 val scannerUiState by scannerViewModel.uiState.collectAsStateWithLifecycle()
                 val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+                val pruningUiState by pruningViewModel.uiState.collectAsStateWithLifecycle()
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
@@ -84,7 +87,24 @@ class MainActivity : ComponentActivity() {
                                 onNagModeToggleRequested = settingsViewModel::onNagModeToggleRequested,
                                 onNotificationPermissionResult = settingsViewModel::onNotificationPermissionResult,
                                 onNotificationPermissionRequestHandled = settingsViewModel::onNotificationPermissionRequestHandled,
-                                onRefreshNotificationPermissionState = settingsViewModel::refreshNotificationPermissionState
+                                onRefreshNotificationPermissionState = settingsViewModel::refreshNotificationPermissionState,
+                                onNavigateToPruningSimulator = {
+                                    pruningViewModel.resetSandbox()
+                                    navController.navigate(AppRoutes.PRUNING_SIMULATOR) {
+                                        launchSingleTop = true
+                                    }
+                                }
+                            )
+                        }
+
+                        composable(AppRoutes.PRUNING_SIMULATOR) {
+                            PruningSimulatorScreen(
+                                uiState = pruningUiState,
+                                onToggleBillStatus = pruningViewModel::toggleBillStatus,
+                                onResetSandbox = pruningViewModel::resetSandbox,
+                                onNavigateBack = {
+                                    navController.popBackStack()
+                                }
                             )
                         }
 

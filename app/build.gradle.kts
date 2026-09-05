@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.artie.chargemenot"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.artie.chargemenot"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
 

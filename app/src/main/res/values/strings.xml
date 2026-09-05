@@ -12,4 +12,14 @@
     <string name="nag_mode_card_title">Nag Mode</string>
     <string name="nag_mode_card_subtitle">Get local reminders when bills are due or overdue</string>
     <string name="nag_mode_permission_warning">Notification permission is required for Nag Mode reminders. Enable notifications to continue.</string>
+
+    <string name="pruning_simulator_title">Pruning Simulator</string>
+    <string name="pruning_simulator_back">Back to dashboard</string>
+    <string name="pruning_simulator_summary">If you prune these weeds, your new monthly total is: %1$s</string>
+    <string name="pruning_simulator_bills_header">Bills in your sandbox garden</string>
+    <string name="pruning_simulator_empty_garden">Your garden has no unpaid bills to prune right now.</string>
+    <string name="pruning_simulator_reset">Reset Garden</string>
+    <string name="pruning_simulator_looks_good">Looks Good</string>
+    <string name="pruning_simulator_entry">Test Your Pruning Skills</string>
+    <string name="pruning_simulator_entry_subtitle">Simulate pruning weeds without changing your real garden</string>
 </resources>

@@ -10,6 +10,7 @@ import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.notification.NagModeNotificationHelper
 import com.artie.chargemenot.ui.dashboard.DashboardViewModel
+import com.artie.chargemenot.ui.viewmodels.PruningViewModel
 import com.artie.chargemenot.ui.viewmodels.ScannerViewModel
 import com.artie.chargemenot.ui.viewmodels.SettingsViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -53,6 +54,14 @@ class ChargeMeNotApplication : Application() {
             userSettingsRepository = userSettingsRepository,
             nagModeScheduler = nagModeScheduler,
             notificationPermissionGateway = notificationPermissionGateway,
+            coroutineScope = applicationScope
+        )
+    }
+
+    val pruningViewModel: PruningViewModel by lazy {
+        PruningViewModel(
+            billDao = database.billDao(),
+            userSettingsRepository = userSettingsRepository,
             coroutineScope = applicationScope
         )
     }
