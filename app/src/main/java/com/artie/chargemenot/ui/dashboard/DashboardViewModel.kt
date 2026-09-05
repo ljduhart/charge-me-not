@@ -49,13 +49,16 @@ class DashboardViewModel(
             combine(
                 billRepository.getUpcomingBills(),
                 billRepository.getAllBills(),
-                userSettingsRepository.observeMonthlyBudget(),
-                forecastUseCase.observeForecast()
-            ) { upcoming, all, monthlyBudget, forecast ->
+                userSettingsRepository.observeMonthlyBudget()
+            ) { upcoming, all, monthlyBudget ->
                 val subscriptions = all.filter { it.category == BillCategory.SUBSCRIPTIONS && !it.isPaid }
                 val categoryTotals = upcoming
                     .groupBy { it.category }
                     .mapValues { (_, bills) -> bills.sumOf { bill -> bill.amount } }
+                val forecast = forecastUseCase.calculateForecastFromDomainBills(
+                    bills = all,
+                    today = LocalDate.now()
+                )
 
                 DashboardUiState(
                     greeting = resolveGreeting(),

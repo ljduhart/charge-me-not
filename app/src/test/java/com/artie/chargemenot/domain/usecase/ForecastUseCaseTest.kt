@@ -99,6 +99,56 @@ class ForecastUseCaseTest {
     }
 
     @Test
+    fun calculateForecast_excludesCurrentMonthFromHistoricalRegression() {
+        val today = LocalDate.of(2026, 9, 5)
+        val bills = listOf(
+            bill(
+                amount = 200.0,
+                dueDate = today.minusMonths(2).withDayOfMonth(10),
+                category = BillCategory.UTILITIES
+            ),
+            bill(
+                amount = 220.0,
+                dueDate = today.minusMonths(1).withDayOfMonth(10),
+                category = BillCategory.UTILITIES
+            ),
+            bill(
+                amount = 500.0,
+                dueDate = today.withDayOfMonth(15),
+                category = BillCategory.UTILITIES
+            )
+        )
+
+        val result = useCase.calculateForecast(bills, today)
+
+        assertNotNull(result)
+        assertEquals(240.0, result!!.predictedAmount, 0.001)
+        assertEquals(3, result.timelinePoints.size)
+        assertEquals("Oct", result.targetMonthLabel)
+    }
+
+    @Test
+    fun calculateForecast_returnsNullWhenOnlyCurrentMonthHasVariableBills() {
+        val today = LocalDate.of(2026, 9, 5)
+        val bills = listOf(
+            bill(
+                amount = 180.0,
+                dueDate = today.withDayOfMonth(12),
+                category = BillCategory.FOOD
+            ),
+            bill(
+                amount = 95.0,
+                dueDate = today.withDayOfMonth(20),
+                category = BillCategory.UTILITIES
+            )
+        )
+
+        val result = useCase.calculateForecast(bills, today)
+
+        assertNull(result)
+    }
+
+    @Test
     fun predictNextMonthLinearRegression_returnsAverageWhenDenominatorIsZero() {
         val predicted = useCase.predictNextMonthLinearRegression(listOf(100.0, 100.0, 100.0))
         assertEquals(100.0, predicted, 0.001)

@@ -2,6 +2,7 @@ package com.artie.chargemenot.domain.usecase
 
 import com.artie.chargemenot.data.local.BillDao
 import com.artie.chargemenot.data.local.BillEntity
+import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.domain.model.ForecastResult
 import com.artie.chargemenot.domain.model.ForecastTimelinePoint
@@ -18,17 +19,28 @@ class ForecastUseCase(
     private val billDao: BillDao
 ) {
 
-    fun observeForecast(today: LocalDate = LocalDate.now()): Flow<ForecastResult?> {
+    fun observeForecast(): Flow<ForecastResult?> {
         return billDao.getAllBills().map { bills ->
-            calculateForecast(bills, today)
+            calculateForecast(bills, LocalDate.now())
         }
+    }
+
+    fun calculateForecastFromDomainBills(
+        bills: List<Bill>,
+        today: LocalDate = LocalDate.now()
+    ): ForecastResult? {
+        return calculateForecast(
+            bills = bills.map { bill -> bill.toBillEntity() },
+            today = today
+        )
     }
 
     fun calculateForecast(
         bills: List<BillEntity>,
         today: LocalDate = LocalDate.now()
     ): ForecastResult? {
-        val targetMonth = YearMonth.from(today).plusMonths(1)
+        val currentMonth = YearMonth.from(today)
+        val targetMonth = currentMonth.plusMonths(1)
 
         val monthlyTotals = bills
             .asSequence()
@@ -38,7 +50,7 @@ class ForecastUseCase(
             .filterValues { total -> total > 0.0 }
 
         val historicalMonths = monthlyTotals.keys
-            .filter { month -> month < targetMonth }
+            .filter { month -> month < currentMonth }
             .sorted()
 
         if (historicalMonths.size < MIN_HISTORICAL_MONTHS) {
@@ -157,6 +169,21 @@ class ForecastUseCase(
 
     private fun formatMonthLabel(month: YearMonth): String {
         return month.month.getDisplayName(TextStyle.SHORT, Locale.US)
+    }
+
+    private fun Bill.toBillEntity(): BillEntity {
+        return BillEntity(
+            id = id,
+            name = name,
+            amount = amount,
+            dueDate = dueDate,
+            category = category,
+            isPaid = isPaid,
+            usageCount = usageCount,
+            auditPromptCount = auditPromptCount,
+            parentBillId = parentBillId,
+            receiptImagePath = receiptImagePath
+        )
     }
 
     companion object {

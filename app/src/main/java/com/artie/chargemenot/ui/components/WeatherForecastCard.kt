@@ -24,7 +24,6 @@ import com.artie.chargemenot.domain.model.ForecastTimelinePoint
 import com.artie.chargemenot.domain.model.WeatherStatus
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
-import com.artie.chargemenot.ui.theme.MeadowGreenLight
 import com.artie.chargemenot.ui.theme.MeadowSage
 import com.artie.chargemenot.ui.theme.MeadowSky
 import com.artie.chargemenot.ui.theme.MeadowSunflower
