@@ -2,7 +2,6 @@ package com.artie.chargemenot.ui.screens
 
 import android.Manifest
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -102,7 +101,7 @@ import java.util.concurrent.Executors
 fun ScannerScreen(
     uiState: ScannerUiState,
     onScanResult: (OcrScanResult) -> Unit,
-    onQrPayloadDetected: (com.artie.chargemenot.data.model.CrossPollinationPayload) -> Unit,
+    onQrPayloadDetected: (CrossPollinationPayload) -> Unit,
     onCategorySelected: (BillCategory) -> Unit,
     onAcceptPollinatedBill: () -> Unit,
     onDiscardPollen: () -> Unit,
@@ -178,59 +177,55 @@ fun ScannerScreen(
                 )
             }
 
-            val showPollinatedCard = uiState.pollenReceived != null
-            val showPredictiveCard = !showPollinatedCard && uiState.hasActionableScanData()
-
-            AnimatedVisibility(
-                visible = showPollinatedCard,
-                enter = slideInVertically(
-                    animationSpec = tween(360),
-                    initialOffsetY = { fullHeight -> fullHeight }
-                ) + fadeIn(animationSpec = tween(360)),
-                exit = slideOutVertically(
-                    animationSpec = tween(280),
-                    targetOffsetY = { fullHeight -> fullHeight }
-                ) + fadeOut(animationSpec = tween(280)),
+            Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
             ) {
-                uiState.pollenReceived?.let { pollen ->
-                    AcceptPollinatedBillCard(
-                        pollen = pollen,
-                        onAccept = onAcceptPollinatedBill,
-                        onDiscard = onDiscardPollen,
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = uiState.pollenReceived != null,
+                    modifier = Modifier.fillMaxSize(),
+                    enter = slideInVertically(
+                        animationSpec = tween(360),
+                        initialOffsetY = { fullHeight -> fullHeight }
+                    ) + fadeIn(animationSpec = tween(360)),
+                    exit = slideOutVertically(
+                        animationSpec = tween(280),
+                        targetOffsetY = { fullHeight -> fullHeight }
+                    ) + fadeOut(animationSpec = tween(280))
+                ) {
+                    uiState.pollenReceived?.let { pollen ->
+                        AcceptPollinatedBillCard(
+                            pollen = pollen,
+                            onAccept = onAcceptPollinatedBill,
+                            onDiscard = onDiscardPollen,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = uiState.pollenReceived == null,
+                    modifier = Modifier.fillMaxSize(),
+                    enter = slideInVertically(
+                        animationSpec = tween(360),
+                        initialOffsetY = { fullHeight -> fullHeight }
+                    ) + fadeIn(animationSpec = tween(360)),
+                    exit = slideOutVertically(
+                        animationSpec = tween(280),
+                        targetOffsetY = { fullHeight -> fullHeight }
+                    ) + fadeOut(animationSpec = tween(280))
+                ) {
+                    PredictiveImpactCard(
+                        uiState = uiState,
+                        onCategorySelected = onCategorySelected,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
             }
-
-            AnimatedVisibility(
-                visible = showPredictiveCard,
-                enter = slideInVertically(
-                    animationSpec = tween(360),
-                    initialOffsetY = { fullHeight -> fullHeight }
-                ) + fadeIn(animationSpec = tween(360)),
-                exit = slideOutVertically(
-                    animationSpec = tween(280),
-                    targetOffsetY = { fullHeight -> fullHeight }
-                ) + fadeOut(animationSpec = tween(280)),
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) {
-                PredictiveImpactCard(
-                    uiState = uiState,
-                    onCategorySelected = onCategorySelected,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
         }
     }
 }
-
-private fun ScannerUiState.hasActionableScanData(): Boolean =
-    scannedBill.amount != null || scannedBill.dueDate != null
 
 @Composable
 private fun PulsingScanReticle(
