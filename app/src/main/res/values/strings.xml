@@ -80,4 +80,11 @@
     <string name="compost_bin_no_results">No receipt compost matches that search yet.</string>
     <string name="compost_bin_receipt_image">Receipt thumbnail</string>
     <string name="scanner_save_into_garden">Plant Scanned Bill in Garden</string>
+
+    <string name="weather_forecast_title">Variable Bill Weather Forecast</string>
+    <string name="weather_forecast_drought">Drought Warning: Your utilities and groceries are predicted to spike by %1$s%% in %2$s. We recommend shrinking your subscription petals now.</string>
+    <string name="weather_forecast_cloudy">Clouds Gathering: Your variable bills may rise by %1$s%% in %2$s. Keep an eye on utilities and grocery spending.</string>
+    <string name="weather_forecast_sunny">Clear Skies: Your variable bills look stable for %1$s.</string>
+    <string name="weather_forecast_sunny_trend">Clear Skies: Your variable bills look stable for %1$s (+%2$s%% trend).</string>
+    <string name="weather_forecast_predicted_total">Predicted %1$s total: %2$s</string>
 </resources>

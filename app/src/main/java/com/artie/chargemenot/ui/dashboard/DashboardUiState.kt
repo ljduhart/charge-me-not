@@ -1,6 +1,7 @@
 package com.artie.chargemenot.ui.dashboard
 
 import com.artie.chargemenot.domain.model.Bill
+import com.artie.chargemenot.domain.model.ForecastResult
 import com.artie.chargemenot.domain.model.UserSettings
 
 data class DashboardUiState(
@@ -11,5 +12,6 @@ data class DashboardUiState(
     val subscriptionBills: List<Bill> = emptyList(),
     val allBills: List<Bill> = emptyList(),
     val categoryTotals: Map<com.artie.chargemenot.domain.model.BillCategory, Double> = emptyMap(),
+    val forecastResult: ForecastResult? = null,
     val isLoading: Boolean = true
 )
