@@ -1,13 +1,16 @@
 package com.artie.chargemenot.notification
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.artie.chargemenot.MainActivity
 import com.artie.chargemenot.R
 
@@ -33,7 +36,25 @@ object NagModeNotificationHelper {
         notificationManager?.createNotificationChannel(channel)
     }
 
+    fun canPostNotifications(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                return false
+            }
+        }
+
+        return NotificationManagerCompat.from(context).areNotificationsEnabled()
+    }
+
     fun showOverdueBillsNotification(context: Context, unpaidCount: Int) {
+        if (!canPostNotifications(context)) {
+            return
+        }
+
         createNotificationChannel(context)
 
         val contentText = context.resources.getQuantityString(
@@ -63,6 +84,10 @@ object NagModeNotificationHelper {
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
 
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+        try {
+            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+        } catch (_: SecurityException) {
+            // Permission revoked between the pre-check and notify().
+        }
     }
 }

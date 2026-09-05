@@ -97,6 +97,8 @@ class ScannerViewModelTest {
     override suspend fun deleteBillById(billId: Long) = Unit
 
     override suspend fun getBillCount(): Int = 0
+
+    override suspend fun getOverdueOrDueTodayUnpaidBillCount(today: LocalDate): Int = 0
   }
 
   private class FakeUserSettingsDao : UserSettingsDao {

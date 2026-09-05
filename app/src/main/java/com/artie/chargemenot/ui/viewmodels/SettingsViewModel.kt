@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class SettingsViewModel(
@@ -27,6 +26,8 @@ class SettingsViewModel(
 
     private val nagModePermissionBlockedState = MutableStateFlow(false)
 
+    private val shouldRequestPermissionState = MutableStateFlow(false)
+
     private val _uiState = MutableStateFlow(buildUiState(isNagModeEnabled = false))
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
@@ -39,13 +40,14 @@ class SettingsViewModel(
             combine(
                 userSettingsRepository.observeNagModeEnabled(),
                 permissionGrantedState,
-                nagModePermissionBlockedState
-            ) { isNagModeEnabled, permissionGranted, permissionBlocked ->
+                nagModePermissionBlockedState,
+                shouldRequestPermissionState
+            ) { isNagModeEnabled, permissionGranted, permissionBlocked, shouldRequestPermission ->
                 buildUiState(
                     isNagModeEnabled = isNagModeEnabled,
                     permissionGranted = permissionGranted,
                     nagModePermissionBlocked = permissionBlocked,
-                    shouldRequestNotificationPermission = _uiState.value.shouldRequestNotificationPermission
+                    shouldRequestNotificationPermission = shouldRequestPermission
                 )
             }.collect { state ->
                 _uiState.value = state
@@ -61,6 +63,7 @@ class SettingsViewModel(
     fun onNagModeToggleRequested(isEnabled: Boolean) {
         if (!isEnabled) {
             nagModePermissionBlockedState.value = false
+            shouldRequestPermissionState.value = false
             toggleNagMode(isEnabled = false)
             return
         }
@@ -69,23 +72,18 @@ class SettingsViewModel(
             !notificationPermissionGateway.isNotificationPermissionGranted()
         ) {
             nagModePermissionBlockedState.value = true
-            _uiState.update { current ->
-                current.copy(
-                    shouldRequestNotificationPermission = true,
-                    nagModePermissionBlocked = true
-                )
-            }
-            publishDerivedState(isNagModeEnabled = false)
+            shouldRequestPermissionState.value = true
             return
         }
 
         nagModePermissionBlockedState.value = false
+        shouldRequestPermissionState.value = false
         toggleNagMode(isEnabled = true)
     }
 
     fun onNotificationPermissionResult(isGranted: Boolean) {
         permissionGrantedState.value = isGranted
-        nagModePermissionBlockedState.value = !isGranted
+        shouldRequestPermissionState.value = false
 
         if (isGranted) {
             nagModePermissionBlockedState.value = false
@@ -93,19 +91,11 @@ class SettingsViewModel(
             return
         }
 
-        _uiState.update { current ->
-            current.copy(
-                shouldRequestNotificationPermission = false,
-                nagModePermissionBlocked = true
-            )
-        }
-        publishDerivedState(isNagModeEnabled = _uiState.value.isNagModeEnabled)
+        nagModePermissionBlockedState.value = true
     }
 
     fun onNotificationPermissionRequestHandled() {
-        _uiState.update { current ->
-            current.copy(shouldRequestNotificationPermission = false)
-        }
+        shouldRequestPermissionState.value = false
     }
 
     fun toggleNagMode(isEnabled: Boolean) {
@@ -113,13 +103,10 @@ class SettingsViewModel(
             userSettingsRepository.updateNagModeEnabled(isEnabled)
             if (isEnabled) {
                 nagModeScheduler.enableNagMode()
-                nagModePermissionBlockedState.value = false
             } else {
                 nagModeScheduler.disableNagMode()
-                nagModePermissionBlockedState.value = false
             }
-
-            publishDerivedState(isNagModeEnabled = isEnabled)
+            nagModePermissionBlockedState.value = false
         }
     }
 
@@ -131,20 +118,11 @@ class SettingsViewModel(
         }
     }
 
-    private fun publishDerivedState(isNagModeEnabled: Boolean) {
-        _uiState.value = buildUiState(
-            isNagModeEnabled = isNagModeEnabled,
-            permissionGranted = permissionGrantedState.value,
-            nagModePermissionBlocked = nagModePermissionBlockedState.value,
-            shouldRequestNotificationPermission = _uiState.value.shouldRequestNotificationPermission
-        )
-    }
-
     private fun buildUiState(
         isNagModeEnabled: Boolean,
-        permissionGranted: Boolean,
-        nagModePermissionBlocked: Boolean,
-        shouldRequestNotificationPermission: Boolean
+        permissionGranted: Boolean = notificationPermissionGateway.isNotificationPermissionGranted(),
+        nagModePermissionBlocked: Boolean = false,
+        shouldRequestNotificationPermission: Boolean = false
     ): SettingsUiState {
         val requiresPermission = notificationPermissionGateway.requiresRuntimePermission()
         val showWarning = requiresPermission && !permissionGranted &&

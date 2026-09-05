@@ -5,6 +5,7 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -16,8 +17,13 @@ class BillOcrAnalyzer(
     private val onScanResult: (OcrScanResult) -> Unit
 ) : ImageAnalysis.Analyzer {
 
-    private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    private var textRecognizer: TextRecognizer? = null
     private val isProcessing = AtomicBoolean(false)
+
+    private fun textRecognizer(): TextRecognizer {
+        return textRecognizer ?: TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+            .also { textRecognizer = it }
+    }
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun analyze(imageProxy: ImageProxy) {
@@ -38,7 +44,7 @@ class BillOcrAnalyzer(
             imageProxy.imageInfo.rotationDegrees
         )
 
-        textRecognizer.process(inputImage)
+        textRecognizer().process(inputImage)
             .addOnSuccessListener { visionText ->
                 val result = extractBillData(visionText.text)
                 if (result.hasActionableData) {
@@ -55,7 +61,8 @@ class BillOcrAnalyzer(
     }
 
     fun close() {
-        textRecognizer.close()
+        textRecognizer?.close()
+        textRecognizer = null
     }
 
     internal fun extractBillData(rawText: String): OcrScanResult {

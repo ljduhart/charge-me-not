@@ -4,7 +4,7 @@ import android.Manifest
 import androidx.activity.compose.BackHandler
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.Preview
+import androidx.camera.core.Preview as CameraPreview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
@@ -166,7 +166,7 @@ private fun CameraPreviewSection(
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
         val cameraProvider = cameraProviderFuture.get()
 
-        val preview = Preview.Builder()
+        val preview = CameraPreview.Builder()
             .build()
             .also { it.surfaceProvider = previewView.surfaceProvider }
 

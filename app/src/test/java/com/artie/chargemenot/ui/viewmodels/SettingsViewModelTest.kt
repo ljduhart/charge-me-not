@@ -70,6 +70,45 @@ class SettingsViewModelTest {
   }
 
   @Test
+  fun onNagModeToggleRequested_preservesPermissionRequestFlagAfterCombineEmissions() {
+    val scheduler = FakeNagModeScheduler()
+    val viewModel = createViewModel(
+      scheduler = scheduler,
+      permissionGateway = FakeNotificationPermissionGateway(
+        granted = false,
+        requiresRuntime = true
+      )
+    )
+    testScope.advanceUntilIdle()
+
+    viewModel.onNagModeToggleRequested(isEnabled = true)
+    testScope.advanceUntilIdle()
+
+    assertTrue(viewModel.uiState.value.shouldRequestNotificationPermission)
+    assertTrue(viewModel.uiState.value.nagModePermissionBlocked)
+    assertFalse(scheduler.isEnabled)
+  }
+
+  @Test
+  fun onNotificationPermissionRequestHandled_clearsPermissionRequestFlag() {
+    val viewModel = createViewModel(
+      scheduler = FakeNagModeScheduler(),
+      permissionGateway = FakeNotificationPermissionGateway(
+        granted = false,
+        requiresRuntime = true
+      )
+    )
+    testScope.advanceUntilIdle()
+
+    viewModel.onNagModeToggleRequested(isEnabled = true)
+    testScope.advanceUntilIdle()
+    viewModel.onNotificationPermissionRequestHandled()
+    testScope.advanceUntilIdle()
+
+    assertFalse(viewModel.uiState.value.shouldRequestNotificationPermission)
+  }
+
+  @Test
   fun onNagModeToggleRequested_disablesSchedulerWhenTurnedOff() {
     val scheduler = FakeNagModeScheduler()
     val viewModel = createViewModel(
