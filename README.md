@@ -15,12 +15,15 @@ A local-first personal finance app by **ART-ie LLC** that helps you tend your fi
 - **Total Upcoming** summary of unpaid bills
 - **Your Financial Bloom** — a Canvas-drawn flower where each petal represents a spending category
 - **Subscriptions: Weeds or Flowers?** — manage recurring bills with Keep (leaf) and Pull (weed) actions
+- **Pruning Simulator** — ephemeral financial sandbox to test pruning bills without writing to Room
+- **Nag Mode** — local WorkManager reminders for due/overdue bills
+- **Bill Scanner** — CameraX OCR with predictive bloom impact
 
 ## Requirements
 
 - Android Studio Ladybug (2024.2.1) or newer
 - JDK 17
-- Android SDK 35
+- Android SDK 36
 
 ## Getting Started
 
@@ -43,7 +46,8 @@ app/src/main/java/com/artie/chargemenot/
 │   └── model/          # Domain models
 ├── ui/
 │   ├── dashboard/      # ViewModel & UI state
-│   ├── screens/        # Compose screens
+│   ├── screens/        # Compose screens (Dashboard, Scanner, Pruning Simulator)
+│   ├── viewmodels/     # Scanner, Settings, Pruning ViewModels
 │   └── theme/          # Meadow color palette & typography
 ├── MainActivity.kt
 └── ChargeMeNotApplication.kt
