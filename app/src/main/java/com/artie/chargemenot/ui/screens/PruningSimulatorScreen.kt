@@ -58,6 +58,7 @@ import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.ui.components.FinancialBloomCanvas
 import com.artie.chargemenot.ui.components.MeadowTickerCurrencyLine
 import com.artie.chargemenot.ui.components.RootSystemCanvas
+import com.artie.chargemenot.ui.components.billInitial
 import com.artie.chargemenot.ui.components.categoryColor
 import com.artie.chargemenot.ui.components.categoryDisplayName
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
@@ -281,33 +282,33 @@ private fun PruningBillsList(
         ) {
             items(
                 items = bills,
-                key = { bill -> bill.id }
+                key = { bill -> "pruning_bill_${bill.id}" }
             ) { bill ->
                 val children = childRelationships[bill.id] ?: emptyList()
                 val isExpanded = expandedRootBillId == bill.id
 
-                PruningBillRow(
-                    bill = bill,
-                    isPruned = bill.id in prunedBillIds,
-                    hasRootChildren = children.isNotEmpty(),
-                    isRootExpanded = isExpanded,
-                    currencyFormat = currencyFormat,
-                    dateFormat = dateFormat,
-                    onToggleBillStatus = onToggleBillStatus,
-                    onToggleRootExpansion = onToggleRootExpansion,
-                    modifier = Modifier.animateItem()
-                )
-
-                if (isExpanded && children.isNotEmpty()) {
-                    RootSystemCanvas(
-                        parentBill = bill,
-                        childBills = children,
-                        isParentPruned = bill.id in prunedBillIds,
-                        prunedBillIds = prunedBillIds,
-                        modifier = Modifier
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                            .animateItem()
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    PruningBillRow(
+                        bill = bill,
+                        isPruned = bill.id in prunedBillIds,
+                        hasRootChildren = children.isNotEmpty(),
+                        isRootExpanded = isExpanded,
+                        currencyFormat = currencyFormat,
+                        dateFormat = dateFormat,
+                        onToggleBillStatus = onToggleBillStatus,
+                        onToggleRootExpansion = onToggleRootExpansion
                     )
+
+                    if (isExpanded && children.isNotEmpty()) {
+                        RootSystemCanvas(
+                            parentBill = bill,
+                            childBills = children,
+                            isParentPruned = bill.id in prunedBillIds,
+                            prunedBillIds = prunedBillIds,
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                 }
             }
         }
@@ -356,7 +357,7 @@ private fun PruningBillRow(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = bill.name.first().uppercase(),
+                    text = billInitial(bill.name),
                     style = MaterialTheme.typography.titleMedium,
                     color = MeadowGreenDark,
                     fontWeight = FontWeight.Bold

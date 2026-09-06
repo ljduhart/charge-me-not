@@ -1,10 +1,5 @@
 package com.artie.chargemenot.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -47,6 +42,7 @@ import com.artie.chargemenot.ui.components.LinkRootBottomSheet
 import com.artie.chargemenot.ui.components.MeadowTickerAmount
 import com.artie.chargemenot.ui.components.NagModeCard
 import com.artie.chargemenot.ui.components.WeatherForecastCard
+import com.artie.chargemenot.ui.components.billInitial
 import com.artie.chargemenot.ui.components.categoryColor
 import com.artie.chargemenot.ui.components.categoryDisplayName
 import com.artie.chargemenot.ui.dashboard.DashboardUiState
@@ -134,7 +130,7 @@ fun DashboardScreen(
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
-        item {
+        item(key = "greeting_header") {
             GreetingHeader(
                 greeting = uiState.greeting,
                 totalUpcoming = uiState.totalUpcoming,
@@ -144,9 +140,9 @@ fun DashboardScreen(
             )
         }
 
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item(key = "greeting_spacer") { Spacer(modifier = Modifier.height(16.dp)) }
 
-        item {
+        item(key = "nag_mode_card") {
             NagModeCard(
                 uiState = settingsUiState,
                 onNagModeToggleRequested = onNagModeToggleRequested,
@@ -156,67 +152,61 @@ fun DashboardScreen(
             )
         }
 
-        item { Spacer(modifier = Modifier.height(28.dp)) }
+        item(key = "nag_mode_spacer") { Spacer(modifier = Modifier.height(28.dp)) }
 
-        item {
+        item(key = "financial_bloom") {
             FinancialBloomSection(
                 categoryTotals = uiState.categoryTotals
             )
         }
 
-        item {
-            AnimatedVisibility(
-                visible = uiState.forecastResult != null,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
-                uiState.forecastResult?.let { forecast ->
-                    WeatherForecastCard(
-                        forecastResult = forecast,
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
-                }
+        uiState.forecastResult?.let { forecast ->
+            item(key = "weather_forecast") {
+                WeatherForecastCard(
+                    forecastResult = forecast,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
             }
         }
 
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item(key = "forecast_spacer") { Spacer(modifier = Modifier.height(16.dp)) }
 
-        item {
+        item(key = "pruning_entry") {
             PruningSimulatorEntryCard(
                 onNavigateToPruningSimulator = onNavigateToPruningSimulator
             )
         }
 
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item(key = "pruning_spacer") { Spacer(modifier = Modifier.height(16.dp)) }
 
-        item {
+        item(key = "weed_whacker_entry") {
             WeedWhackerEntryCard(
                 onNavigateToWeedWhacker = onNavigateToWeedWhacker
             )
         }
 
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item(key = "weed_whacker_spacer") { Spacer(modifier = Modifier.height(16.dp)) }
 
-        item {
+        item(key = "compost_entry") {
             CompostBinEntryCard(
                 onNavigateToCompostBin = onNavigateToCompostBin
             )
         }
 
-        item { Spacer(modifier = Modifier.height(32.dp)) }
+        item(key = "compost_spacer") { Spacer(modifier = Modifier.height(32.dp)) }
 
-        item {
+        item(key = "upcoming_bills_header") {
             UpcomingBillsSectionHeader()
         }
 
         if (uiState.upcomingBills.isEmpty()) {
-            item {
+            item(key = "upcoming_bills_empty") {
                 UpcomingBillsEmptyCard()
             }
         } else {
             items(
                 items = uiState.upcomingBills,
-                key = { bill -> bill.id }
+                key = { bill -> "upcoming_${bill.id}" }
             ) { bill ->
                 UpcomingBillCard(
                     bill = bill,
@@ -224,27 +214,25 @@ fun DashboardScreen(
                     dateFormat = dateFormat,
                     onShare = { billToShare = bill },
                     onLinkRoots = { billToLink = bill },
-                    modifier = Modifier
-                        .padding(top = 10.dp)
-                        .animateItem()
+                    modifier = Modifier.padding(top = 10.dp)
                 )
             }
         }
 
-        item { Spacer(modifier = Modifier.height(32.dp)) }
+        item(key = "upcoming_subscriptions_spacer") { Spacer(modifier = Modifier.height(32.dp)) }
 
-        item {
+        item(key = "subscriptions_header") {
             SubscriptionsSectionHeader()
         }
 
         if (uiState.subscriptionBills.isEmpty()) {
-            item {
+            item(key = "subscriptions_empty") {
                 SubscriptionsEmptyCard()
             }
         } else {
             items(
                 items = uiState.subscriptionBills,
-                key = { bill -> bill.id }
+                key = { bill -> "subscription_${bill.id}" }
             ) { bill ->
                 SubscriptionBillCard(
                     bill = bill,
@@ -254,9 +242,7 @@ fun DashboardScreen(
                     onPull = { onPullSubscription(bill) },
                     onShare = { billToShare = bill },
                     onLinkRoots = { billToLink = bill },
-                    modifier = Modifier
-                        .padding(top = 10.dp)
-                        .animateItem()
+                    modifier = Modifier.padding(top = 10.dp)
                 )
             }
         }
@@ -711,7 +697,7 @@ private fun UpcomingBillCard(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = bill.name.first().uppercase(),
+                    text = billInitial(bill.name),
                     style = MaterialTheme.typography.titleMedium,
                     color = MeadowGreenDark,
                     fontWeight = FontWeight.Bold
@@ -830,7 +816,7 @@ private fun SubscriptionBillCard(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = bill.name.first().uppercase(),
+                    text = billInitial(bill.name),
                     style = MaterialTheme.typography.titleMedium,
                     color = MeadowGreenDark,
                     fontWeight = FontWeight.Bold

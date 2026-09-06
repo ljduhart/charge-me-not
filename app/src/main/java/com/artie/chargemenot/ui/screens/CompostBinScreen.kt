@@ -158,12 +158,11 @@ fun CompostBinScreen(
                     ) {
                         items(
                             items = uiState.results,
-                            key = { result -> result.bill.id }
+                            key = { result -> "compost_${result.bill.id}" }
                         ) { result ->
                             CompostResultRow(
                                 result = result,
-                                dateFormat = dateFormat,
-                                modifier = Modifier.animateItem()
+                                dateFormat = dateFormat
                             )
                         }
                     }

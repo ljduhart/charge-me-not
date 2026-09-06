@@ -237,3 +237,12 @@ fun categoryDisplayName(category: BillCategory): String = when (category) {
     BillCategory.ENTERTAINMENT -> "Entertainment"
     BillCategory.OTHER -> "Other"
 }
+
+fun billInitial(name: String): String {
+    val trimmed = name.trim()
+    return if (trimmed.isEmpty()) {
+        "?"
+    } else {
+        trimmed.first().uppercaseChar().toString()
+    }
+}
