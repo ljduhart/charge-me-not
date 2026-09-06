@@ -339,21 +339,39 @@ private fun LocalClimatePage(
     selectedCurrency: SupportedCurrency,
     onCurrencySelected: (SupportedCurrency) -> Unit
 ) {
-    OnboardingPageScaffold(
-        title = stringResource(R.string.onboarding_climate_title),
-        subtitle = stringResource(R.string.onboarding_climate_subtitle)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Text(
+            text = stringResource(R.string.onboarding_climate_title),
+            style = MaterialTheme.typography.headlineMedium,
+            color = MeadowGreenDark,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = stringResource(R.string.onboarding_climate_subtitle),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
+        Spacer(modifier = Modifier.height(20.dp))
         Icon(
             imageVector = Icons.Rounded.Public,
             contentDescription = null,
             tint = MeadowGreen,
-            modifier = Modifier.size(88.dp)
+            modifier = Modifier.size(72.dp)
         )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
+        Spacer(modifier = Modifier.height(16.dp))
         LazyColumn(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(SupportedCurrency.entries, key = { currency -> currency.code }) { currency ->

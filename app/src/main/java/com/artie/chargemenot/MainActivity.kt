@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -25,7 +26,6 @@ import com.artie.chargemenot.ui.navigation.AppRoutes
 import com.artie.chargemenot.ui.screens.onboarding.OnboardingLoadingScreen
 import com.artie.chargemenot.ui.navigation.ChargeMeNotNavHost
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
-import com.artie.chargemenot.ui.theme.MeadowGreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowSky
 import com.artie.chargemenot.ui.theme.MeadowWhite
@@ -65,10 +65,15 @@ class MainActivity : ComponentActivity() {
                 val selectedBillForEdit by dashboardViewModel.selectedBillForEdit.collectAsStateWithLifecycle()
                 val onboardingUiState by onboardingViewModel.uiState.collectAsStateWithLifecycle()
 
-                val startDestination = if (onboardingUiState.isOnboardingComplete) {
-                    AppRoutes.DASHBOARD
-                } else {
-                    AppRoutes.ONBOARDING
+                var graphStartDestination by remember { mutableStateOf<String?>(null) }
+                LaunchedEffect(onboardingUiState.isLoading) {
+                    if (!onboardingUiState.isLoading && graphStartDestination == null) {
+                        graphStartDestination = if (onboardingUiState.isOnboardingComplete) {
+                            AppRoutes.DASHBOARD
+                        } else {
+                            AppRoutes.ONBOARDING
+                        }
+                    }
                 }
 
                 LaunchedEffect(currentRoute) {
@@ -77,9 +82,12 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                LaunchedEffect(pendingNavigationRoute) {
+                LaunchedEffect(pendingNavigationRoute, onboardingUiState.isLoading, onboardingUiState.isOnboardingComplete) {
                     val route = pendingNavigationRoute
-                    if (route != null) {
+                    if (route != null &&
+                        !onboardingUiState.isLoading &&
+                        onboardingUiState.isOnboardingComplete
+                    ) {
                         if (route == AppRoutes.WEED_WHACKER) {
                             weedWhackerViewModel.restartAuditSession()
                         }
@@ -91,7 +99,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                if (onboardingUiState.isLoading) {
+                if (onboardingUiState.isLoading || graphStartDestination == null) {
                     OnboardingLoadingScreen(modifier = Modifier.fillMaxSize())
                 } else {
                 Scaffold(
@@ -121,7 +129,7 @@ class MainActivity : ComponentActivity() {
                 ) { innerPadding ->
                     ChargeMeNotNavHost(
                         navController = navController,
-                        startDestination = startDestination,
+                        startDestination = graphStartDestination!!,
                         onboardingUiState = onboardingUiState,
                         onBudgetEnabledChange = onboardingViewModel::setBudgetEnabled,
                         onBudgetAmountChange = onboardingViewModel::setBudgetAmount,

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class OnboardingViewModel(
     private val userSettingsRepository: UserSettingsRepository,
@@ -112,7 +113,9 @@ class OnboardingViewModel(
             _uiState.update { current ->
                 current.copy(isOnboardingComplete = true)
             }
-            onComplete()
+            withContext(Dispatchers.Main) {
+                onComplete()
+            }
         }
     }
 

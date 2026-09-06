@@ -69,6 +69,18 @@ class OnboardingViewModelTest {
     }
 
     @Test
+    fun saveOnboardingData_invokesOnCompleteCallback() {
+        val viewModel = createViewModel()
+        testScope.advanceUntilIdle()
+
+        var didComplete = false
+        viewModel.saveOnboardingData(onComplete = { didComplete = true })
+        testScope.advanceUntilIdle()
+
+        assertTrue(didComplete)
+    }
+
+    @Test
     fun saveOnboardingData_withBudgetDisabled_usesDefaultBudget() {
         val viewModel = createViewModel()
         testScope.advanceUntilIdle()
