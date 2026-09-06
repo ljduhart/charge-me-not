@@ -102,7 +102,11 @@
     <string name="dashboard_keep_pull_prompt">(Keep? Pull?)</string>
     <string name="dashboard_keep_flower">Keep subscription</string>
     <string name="dashboard_pull_weed">Pull subscription</string>
-    <string name="dashboard_subscriptions_empty">No subscriptions in this meadow category right now.</string>
+    <string name="dashboard_subscriptions_empty">No subscriptions sprouting — your garden is clear!</string>
+    <string name="dashboard_monthly_budget_label">Monthly budget</string>
+    <string name="dashboard_monthly_budget_edit">Edit monthly budget</string>
+    <string name="dashboard_monthly_budget_save">Save monthly budget</string>
+    <string name="dashboard_monthly_budget_minimum">Minimum %1$s</string>
     <string name="dashboard_add_bill">Add Bill</string>
     <string name="dashboard_nav_rent">Rent</string>
     <string name="dashboard_nav_loans">Loans</string>

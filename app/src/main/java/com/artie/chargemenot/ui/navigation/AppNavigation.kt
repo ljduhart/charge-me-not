@@ -129,6 +129,7 @@ fun ChargeMeNotNavHost(
                 onNavigateToPruningSimulator = onNavigateToPruningSimulator,
                 onNavigateToWeedWhacker = onNavigateToWeedWhacker,
                 onNavigateToCompostBin = onNavigateToCompostBin,
+                onLinkBillToParent = onLinkBillToParent,
                 onSelectBillForEdit = onSelectBillForEdit,
                 onClearEditSelection = onClearEditSelection,
                 onSaveBillEdits = onSaveBillEdits,

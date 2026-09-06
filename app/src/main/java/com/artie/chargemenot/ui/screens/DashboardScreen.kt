@@ -30,6 +30,10 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Grass
+import androidx.compose.material.icons.filled.LocalFlorist
+import androidx.compose.material.icons.filled.Nature
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
@@ -42,6 +46,7 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -66,15 +71,20 @@ import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.ui.components.BloomCanvas
+import com.artie.chargemenot.ui.components.CrossPollinateShareDialog
 import com.artie.chargemenot.ui.components.EditBillBottomSheet
+import com.artie.chargemenot.ui.components.LinkRootBottomSheet
 import com.artie.chargemenot.ui.components.MeadowTickerAmount
 import com.artie.chargemenot.ui.components.NagModeCard
 import com.artie.chargemenot.ui.components.SubscriptionBrandIcon
 import com.artie.chargemenot.ui.components.WeatherForecastCard
 import com.artie.chargemenot.ui.dashboard.DashboardBottomNavItem
+import com.artie.chargemenot.domain.model.UserSettings
 import com.artie.chargemenot.ui.dashboard.DashboardUiState
-import com.artie.chargemenot.ui.dashboard.matchesDashboardNav
 import com.artie.chargemenot.ui.dashboard.toHighlightCategory
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import com.artie.chargemenot.ui.theme.MeadowEarth
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.LeafGreen
 import com.artie.chargemenot.ui.theme.MeadowCream
@@ -106,6 +116,7 @@ fun DashboardScreen(
     onNavigateToPruningSimulator: () -> Unit,
     onNavigateToWeedWhacker: () -> Unit,
     onNavigateToCompostBin: () -> Unit,
+    onLinkBillToParent: (Long, Long?) -> Unit,
     onSelectBillForEdit: (Bill) -> Unit,
     onClearEditSelection: () -> Unit,
     onSaveBillEdits: (Bill) -> Unit,
@@ -116,7 +127,31 @@ fun DashboardScreen(
     val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    var isSearchVisible by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    var billToShare by remember { mutableStateOf<Bill?>(null) }
+    var billToLink by remember { mutableStateOf<Bill?>(null) }
+
+    billToShare?.let { bill ->
+        CrossPollinateShareDialog(
+            bill = bill,
+            onDismiss = { billToShare = null }
+        )
+    }
+
+    billToLink?.let { bill ->
+        LinkRootBottomSheet(
+            bill = bill,
+            availableParents = eligibleParentBills(
+                childBill = bill,
+                allBills = uiState.allBills
+            ),
+            onLinkToParent = { parentId ->
+                onLinkBillToParent(bill.id, parentId)
+            },
+            onDismiss = { billToLink = null }
+        )
+    }
 
     EditBillBottomSheet(
         selectedBill = selectedBillForEdit,
@@ -124,14 +159,11 @@ fun DashboardScreen(
         onSave = onSaveBillEdits
     )
 
-    val filteredSubscriptions = remember(uiState.subscriptionBills, searchQuery, uiState.selectedBottomNavItem) {
-        val navFiltered = uiState.subscriptionBills.filter { bill ->
-            bill.category.matchesDashboardNav(uiState.selectedBottomNavItem)
-        }
+    val filteredSubscriptions = remember(uiState.subscriptionBills, searchQuery) {
         if (searchQuery.isBlank()) {
-            navFiltered
+            uiState.subscriptionBills
         } else {
-            navFiltered.filter { bill ->
+            uiState.subscriptionBills.filter { bill ->
                 bill.name.contains(searchQuery.trim(), ignoreCase = true)
             }
         }
@@ -204,7 +236,14 @@ fun DashboardScreen(
                         }
                     },
                     actions = {
-                        IconButton(onClick = { searchQuery = if (searchQuery.isBlank()) " " else "" }) {
+                        IconButton(
+                            onClick = {
+                                isSearchVisible = !isSearchVisible
+                                if (!isSearchVisible) {
+                                    searchQuery = ""
+                                }
+                            }
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = stringResource(R.string.dashboard_search)
@@ -240,6 +279,26 @@ fun DashboardScreen(
                     )
                 }
 
+                if (isSearchVisible) {
+                    item(key = "subscription_search") {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 12.dp),
+                            placeholder = { Text(stringResource(R.string.dashboard_search)) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = null
+                                )
+                            },
+                            singleLine = true
+                        )
+                    }
+                }
+
                 item(key = "total_upcoming_card") {
                     TotalUpcomingSummaryCard(
                         totalUpcoming = uiState.totalUpcoming,
@@ -256,6 +315,7 @@ fun DashboardScreen(
                         monthlyBudget = uiState.monthlyBudget,
                         selectedBottomNavItem = uiState.selectedBottomNavItem,
                         onBloomSettingsClick = onBloomSettingsClick,
+                        onMonthlyBudgetChange = onMonthlyBudgetChange,
                         modifier = Modifier.padding(top = 16.dp)
                     )
                 }
@@ -292,6 +352,8 @@ fun DashboardScreen(
                             onRowClick = { onSelectBillForEdit(bill) },
                             onKeep = { onKeepSubscription(bill) },
                             onPull = { onPullSubscription(bill) },
+                            onShare = { billToShare = bill },
+                            onLinkRoots = { billToLink = bill },
                             modifier = Modifier.padding(top = 10.dp)
                         )
                     }
@@ -398,8 +460,14 @@ private fun FinancialBloomCard(
     monthlyBudget: Double,
     selectedBottomNavItem: DashboardBottomNavItem,
     onBloomSettingsClick: () -> Unit,
+    onMonthlyBudgetChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
+    var isEditingBudget by remember { mutableStateOf(false) }
+    var budgetInput by remember(monthlyBudget) {
+        mutableStateOf(monthlyBudget.toInt().toString())
+    }
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -438,6 +506,74 @@ private fun FinancialBloomCard(
                 highlightedCategory = selectedBottomNavItem.toHighlightCategory(),
                 modifier = Modifier.fillMaxWidth()
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.dashboard_monthly_budget_label),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (!isEditingBudget) {
+                        Text(
+                            text = currencyFormat.format(monthlyBudget),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MeadowGreenDark,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+                IconButton(
+                    onClick = {
+                        if (isEditingBudget) {
+                            onMonthlyBudgetChange(budgetInput)
+                            isEditingBudget = false
+                        } else {
+                            budgetInput = monthlyBudget.toInt().toString()
+                            isEditingBudget = true
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = if (isEditingBudget) Icons.Default.Check else Icons.Default.Edit,
+                        contentDescription = stringResource(
+                            if (isEditingBudget) {
+                                R.string.dashboard_monthly_budget_save
+                            } else {
+                                R.string.dashboard_monthly_budget_edit
+                            }
+                        ),
+                        tint = MeadowGreenDark
+                    )
+                }
+            }
+
+            if (isEditingBudget) {
+                OutlinedTextField(
+                    value = budgetInput,
+                    onValueChange = { budgetInput = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.dashboard_monthly_budget_label)) },
+                    prefix = { Text("$") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true
+                )
+                Text(
+                    text = stringResource(
+                        R.string.dashboard_monthly_budget_minimum,
+                        currencyFormat.format(UserSettings.MIN_MONTHLY_BUDGET)
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
         }
     }
 }
@@ -466,6 +602,8 @@ private fun SubscriptionWeedFlowerRow(
     onRowClick: () -> Unit,
     onKeep: () -> Unit,
     onPull: () -> Unit,
+    onShare: () -> Unit,
+    onLinkRoots: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -495,6 +633,22 @@ private fun SubscriptionWeedFlowerRow(
                     text = stringResource(R.string.dashboard_keep_pull_prompt),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(onClick = onLinkRoots) {
+                Icon(
+                    imageVector = Icons.Default.Nature,
+                    contentDescription = stringResource(R.string.link_roots_icon),
+                    tint = MeadowEarth,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            IconButton(onClick = onShare) {
+                Icon(
+                    imageVector = Icons.Default.LocalFlorist,
+                    contentDescription = stringResource(R.string.cross_pollinate_share),
+                    tint = MeadowGreen,
+                    modifier = Modifier.size(24.dp)
                 )
             }
             IconButton(onClick = onPull) {
@@ -610,6 +764,7 @@ private fun DashboardScreenPreview() {
             onNavigateToPruningSimulator = {},
             onNavigateToWeedWhacker = {},
             onNavigateToCompostBin = {},
+            onLinkBillToParent = { _, _ -> },
             onSelectBillForEdit = {},
             onClearEditSelection = {},
             onSaveBillEdits = {},
@@ -617,4 +772,20 @@ private fun DashboardScreenPreview() {
             onBloomSettingsClick = {}
         )
     }
+}
+
+private fun eligibleParentBills(childBill: Bill, allBills: List<Bill>): List<Bill> {
+    val descendantIds = collectDescendantBillIds(childBill.id, allBills)
+    return allBills.filter { bill ->
+        bill.id != childBill.id && bill.id !in descendantIds
+    }
+}
+
+private fun collectDescendantBillIds(parentId: Long, bills: List<Bill>): Set<Long> {
+    return bills
+        .filter { bill -> bill.parentBillId == parentId }
+        .flatMap { child ->
+            setOf(child.id) + collectDescendantBillIds(child.id, bills)
+        }
+        .toSet()
 }

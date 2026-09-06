@@ -62,6 +62,12 @@ class MainActivity : ComponentActivity() {
                 val compostBinUiState by compostBinViewModel.uiState.collectAsStateWithLifecycle()
                 val selectedBillForEdit by dashboardViewModel.selectedBillForEdit.collectAsStateWithLifecycle()
 
+                LaunchedEffect(currentRoute) {
+                    if (currentRoute != null && currentRoute != AppRoutes.DASHBOARD) {
+                        dashboardViewModel.clearEditSelection()
+                    }
+                }
+
                 LaunchedEffect(pendingNavigationRoute) {
                     val route = pendingNavigationRoute
                     if (route != null) {
