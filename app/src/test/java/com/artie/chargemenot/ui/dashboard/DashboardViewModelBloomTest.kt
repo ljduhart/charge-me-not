@@ -67,6 +67,41 @@ class DashboardViewModelBloomTest {
     }
 
     @Test
+    fun selectBillForEdit_clearsSelectedCategory() {
+        val viewModel = createViewModel()
+        viewModel.onPetalTapped("Rent")
+
+        viewModel.selectBillForEdit(
+            Bill(
+                id = 1L,
+                name = "Maple Street Apartment",
+                amount = 1_450.0,
+                dueDate = LocalDate.of(2026, 9, 12),
+                category = BillCategory.RENT
+            )
+        )
+
+        assertNull(viewModel.selectedCategoryForEdit.value)
+    }
+
+    @Test
+    fun onPetalTapped_clearsSelectedBillForEdit() {
+        val viewModel = createViewModel()
+        val bill = Bill(
+            id = 1L,
+            name = "Maple Street Apartment",
+            amount = 1_450.0,
+            dueDate = LocalDate.of(2026, 9, 12),
+            category = BillCategory.RENT
+        )
+        viewModel.selectBillForEdit(bill)
+        viewModel.onPetalTapped("Utilities")
+
+        assertNull(viewModel.selectedBillForEdit.value)
+        assertEquals("Utilities", viewModel.selectedCategoryForEdit.value)
+    }
+
+    @Test
     fun categoryBills_emitsBillsForSelectedCategory() {
         val viewModel = createViewModel()
         testScope.advanceUntilIdle()

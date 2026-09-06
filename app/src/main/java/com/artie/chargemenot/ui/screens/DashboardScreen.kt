@@ -165,13 +165,15 @@ fun DashboardScreen(
         onSave = onSaveBillEdits
     )
 
-    CategoryDetailBottomSheet(
-        selectedCategory = selectedCategoryForEdit,
-        bills = categoryBills,
-        onDismiss = onClearCategorySelection,
-        onAddNewBill = onAddBillToCategory,
-        onBillClick = onSelectBillForEdit
-    )
+    if (selectedCategoryForEdit != null && selectedBillForEdit == null) {
+        CategoryDetailBottomSheet(
+            selectedCategory = selectedCategoryForEdit,
+            bills = categoryBills,
+            onDismiss = onClearCategorySelection,
+            onAddNewBill = onAddBillToCategory,
+            onBillClick = onSelectBillForEdit
+        )
+    }
 
     val filteredSubscriptions = remember(uiState.subscriptionBills, searchQuery) {
         if (searchQuery.isBlank()) {

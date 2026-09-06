@@ -32,7 +32,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
-import com.artie.chargemenot.ui.theme.LeafGreen
 import com.artie.chargemenot.ui.theme.MeadowGreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowSage

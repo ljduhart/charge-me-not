@@ -144,6 +144,7 @@ class DashboardViewModel(
     }
 
     fun selectBillForEdit(bill: Bill) {
+        _selectedCategoryForEdit.value = null
         _selectedBillForEdit.value = bill
     }
 
@@ -152,6 +153,7 @@ class DashboardViewModel(
     }
 
     fun onPetalTapped(category: String) {
+        _selectedBillForEdit.value = null
         _selectedCategoryForEdit.value = category
     }
 
