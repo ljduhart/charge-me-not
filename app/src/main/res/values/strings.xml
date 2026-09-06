@@ -120,4 +120,26 @@
     <string name="edit_bill_category_label">Category</string>
     <string name="edit_bill_save">Save Changes</string>
     <string name="edit_bill_cancel">Cancel</string>
+
+    <string name="onboarding_seed_title">Welcome to Charge-Me Not</string>
+    <string name="onboarding_seed_subtitle">Plant the seeds of financial peace. No clouds, no data harvesting—just your local garden.</string>
+    <string name="onboarding_seed_image">Seed illustration</string>
+    <string name="onboarding_soil_title">Set Your Boundary</string>
+    <string name="onboarding_soil_subtitle">Choose whether to set a monthly spending boundary for your meadow.</string>
+    <string name="onboarding_trowel_icon">Garden trowel</string>
+    <string name="onboarding_monthly_budget_toggle">Enable monthly budget</string>
+    <string name="onboarding_budget_range">Range: %1$s – %2$s</string>
+    <string name="onboarding_climate_title">Select Your Climate</string>
+    <string name="onboarding_climate_subtitle">Pick the currency that matches your local meadow.</string>
+    <string name="onboarding_currency_selected">Selected currency</string>
+    <string name="onboarding_watering_title">Watering Schedule</string>
+    <string name="onboarding_watering_subtitle">Enable gentle local reminders so your bills never wilt unnoticed.</string>
+    <string name="onboarding_enable_watering">Enable Watering Schedule</string>
+    <string name="onboarding_watering_enabled">Watering schedule enabled for your garden.</string>
+    <string name="onboarding_sprout_title">Your Garden is Ready</string>
+    <string name="onboarding_sprout_subtitle">Your meadow is planted locally on this device. Step inside and tend your financial bloom.</string>
+    <string name="onboarding_sprout_icon">First sprout</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_enter_garden">Enter the Garden</string>
 </resources>

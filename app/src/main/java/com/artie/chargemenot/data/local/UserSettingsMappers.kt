@@ -4,10 +4,14 @@ import com.artie.chargemenot.domain.model.UserSettings
 
 fun UserSettingsEntity.toDomain(): UserSettings = UserSettings(
     monthlyBudget = monthlyBudget,
-    isNagModeEnabled = isNagModeEnabled
+    isNagModeEnabled = isNagModeEnabled,
+    selectedCurrency = selectedCurrency,
+    isOnboardingComplete = isOnboardingComplete
 )
 
 fun UserSettings.toEntity(): UserSettingsEntity = UserSettingsEntity(
     monthlyBudget = monthlyBudget,
-    isNagModeEnabled = isNagModeEnabled
+    isNagModeEnabled = isNagModeEnabled,
+    selectedCurrency = selectedCurrency,
+    isOnboardingComplete = isOnboardingComplete
 )

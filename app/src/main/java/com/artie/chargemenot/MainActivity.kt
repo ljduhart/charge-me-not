@@ -22,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.artie.chargemenot.ui.navigation.AppRoutes
+import com.artie.chargemenot.ui.screens.onboarding.OnboardingLoadingScreen
 import com.artie.chargemenot.ui.navigation.ChargeMeNotNavHost
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.MeadowGreen
@@ -47,6 +48,7 @@ class MainActivity : ComponentActivity() {
         val pruningViewModel = app.pruningViewModel
         val weedWhackerViewModel = app.weedWhackerViewModel
         val compostBinViewModel = app.compostBinViewModel
+        val onboardingViewModel = app.onboardingViewModel
 
         setContent {
             ChargeMeNotTheme {
@@ -61,6 +63,13 @@ class MainActivity : ComponentActivity() {
                 val weedWhackerUiState by weedWhackerViewModel.uiState.collectAsStateWithLifecycle()
                 val compostBinUiState by compostBinViewModel.uiState.collectAsStateWithLifecycle()
                 val selectedBillForEdit by dashboardViewModel.selectedBillForEdit.collectAsStateWithLifecycle()
+                val onboardingUiState by onboardingViewModel.uiState.collectAsStateWithLifecycle()
+
+                val startDestination = if (onboardingUiState.isOnboardingComplete) {
+                    AppRoutes.DASHBOARD
+                } else {
+                    AppRoutes.ONBOARDING
+                }
 
                 LaunchedEffect(currentRoute) {
                     if (currentRoute != null && currentRoute != AppRoutes.DASHBOARD) {
@@ -82,6 +91,9 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                if (onboardingUiState.isLoading) {
+                    OnboardingLoadingScreen(modifier = Modifier.fillMaxSize())
+                } else {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     floatingActionButton = {
@@ -109,6 +121,23 @@ class MainActivity : ComponentActivity() {
                 ) { innerPadding ->
                     ChargeMeNotNavHost(
                         navController = navController,
+                        startDestination = startDestination,
+                        onboardingUiState = onboardingUiState,
+                        onBudgetEnabledChange = onboardingViewModel::setBudgetEnabled,
+                        onBudgetAmountChange = onboardingViewModel::setBudgetAmount,
+                        onCurrencySelected = onboardingViewModel::selectCurrency,
+                        onRequestWateringSchedule = onboardingViewModel::requestWateringSchedule,
+                        onOnboardingNotificationPermissionResult = onboardingViewModel::onNotificationPermissionResult,
+                        onOnboardingNotificationPermissionRequestHandled = onboardingViewModel::onNotificationPermissionRequestHandled,
+                        onRefreshOnboardingNotificationPermissionState = onboardingViewModel::refreshNotificationPermissionState,
+                        onSaveOnboardingData = {
+                            onboardingViewModel.saveOnboardingData {
+                                navController.navigate(AppRoutes.DASHBOARD) {
+                                    popUpTo(AppRoutes.ONBOARDING) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            }
+                        },
                         dashboardUiState = dashboardUiState,
                         selectedBillForEdit = selectedBillForEdit,
                         scannerUiState = scannerUiState,
@@ -184,6 +213,7 @@ class MainActivity : ComponentActivity() {
                         onBloomSettingsClick = dashboardViewModel::openBloomSettingsEdit,
                         modifier = Modifier.padding(innerPadding)
                     )
+                }
                 }
             }
         }

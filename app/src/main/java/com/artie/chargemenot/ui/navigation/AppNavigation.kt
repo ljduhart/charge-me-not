@@ -22,6 +22,9 @@ import com.artie.chargemenot.ui.viewmodels.CompostBinUiState
 import com.artie.chargemenot.ui.viewmodels.PruningUiState
 import com.artie.chargemenot.ui.viewmodels.ScannerUiState
 import com.artie.chargemenot.ui.viewmodels.SettingsUiState
+import com.artie.chargemenot.domain.model.SupportedCurrency
+import com.artie.chargemenot.ui.screens.onboarding.OnboardingScreen
+import com.artie.chargemenot.ui.viewmodels.OnboardingUiState
 import com.artie.chargemenot.ui.viewmodels.WeedWhackerUiState
 import com.artie.chargemenot.data.model.CrossPollinationPayload
 import com.artie.chargemenot.domain.model.Bill
@@ -62,6 +65,16 @@ private val meadowPopExitTransition = fadeOut(
 @Composable
 fun ChargeMeNotNavHost(
     navController: NavHostController,
+    startDestination: String,
+    onboardingUiState: OnboardingUiState,
+    onBudgetEnabledChange: (Boolean) -> Unit,
+    onBudgetAmountChange: (Float) -> Unit,
+    onCurrencySelected: (SupportedCurrency) -> Unit,
+    onRequestWateringSchedule: () -> Unit,
+    onOnboardingNotificationPermissionResult: (Boolean) -> Unit,
+    onOnboardingNotificationPermissionRequestHandled: () -> Unit,
+    onRefreshOnboardingNotificationPermissionState: () -> Unit,
+    onSaveOnboardingData: () -> Unit,
     dashboardUiState: DashboardUiState,
     selectedBillForEdit: Bill?,
     scannerUiState: ScannerUiState,
@@ -105,9 +118,29 @@ fun ChargeMeNotNavHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = AppRoutes.DASHBOARD,
+        startDestination = startDestination,
         modifier = modifier.fillMaxSize()
     ) {
+        composable(
+            route = AppRoutes.ONBOARDING,
+            enterTransition = { meadowEnterTransition },
+            exitTransition = { meadowExitTransition },
+            popEnterTransition = { meadowPopEnterTransition },
+            popExitTransition = { meadowPopExitTransition }
+        ) {
+            OnboardingScreen(
+                uiState = onboardingUiState,
+                onBudgetEnabledChange = onBudgetEnabledChange,
+                onBudgetAmountChange = onBudgetAmountChange,
+                onCurrencySelected = onCurrencySelected,
+                onRequestWateringSchedule = onRequestWateringSchedule,
+                onNotificationPermissionResult = onOnboardingNotificationPermissionResult,
+                onNotificationPermissionRequestHandled = onOnboardingNotificationPermissionRequestHandled,
+                onRefreshNotificationPermissionState = onRefreshOnboardingNotificationPermissionState,
+                onSaveOnboardingData = onSaveOnboardingData
+            )
+        }
+
         composable(
             route = AppRoutes.DASHBOARD,
             enterTransition = { meadowEnterTransition },

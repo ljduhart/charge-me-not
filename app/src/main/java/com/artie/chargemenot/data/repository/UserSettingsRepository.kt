@@ -23,6 +23,30 @@ class UserSettingsRepository(
     fun observeNagModeEnabled(): Flow<Boolean> =
         observeUserSettings().map { settings -> settings.isNagModeEnabled }
 
+    fun observeOnboardingComplete(): Flow<Boolean> =
+        observeUserSettings().map { settings -> settings.isOnboardingComplete }
+
+    suspend fun getOnboardingComplete(): Boolean {
+        return userSettingsDao.getSettings()?.isOnboardingComplete ?: false
+    }
+
+    suspend fun saveOnboardingPreferences(
+        monthlyBudget: Double,
+        selectedCurrency: String,
+        isNagModeEnabled: Boolean
+    ) {
+        val sanitizedBudget = monthlyBudget.coerceAtLeast(UserSettings.MIN_MONTHLY_BUDGET)
+        val current = userSettingsDao.getSettings()?.toDomain() ?: UserSettings()
+        userSettingsDao.upsertSettings(
+            current.copy(
+                monthlyBudget = sanitizedBudget,
+                selectedCurrency = selectedCurrency,
+                isNagModeEnabled = isNagModeEnabled,
+                isOnboardingComplete = true
+            ).toEntity()
+        )
+    }
+
     suspend fun updateMonthlyBudget(monthlyBudget: Double) {
         val current = userSettingsDao.getSettings()?.toDomain() ?: UserSettings()
         val sanitizedBudget = monthlyBudget.coerceAtLeast(UserSettings.MIN_MONTHLY_BUDGET)
@@ -47,7 +71,9 @@ class UserSettingsRepository(
             userSettingsDao.upsertSettings(
                 UserSettingsEntity(
                     monthlyBudget = UserSettings.DEFAULT_MONTHLY_BUDGET,
-                    isNagModeEnabled = false
+                    isNagModeEnabled = false,
+                    selectedCurrency = UserSettings.DEFAULT_CURRENCY,
+                    isOnboardingComplete = false
                 )
             )
         }

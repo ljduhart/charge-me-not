@@ -62,6 +62,23 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
     }
 }
 
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            ALTER TABLE user_settings
+            ADD COLUMN selectedCurrency TEXT NOT NULL DEFAULT 'USD'
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            ALTER TABLE user_settings
+            ADD COLUMN isOnboardingComplete INTEGER NOT NULL DEFAULT 1
+            """.trimIndent()
+        )
+    }
+}
+
 val MIGRATION_5_6 = object : Migration(5, 6) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(
