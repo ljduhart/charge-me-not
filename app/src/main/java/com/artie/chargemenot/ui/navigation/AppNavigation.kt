@@ -77,6 +77,8 @@ fun ChargeMeNotNavHost(
     onSaveOnboardingData: () -> Unit,
     dashboardUiState: DashboardUiState,
     selectedBillForEdit: Bill?,
+    selectedCategoryForEdit: String?,
+    categoryBills: List<Bill>,
     scannerUiState: ScannerUiState,
     settingsUiState: SettingsUiState,
     pruningUiState: PruningUiState,
@@ -112,6 +114,9 @@ fun ChargeMeNotNavHost(
     onSelectBillForEdit: (Bill) -> Unit,
     onClearEditSelection: () -> Unit,
     onSaveBillEdits: (Bill) -> Unit,
+    onPetalTapped: (String) -> Unit,
+    onClearCategorySelection: () -> Unit,
+    onAddBillToCategory: (String) -> Unit,
     onSelectBottomNavItem: (DashboardBottomNavItem) -> Unit,
     onBloomSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -152,6 +157,8 @@ fun ChargeMeNotNavHost(
                 uiState = dashboardUiState,
                 settingsUiState = settingsUiState,
                 selectedBillForEdit = selectedBillForEdit,
+                selectedCategoryForEdit = selectedCategoryForEdit,
+                categoryBills = categoryBills,
                 onKeepSubscription = onKeepSubscription,
                 onPullSubscription = onPullSubscription,
                 onMonthlyBudgetChange = onMonthlyBudgetChange,
@@ -166,6 +173,9 @@ fun ChargeMeNotNavHost(
                 onSelectBillForEdit = onSelectBillForEdit,
                 onClearEditSelection = onClearEditSelection,
                 onSaveBillEdits = onSaveBillEdits,
+                onPetalTapped = onPetalTapped,
+                onClearCategorySelection = onClearCategorySelection,
+                onAddBillToCategory = onAddBillToCategory,
                 onSelectBottomNavItem = onSelectBottomNavItem,
                 onBloomSettingsClick = onBloomSettingsClick
             )

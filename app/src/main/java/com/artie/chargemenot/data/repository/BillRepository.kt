@@ -27,6 +27,9 @@ class BillRepository(
     fun getUpcomingBills(today: LocalDate = LocalDate.now()): Flow<List<Bill>> =
         billDao.getUpcomingBills(today).map { entities -> entities.map { it.toDomain() } }
 
+    fun getBillsByCategory(category: String): Flow<List<Bill>> =
+        billDao.getBillsByCategory(category).map { entities -> entities.map { it.toDomain() } }
+
     suspend fun insertBill(bill: Bill): Long =
         billDao.insertBill(bill.toEntity())
 

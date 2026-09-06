@@ -243,6 +243,9 @@ class ScannerViewModelTest {
     override fun getActiveSubscriptions(): Flow<List<BillEntity>> =
       MutableStateFlow(emptyList())
 
+    override fun getBillsByCategory(category: String): Flow<List<BillEntity>> =
+      MutableStateFlow(emptyList())
+
     override suspend fun getBillByIdOnce(billId: Long): BillEntity? = null
 
     override suspend fun getOverdueOrDueTodayUnpaidBillCount(today: LocalDate): Int = 0
@@ -279,6 +282,9 @@ class ScannerViewModelTest {
     override suspend fun getBillCount(): Int = 0
 
     override fun getActiveSubscriptions(): Flow<List<BillEntity>> =
+      MutableStateFlow(emptyList())
+
+    override fun getBillsByCategory(category: String): Flow<List<BillEntity>> =
       MutableStateFlow(emptyList())
 
     override suspend fun getBillByIdOnce(billId: Long): BillEntity? = null

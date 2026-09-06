@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.artie.chargemenot.ui.components.BloomCategoryDefinitions
 import com.artie.chargemenot.ui.navigation.AppRoutes
 import com.artie.chargemenot.ui.screens.onboarding.OnboardingLoadingScreen
 import com.artie.chargemenot.ui.navigation.ChargeMeNotNavHost
@@ -63,6 +64,8 @@ class MainActivity : ComponentActivity() {
                 val weedWhackerUiState by weedWhackerViewModel.uiState.collectAsStateWithLifecycle()
                 val compostBinUiState by compostBinViewModel.uiState.collectAsStateWithLifecycle()
                 val selectedBillForEdit by dashboardViewModel.selectedBillForEdit.collectAsStateWithLifecycle()
+                val selectedCategoryForEdit by dashboardViewModel.selectedCategoryForEdit.collectAsStateWithLifecycle()
+                val categoryBills by dashboardViewModel.categoryBills.collectAsStateWithLifecycle()
                 val onboardingUiState by onboardingViewModel.uiState.collectAsStateWithLifecycle()
 
                 var graphStartDestination by remember { mutableStateOf<String?>(null) }
@@ -79,6 +82,7 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(currentRoute) {
                     if (currentRoute != null && currentRoute != AppRoutes.DASHBOARD) {
                         dashboardViewModel.clearEditSelection()
+                        dashboardViewModel.clearCategorySelection()
                     }
                 }
 
@@ -148,6 +152,8 @@ class MainActivity : ComponentActivity() {
                         },
                         dashboardUiState = dashboardUiState,
                         selectedBillForEdit = selectedBillForEdit,
+                        selectedCategoryForEdit = selectedCategoryForEdit,
+                        categoryBills = categoryBills,
                         scannerUiState = scannerUiState,
                         settingsUiState = settingsUiState,
                         pruningUiState = pruningUiState,
@@ -217,6 +223,17 @@ class MainActivity : ComponentActivity() {
                         onSelectBillForEdit = dashboardViewModel::selectBillForEdit,
                         onClearEditSelection = dashboardViewModel::clearEditSelection,
                         onSaveBillEdits = dashboardViewModel::saveBillEdits,
+                        onPetalTapped = dashboardViewModel::onPetalTapped,
+                        onClearCategorySelection = dashboardViewModel::clearCategorySelection,
+                        onAddBillToCategory = { categoryName ->
+                            BloomCategoryDefinitions.fromDisplayName(categoryName)?.billCategory?.let { category ->
+                                scannerViewModel.selectCategory(category)
+                                dashboardViewModel.clearCategorySelection()
+                                navController.navigate(AppRoutes.SCANNER) {
+                                    launchSingleTop = true
+                                }
+                            }
+                        },
                         onSelectBottomNavItem = dashboardViewModel::selectBottomNavItem,
                         onBloomSettingsClick = dashboardViewModel::openBloomSettingsEdit,
                         modifier = Modifier.padding(innerPadding)

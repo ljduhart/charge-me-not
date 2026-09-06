@@ -51,6 +51,15 @@ interface BillDao {
     )
     fun getActiveSubscriptions(): Flow<List<BillEntity>>
 
+    @Query(
+        """
+        SELECT * FROM bills
+        WHERE category = :category AND isPaid = 0
+        ORDER BY dueDate ASC
+        """
+    )
+    fun getBillsByCategory(category: String): Flow<List<BillEntity>>
+
     @Query("SELECT * FROM bills WHERE id = :billId")
     suspend fun getBillByIdOnce(billId: Long): BillEntity?
 

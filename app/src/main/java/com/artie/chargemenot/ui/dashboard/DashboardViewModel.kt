@@ -6,6 +6,7 @@ import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.domain.model.ForecastResult
 import com.artie.chargemenot.domain.model.UserSettings
+import com.artie.chargemenot.ui.components.BloomCategoryDefinitions
 import com.artie.chargemenot.domain.usecase.ForecastUseCase
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -15,6 +16,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -38,6 +41,28 @@ class DashboardViewModel(
 
     private val _selectedBillForEdit = MutableStateFlow<Bill?>(null)
     val selectedBillForEdit: StateFlow<Bill?> = _selectedBillForEdit.asStateFlow()
+
+    private val _selectedCategoryForEdit = MutableStateFlow<String?>(null)
+    val selectedCategoryForEdit: StateFlow<String?> = _selectedCategoryForEdit.asStateFlow()
+
+    val categoryBills: StateFlow<List<Bill>> = _selectedCategoryForEdit
+        .flatMapLatest { categoryName ->
+            if (categoryName == null) {
+                flowOf(emptyList())
+            } else {
+                val categoryKey = BloomCategoryDefinitions.billCategoryNameFor(categoryName)
+                if (categoryKey == null) {
+                    flowOf(emptyList())
+                } else {
+                    billRepository.getBillsByCategory(categoryKey)
+                }
+            }
+        }
+        .stateIn(
+            scope = coroutineScope,
+            started = SharingStarted.Eagerly,
+            initialValue = emptyList()
+        )
 
     val forecastResult: StateFlow<ForecastResult?> = uiState
         .map { state -> state.forecastResult }
@@ -124,6 +149,14 @@ class DashboardViewModel(
 
     fun clearEditSelection() {
         _selectedBillForEdit.value = null
+    }
+
+    fun onPetalTapped(category: String) {
+        _selectedCategoryForEdit.value = category
+    }
+
+    fun clearCategorySelection() {
+        _selectedCategoryForEdit.value = null
     }
 
     fun saveBillEdits(updatedBill: Bill) {

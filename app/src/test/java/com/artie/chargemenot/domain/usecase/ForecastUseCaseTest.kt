@@ -186,6 +186,8 @@ class ForecastUseCaseTest {
         override suspend fun deleteBillById(billId: Long) = Unit
         override suspend fun getBillCount(): Int = 0
         override fun getActiveSubscriptions() = kotlinx.coroutines.flow.flowOf(emptyList<BillEntity>())
+        override fun getBillsByCategory(category: String) =
+            kotlinx.coroutines.flow.flowOf(emptyList<BillEntity>())
         override suspend fun getBillByIdOnce(billId: Long): BillEntity? = null
         override suspend fun getOverdueOrDueTodayUnpaidBillCount(today: LocalDate): Int = 0
         override fun getChildrenForParent(parentId: Long) =

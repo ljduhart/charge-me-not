@@ -270,6 +270,11 @@ class WeedWhackerViewModelTest {
                 }
             }
 
+        override fun getBillsByCategory(category: String): Flow<List<BillEntity>> =
+            bills.map { items ->
+                items.filter { bill -> bill.category.name == category && !bill.isPaid }
+            }
+
         override suspend fun getBillByIdOnce(billId: Long): BillEntity? =
             bills.value.firstOrNull { bill -> bill.id == billId }
 

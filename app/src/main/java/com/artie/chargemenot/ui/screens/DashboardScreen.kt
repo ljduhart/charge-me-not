@@ -70,7 +70,8 @@ import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
-import com.artie.chargemenot.ui.components.BloomCanvas
+import com.artie.chargemenot.ui.components.CategoryDetailBottomSheet
+import com.artie.chargemenot.ui.components.PhotorealisticBloomCanvas
 import com.artie.chargemenot.ui.components.CrossPollinateShareDialog
 import com.artie.chargemenot.ui.components.EditBillBottomSheet
 import com.artie.chargemenot.ui.components.LinkRootBottomSheet
@@ -106,6 +107,8 @@ fun DashboardScreen(
     uiState: DashboardUiState,
     settingsUiState: SettingsUiState,
     selectedBillForEdit: Bill?,
+    selectedCategoryForEdit: String?,
+    categoryBills: List<Bill>,
     onKeepSubscription: (Bill) -> Unit,
     onPullSubscription: (Bill) -> Unit,
     onMonthlyBudgetChange: (String) -> Unit,
@@ -120,6 +123,9 @@ fun DashboardScreen(
     onSelectBillForEdit: (Bill) -> Unit,
     onClearEditSelection: () -> Unit,
     onSaveBillEdits: (Bill) -> Unit,
+    onPetalTapped: (String) -> Unit,
+    onClearCategorySelection: () -> Unit,
+    onAddBillToCategory: (String) -> Unit,
     onSelectBottomNavItem: (DashboardBottomNavItem) -> Unit,
     onBloomSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -157,6 +163,14 @@ fun DashboardScreen(
         selectedBill = selectedBillForEdit,
         onDismiss = onClearEditSelection,
         onSave = onSaveBillEdits
+    )
+
+    CategoryDetailBottomSheet(
+        selectedCategory = selectedCategoryForEdit,
+        bills = categoryBills,
+        onDismiss = onClearCategorySelection,
+        onAddNewBill = onAddBillToCategory,
+        onBillClick = onSelectBillForEdit
     )
 
     val filteredSubscriptions = remember(uiState.subscriptionBills, searchQuery) {
@@ -316,6 +330,7 @@ fun DashboardScreen(
                         selectedBottomNavItem = uiState.selectedBottomNavItem,
                         onBloomSettingsClick = onBloomSettingsClick,
                         onMonthlyBudgetChange = onMonthlyBudgetChange,
+                        onPetalTapped = onPetalTapped,
                         modifier = Modifier.padding(top = 16.dp)
                     )
                 }
@@ -461,6 +476,7 @@ private fun FinancialBloomCard(
     selectedBottomNavItem: DashboardBottomNavItem,
     onBloomSettingsClick: () -> Unit,
     onMonthlyBudgetChange: (String) -> Unit,
+    onPetalTapped: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
@@ -499,11 +515,11 @@ private fun FinancialBloomCard(
                 }
             }
 
-            BloomCanvas(
+            PhotorealisticBloomCanvas(
                 categoryTotals = categoryTotals,
-                pendingSubscriptionCount = pendingSubscriptionCount,
                 monthlyBudget = monthlyBudget,
                 highlightedCategory = selectedBottomNavItem.toHighlightCategory(),
+                onPetalTapped = onPetalTapped,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -754,6 +770,8 @@ private fun DashboardScreenPreview() {
             ),
             settingsUiState = SettingsUiState(),
             selectedBillForEdit = null,
+            selectedCategoryForEdit = null,
+            categoryBills = emptyList(),
             onKeepSubscription = {},
             onPullSubscription = {},
             onMonthlyBudgetChange = {},
@@ -768,6 +786,9 @@ private fun DashboardScreenPreview() {
             onSelectBillForEdit = {},
             onClearEditSelection = {},
             onSaveBillEdits = {},
+            onPetalTapped = {},
+            onClearCategorySelection = {},
+            onAddBillToCategory = {},
             onSelectBottomNavItem = {},
             onBloomSettingsClick = {}
         )

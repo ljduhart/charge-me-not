@@ -142,4 +142,10 @@
     <string name="onboarding_next">Next</string>
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_enter_garden">Enter the Garden</string>
+
+    <string name="category_detail_title">Manage Your %1$s Bills</string>
+    <string name="category_detail_subtitle">Review, edit, or plant new bills in this petal.</string>
+    <string name="category_detail_add_bill">Add New Bill to %1$s</string>
+    <string name="category_detail_empty">No active %1$s bills in your garden right now.</string>
+    <string name="category_detail_bill_due">Due %1$s</string>
 </resources>

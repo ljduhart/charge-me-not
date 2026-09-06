@@ -216,6 +216,11 @@ class PruningViewModelTest {
         }
       }
 
+    override fun getBillsByCategory(category: String): Flow<List<BillEntity>> =
+      bills.map { items ->
+        items.filter { bill -> bill.category.name == category && !bill.isPaid }
+      }
+
     override suspend fun getBillByIdOnce(billId: Long): BillEntity? =
       bills.value.firstOrNull { it.id == billId }
 

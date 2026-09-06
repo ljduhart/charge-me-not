@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -157,6 +158,11 @@ class BillRepositoryTest {
         override suspend fun getBillCount(): Int = bills.value.size
 
         override fun getActiveSubscriptions(): Flow<List<BillEntity>> = bills
+
+        override fun getBillsByCategory(category: String): Flow<List<BillEntity>> =
+            bills.map { entities ->
+                entities.filter { bill -> bill.category.name == category && !bill.isPaid }
+            }
 
         override suspend fun getBillByIdOnce(billId: Long): BillEntity? =
             bills.value.firstOrNull { it.id == billId }
