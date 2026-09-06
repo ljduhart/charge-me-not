@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.artie.chargemenot.ui.dashboard.DashboardBottomNavItem
 import com.artie.chargemenot.ui.dashboard.DashboardUiState
 import com.artie.chargemenot.ui.screens.CompostBinScreen
 import com.artie.chargemenot.ui.screens.DashboardScreen
@@ -62,6 +63,7 @@ private val meadowPopExitTransition = fadeOut(
 fun ChargeMeNotNavHost(
     navController: NavHostController,
     dashboardUiState: DashboardUiState,
+    selectedBillForEdit: Bill?,
     scannerUiState: ScannerUiState,
     settingsUiState: SettingsUiState,
     pruningUiState: PruningUiState,
@@ -94,6 +96,11 @@ fun ChargeMeNotNavHost(
     compostBinUiState: CompostBinUiState,
     onCompostSearchQueryChanged: (String) -> Unit,
     onCompostBinNavigateBack: () -> Unit,
+    onSelectBillForEdit: (Bill) -> Unit,
+    onClearEditSelection: () -> Unit,
+    onSaveBillEdits: (Bill) -> Unit,
+    onSelectBottomNavItem: (DashboardBottomNavItem) -> Unit,
+    onBloomSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -111,6 +118,7 @@ fun ChargeMeNotNavHost(
             DashboardScreen(
                 uiState = dashboardUiState,
                 settingsUiState = settingsUiState,
+                selectedBillForEdit = selectedBillForEdit,
                 onKeepSubscription = onKeepSubscription,
                 onPullSubscription = onPullSubscription,
                 onMonthlyBudgetChange = onMonthlyBudgetChange,
@@ -121,7 +129,11 @@ fun ChargeMeNotNavHost(
                 onNavigateToPruningSimulator = onNavigateToPruningSimulator,
                 onNavigateToWeedWhacker = onNavigateToWeedWhacker,
                 onNavigateToCompostBin = onNavigateToCompostBin,
-                onLinkBillToParent = onLinkBillToParent
+                onSelectBillForEdit = onSelectBillForEdit,
+                onClearEditSelection = onClearEditSelection,
+                onSaveBillEdits = onSaveBillEdits,
+                onSelectBottomNavItem = onSelectBottomNavItem,
+                onBloomSettingsClick = onBloomSettingsClick
             )
         }
 

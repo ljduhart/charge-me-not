@@ -17,9 +17,13 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
 
 class DashboardViewModel(
     private val billRepository: BillRepository,
@@ -31,6 +35,9 @@ class DashboardViewModel(
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    private val _selectedBillForEdit = MutableStateFlow<Bill?>(null)
+    val selectedBillForEdit: StateFlow<Bill?> = _selectedBillForEdit.asStateFlow()
 
     val forecastResult: StateFlow<ForecastResult?> = uiState
         .map { state -> state.forecastResult }
@@ -61,14 +68,18 @@ class DashboardViewModel(
                 )
 
                 DashboardUiState(
+                    userDisplayName = _uiState.value.userDisplayName,
+                    formattedDate = formatDisplayDate(LocalDate.now()),
                     greeting = resolveGreeting(),
                     totalUpcoming = upcoming.sumOf { it.amount },
+                    upcomingBillCount = upcoming.size,
                     monthlyBudget = monthlyBudget,
                     upcomingBills = upcoming,
                     subscriptionBills = subscriptions,
                     allBills = all,
                     categoryTotals = categoryTotals,
                     forecastResult = forecast,
+                    selectedBottomNavItem = _uiState.value.selectedBottomNavItem,
                     isLoading = false
                 )
             }.collect { state ->
@@ -105,6 +116,39 @@ class DashboardViewModel(
         coroutineScope.launch(ioDispatcher) {
             userSettingsRepository.updateMonthlyBudget(parsedBudget)
         }
+    }
+
+    fun selectBillForEdit(bill: Bill) {
+        _selectedBillForEdit.value = bill
+    }
+
+    fun clearEditSelection() {
+        _selectedBillForEdit.value = null
+    }
+
+    fun saveBillEdits(updatedBill: Bill) {
+        coroutineScope.launch(ioDispatcher) {
+            billRepository.updateBill(updatedBill)
+            clearEditSelection()
+        }
+    }
+
+    fun selectBottomNavItem(item: DashboardBottomNavItem) {
+        _uiState.update { current -> current.copy(selectedBottomNavItem = item) }
+    }
+
+    fun openBloomSettingsEdit() {
+        val subscription = _uiState.value.subscriptionBills.firstOrNull()
+            ?: _uiState.value.upcomingBills.firstOrNull()
+        if (subscription != null) {
+            selectBillForEdit(subscription)
+        }
+    }
+
+    private fun formatDisplayDate(date: LocalDate): String {
+        val dayOfWeek = date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.US)
+        val month = date.month.getDisplayName(TextStyle.FULL, Locale.US)
+        return "($dayOfWeek, $month ${date.dayOfMonth}, ${date.year})"
     }
 
     private fun resolveGreeting(): String {

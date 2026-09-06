@@ -87,4 +87,33 @@
     <string name="weather_forecast_sunny">Clear Skies: Your variable bills look stable for %1$s.</string>
     <string name="weather_forecast_sunny_trend">Clear Skies: Your variable bills look stable for %1$s (+%2$s%% trend).</string>
     <string name="weather_forecast_predicted_total">Predicted %1$s total: %2$s</string>
+
+    <string name="dashboard_title">CHARGE-ME NOT</string>
+    <string name="dashboard_menu">Open navigation menu</string>
+    <string name="dashboard_search">Search subscriptions</string>
+    <string name="dashboard_drawer_title">Garden Tools</string>
+    <string name="dashboard_welcome_back">Welcome back, %1$s.</string>
+    <string name="dashboard_total_upcoming_label">TOTAL UPCOMING:</string>
+    <string name="dashboard_bill_count">(%1$d Bills)</string>
+    <string name="dashboard_financial_bloom_title">YOUR FINANCIAL BLOOM</string>
+    <string name="dashboard_bloom_settings">Edit bloom settings</string>
+    <string name="dashboard_subscriptions_title">SUBSCRIPTIONS</string>
+    <string name="dashboard_weeds_or_flowers">WEEDS OR FLOWERS?</string>
+    <string name="dashboard_keep_pull_prompt">(Keep? Pull?)</string>
+    <string name="dashboard_keep_flower">Keep subscription</string>
+    <string name="dashboard_pull_weed">Pull subscription</string>
+    <string name="dashboard_subscriptions_empty">No subscriptions in this meadow category right now.</string>
+    <string name="dashboard_add_bill">Add Bill</string>
+    <string name="dashboard_nav_rent">Rent</string>
+    <string name="dashboard_nav_loans">Loans</string>
+    <string name="dashboard_nav_utilities">Utilities</string>
+    <string name="dashboard_nav_others">Others</string>
+
+    <string name="edit_bill_title">Edit Bill</string>
+    <string name="edit_bill_name_label">Bill name</string>
+    <string name="edit_bill_amount_label">Amount</string>
+    <string name="edit_bill_date_label">Due date</string>
+    <string name="edit_bill_category_label">Category</string>
+    <string name="edit_bill_save">Save Changes</string>
+    <string name="edit_bill_cancel">Cancel</string>
 </resources>

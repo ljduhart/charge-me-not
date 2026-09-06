@@ -1,5 +1,8 @@
 package com.artie.chargemenot.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,74 +19,83 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Recycling
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.ContentCut
+import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
-import com.artie.chargemenot.domain.model.UserSettings
-import androidx.compose.material.icons.filled.LocalFlorist
-import com.artie.chargemenot.ui.components.CrossPollinateShareDialog
-import com.artie.chargemenot.ui.components.FinancialBloomCanvas
-import com.artie.chargemenot.ui.components.LinkRootBottomSheet
+import com.artie.chargemenot.ui.components.BloomCanvas
+import com.artie.chargemenot.ui.components.EditBillBottomSheet
 import com.artie.chargemenot.ui.components.MeadowTickerAmount
 import com.artie.chargemenot.ui.components.NagModeCard
+import com.artie.chargemenot.ui.components.SubscriptionBrandIcon
 import com.artie.chargemenot.ui.components.WeatherForecastCard
-import com.artie.chargemenot.ui.components.billInitial
-import com.artie.chargemenot.ui.components.categoryColor
-import com.artie.chargemenot.ui.components.categoryDisplayName
+import com.artie.chargemenot.ui.dashboard.DashboardBottomNavItem
 import com.artie.chargemenot.ui.dashboard.DashboardUiState
-import com.artie.chargemenot.ui.viewmodels.SettingsUiState
+import com.artie.chargemenot.ui.dashboard.matchesDashboardNav
+import com.artie.chargemenot.ui.dashboard.toHighlightCategory
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.LeafGreen
-import com.artie.chargemenot.ui.theme.MeadowEarth
+import com.artie.chargemenot.ui.theme.MeadowCream
+import com.artie.chargemenot.ui.theme.MeadowGreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
-import com.artie.chargemenot.ui.theme.MeadowGreenLight
 import com.artie.chargemenot.ui.theme.MeadowSage
+import com.artie.chargemenot.ui.theme.MeadowSky
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import com.artie.chargemenot.ui.theme.WeedRed
+import com.artie.chargemenot.ui.viewmodels.SettingsUiState
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.Locale
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.material.icons.filled.ContentCut
-import androidx.compose.material.icons.filled.Grass
-import androidx.compose.material.icons.filled.Nature
-import androidx.compose.material.icons.filled.Recycling
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.ui.res.stringResource
-import com.artie.chargemenot.R
-import com.artie.chargemenot.ui.theme.MeadowGreen
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     uiState: DashboardUiState,
     settingsUiState: SettingsUiState,
+    selectedBillForEdit: Bill?,
     onKeepSubscription: (Bill) -> Unit,
     onPullSubscription: (Bill) -> Unit,
     onMonthlyBudgetChange: (String) -> Unit,
@@ -94,867 +106,500 @@ fun DashboardScreen(
     onNavigateToPruningSimulator: () -> Unit,
     onNavigateToWeedWhacker: () -> Unit,
     onNavigateToCompostBin: () -> Unit,
-    onLinkBillToParent: (Long, Long?) -> Unit,
+    onSelectBillForEdit: (Bill) -> Unit,
+    onClearEditSelection: () -> Unit,
+    onSaveBillEdits: (Bill) -> Unit,
+    onSelectBottomNavItem: (DashboardBottomNavItem) -> Unit,
+    onBloomSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
-    val dateFormat = DateTimeFormatter.ofPattern("MMM d")
-    var billToShare by remember { mutableStateOf<Bill?>(null) }
-    var billToLink by remember { mutableStateOf<Bill?>(null) }
+    val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    var searchQuery by remember { mutableStateOf("") }
 
-    billToShare?.let { bill ->
-        CrossPollinateShareDialog(
-            bill = bill,
-            onDismiss = { billToShare = null }
-        )
-    }
+    EditBillBottomSheet(
+        selectedBill = selectedBillForEdit,
+        onDismiss = onClearEditSelection,
+        onSave = onSaveBillEdits
+    )
 
-    billToLink?.let { bill ->
-        LinkRootBottomSheet(
-            bill = bill,
-            availableParents = eligibleParentBills(
-                childBill = bill,
-                allBills = uiState.allBills
-            ),
-            onLinkToParent = { parentId ->
-                onLinkBillToParent(bill.id, parentId)
-            },
-            onDismiss = { billToLink = null }
-        )
-    }
-
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(0.dp)
-    ) {
-        item(key = "greeting_header") {
-            GreetingHeader(
-                greeting = uiState.greeting,
-                totalUpcoming = uiState.totalUpcoming,
-                monthlyBudget = uiState.monthlyBudget,
-                currencyFormat = currencyFormat,
-                onMonthlyBudgetChange = onMonthlyBudgetChange
-            )
+    val filteredSubscriptions = remember(uiState.subscriptionBills, searchQuery, uiState.selectedBottomNavItem) {
+        val navFiltered = uiState.subscriptionBills.filter { bill ->
+            bill.category.matchesDashboardNav(uiState.selectedBottomNavItem)
         }
-
-        item(key = "greeting_spacer") { Spacer(modifier = Modifier.height(16.dp)) }
-
-        item(key = "nag_mode_card") {
-            NagModeCard(
-                uiState = settingsUiState,
-                onNagModeToggleRequested = onNagModeToggleRequested,
-                onNotificationPermissionResult = onNotificationPermissionResult,
-                onNotificationPermissionRequestHandled = onNotificationPermissionRequestHandled,
-                onRefreshPermissionState = onRefreshNotificationPermissionState
-            )
-        }
-
-        item(key = "nag_mode_spacer") { Spacer(modifier = Modifier.height(28.dp)) }
-
-        item(key = "financial_bloom") {
-            FinancialBloomSection(
-                categoryTotals = uiState.categoryTotals
-            )
-        }
-
-        uiState.forecastResult?.let { forecast ->
-            item(key = "weather_forecast") {
-                WeatherForecastCard(
-                    forecastResult = forecast,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
-            }
-        }
-
-        item(key = "forecast_spacer") { Spacer(modifier = Modifier.height(16.dp)) }
-
-        item(key = "pruning_entry") {
-            PruningSimulatorEntryCard(
-                onNavigateToPruningSimulator = onNavigateToPruningSimulator
-            )
-        }
-
-        item(key = "pruning_spacer") { Spacer(modifier = Modifier.height(16.dp)) }
-
-        item(key = "weed_whacker_entry") {
-            WeedWhackerEntryCard(
-                onNavigateToWeedWhacker = onNavigateToWeedWhacker
-            )
-        }
-
-        item(key = "weed_whacker_spacer") { Spacer(modifier = Modifier.height(16.dp)) }
-
-        item(key = "compost_entry") {
-            CompostBinEntryCard(
-                onNavigateToCompostBin = onNavigateToCompostBin
-            )
-        }
-
-        item(key = "compost_spacer") { Spacer(modifier = Modifier.height(32.dp)) }
-
-        item(key = "upcoming_bills_header") {
-            UpcomingBillsSectionHeader()
-        }
-
-        if (uiState.upcomingBills.isEmpty()) {
-            item(key = "upcoming_bills_empty") {
-                UpcomingBillsEmptyCard()
-            }
+        if (searchQuery.isBlank()) {
+            navFiltered
         } else {
-            items(
-                items = uiState.upcomingBills,
-                key = { bill -> "upcoming_${bill.id}" }
-            ) { bill ->
-                UpcomingBillCard(
-                    bill = bill,
-                    currencyFormat = currencyFormat,
-                    dateFormat = dateFormat,
-                    onShare = { billToShare = bill },
-                    onLinkRoots = { billToLink = bill },
-                    modifier = Modifier.padding(top = 10.dp)
-                )
-            }
-        }
-
-        item(key = "upcoming_subscriptions_spacer") { Spacer(modifier = Modifier.height(32.dp)) }
-
-        item(key = "subscriptions_header") {
-            SubscriptionsSectionHeader()
-        }
-
-        if (uiState.subscriptionBills.isEmpty()) {
-            item(key = "subscriptions_empty") {
-                SubscriptionsEmptyCard()
-            }
-        } else {
-            items(
-                items = uiState.subscriptionBills,
-                key = { bill -> "subscription_${bill.id}" }
-            ) { bill ->
-                SubscriptionBillCard(
-                    bill = bill,
-                    currencyFormat = currencyFormat,
-                    dateFormat = dateFormat,
-                    onKeep = { onKeepSubscription(bill) },
-                    onPull = { onPullSubscription(bill) },
-                    onShare = { billToShare = bill },
-                    onLinkRoots = { billToLink = bill },
-                    modifier = Modifier.padding(top = 10.dp)
-                )
+            navFiltered.filter { bill ->
+                bill.name.contains(searchQuery.trim(), ignoreCase = true)
             }
         }
     }
-}
 
-@Composable
-private fun GreetingHeader(
-    greeting: String,
-    totalUpcoming: Double,
-    monthlyBudget: Double,
-    currencyFormat: NumberFormat,
-    onMonthlyBudgetChange: (String) -> Unit
-) {
-    var isEditingBudget by remember { mutableStateOf(false) }
-    var budgetInput by remember(monthlyBudget) {
-        mutableStateOf(monthlyBudget.toInt().toString())
-    }
-
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = greeting,
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            text = "Your meadow awaits",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 20.dp)
-            ) {
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet {
                 Text(
-                    text = "TOTAL UPCOMING",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                    text = stringResource(R.string.dashboard_drawer_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MeadowGreenDark,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                MeadowTickerAmount(
-                    amount = totalUpcoming,
-                    formatter = currencyFormat,
-                    style = MaterialTheme.typography.displayLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    fontWeight = FontWeight.Bold
+                DrawerNavRow(
+                    label = stringResource(R.string.pruning_simulator_entry),
+                    icon = Icons.Default.ContentCut,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onNavigateToPruningSimulator()
+                    }
+                )
+                DrawerNavRow(
+                    label = stringResource(R.string.weed_whacker_entry),
+                    icon = Icons.Default.Grass,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onNavigateToWeedWhacker()
+                    }
+                )
+                DrawerNavRow(
+                    label = stringResource(R.string.compost_bin_entry),
+                    icon = Icons.Default.Recycling,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onNavigateToCompostBin()
+                    }
+                )
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                NagModeCard(
+                    uiState = settingsUiState,
+                    onNagModeToggleRequested = onNagModeToggleRequested,
+                    onNotificationPermissionResult = onNotificationPermissionResult,
+                    onNotificationPermissionRequestHandled = onNotificationPermissionRequestHandled,
+                    onRefreshPermissionState = onRefreshNotificationPermissionState,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
+    ) {
+        Scaffold(
+            modifier = modifier.fillMaxSize(),
+            containerColor = MeadowCream,
+            topBar = {
+                TopAppBar(
+                    title = {
                         Text(
-                            text = "MONTHLY BUDGET",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = stringResource(R.string.dashboard_title),
+                            fontWeight = FontWeight.Bold
                         )
-                        if (!isEditingBudget) {
-                            Text(
-                                text = currencyFormat.format(monthlyBudget),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.SemiBold
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = stringResource(R.string.dashboard_menu)
                             )
                         }
-                    }
-                    IconButton(onClick = {
-                        if (isEditingBudget) {
-                            onMonthlyBudgetChange(budgetInput)
-                            isEditingBudget = false
-                        } else {
-                            budgetInput = monthlyBudget.toInt().toString()
-                            isEditingBudget = true
+                    },
+                    actions = {
+                        IconButton(onClick = { searchQuery = if (searchQuery.isBlank()) " " else "" }) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = stringResource(R.string.dashboard_search)
+                            )
                         }
-                    }) {
-                        Icon(
-                            imageVector = if (isEditingBudget) Icons.Default.Check else Icons.Default.Edit,
-                            contentDescription = if (isEditingBudget) "Save monthly budget" else "Edit monthly budget"
-                        )
-                    }
-                }
-
-                if (isEditingBudget) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = budgetInput,
-                        onValueChange = { budgetInput = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Monthly budget") },
-                        prefix = { Text("$") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MeadowCream,
+                        titleContentColor = MeadowGreenDark,
+                        navigationIconContentColor = MeadowGreenDark,
+                        actionIconContentColor = MeadowGreenDark
                     )
-                    Text(
-                        text = "Minimum ${currencyFormat.format(UserSettings.MIN_MONTHLY_BUDGET)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
+                )
+            },
+            bottomBar = {
+                DashboardBottomNavigationBar(
+                    selectedItem = uiState.selectedBottomNavItem,
+                    onSelectItem = onSelectBottomNavItem
+                )
             }
-        }
-    }
-}
-
-@Composable
-private fun WeedWhackerEntryCard(
-    onNavigateToWeedWhacker: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = WeedRed.copy(alpha = 0.1f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 18.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.weed_whacker_entry),
-                style = MaterialTheme.typography.titleMedium,
-                color = MeadowGreenDark,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = stringResource(R.string.weed_whacker_entry_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
-            )
-            Button(
-                onClick = onNavigateToWeedWhacker,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MeadowGreen,
-                    contentColor = MeadowWhite
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Grass,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.weed_whacker_entry))
-            }
-        }
-    }
-}
-
-@Composable
-private fun PruningSimulatorEntryCard(
-    onNavigateToPruningSimulator: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MeadowSage.copy(alpha = 0.18f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 18.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.pruning_simulator_entry),
-                style = MaterialTheme.typography.titleMedium,
-                color = MeadowGreenDark,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = stringResource(R.string.pruning_simulator_entry_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
-            )
-            Button(
-                onClick = onNavigateToPruningSimulator,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MeadowGreen,
-                    contentColor = MeadowWhite
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ContentCut,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.pruning_simulator_entry))
-            }
-        }
-    }
-}
-
-@Composable
-private fun CompostBinEntryCard(
-    onNavigateToCompostBin: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MeadowEarth.copy(alpha = 0.16f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 18.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.compost_bin_entry),
-                style = MaterialTheme.typography.titleMedium,
-                color = MeadowGreenDark,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = stringResource(R.string.compost_bin_entry_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
-            )
-            Button(
-                onClick = onNavigateToCompostBin,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MeadowEarth,
-                    contentColor = MeadowWhite
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Recycling,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.compost_bin_entry))
-            }
-        }
-    }
-}
-
-@Composable
-private fun FinancialBloomSection(
-    categoryTotals: Map<BillCategory, Double>
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Your Financial Bloom",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            text = "Each petal reflects where your money grows",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(320.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MeadowWhite
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-        ) {
-            Box(
+        ) { innerPadding ->
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                MeadowSage.copy(alpha = 0.15f),
-                                MeadowGreenLight.copy(alpha = 0.08f),
-                                MeadowWhite
-                            )
+                    .padding(innerPadding)
+                    .background(MeadowCream),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
+            ) {
+                item(key = "greeting_row") {
+                    DashboardGreetingRow(
+                        userName = uiState.userDisplayName,
+                        formattedDate = uiState.formattedDate
+                    )
+                }
+
+                item(key = "total_upcoming_card") {
+                    TotalUpcomingSummaryCard(
+                        totalUpcoming = uiState.totalUpcoming,
+                        billCount = uiState.upcomingBillCount,
+                        currencyFormat = currencyFormat,
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+                }
+
+                item(key = "financial_bloom_card") {
+                    FinancialBloomCard(
+                        categoryTotals = uiState.categoryTotals,
+                        pendingSubscriptionCount = uiState.subscriptionBills.size,
+                        monthlyBudget = uiState.monthlyBudget,
+                        selectedBottomNavItem = uiState.selectedBottomNavItem,
+                        onBloomSettingsClick = onBloomSettingsClick,
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+                }
+
+                uiState.forecastResult?.let { forecast ->
+                    item(key = "weather_forecast") {
+                        WeatherForecastCard(
+                            forecastResult = forecast,
+                            modifier = Modifier.padding(top = 16.dp)
                         )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                FinancialBloomCanvas(
-                    categoryTotals = categoryTotals,
-                    modifier = Modifier
-                        .size(260.dp)
-                        .padding(16.dp)
-                )
-            }
-        }
+                    }
+                }
 
-        if (categoryTotals.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(12.dp))
-            CategoryLegend(categoryTotals = categoryTotals)
+                item(key = "subscriptions_header") {
+                    SubscriptionsWeedsHeader(modifier = Modifier.padding(top = 20.dp))
+                }
+
+                if (filteredSubscriptions.isEmpty()) {
+                    item(key = "subscriptions_empty") {
+                        Text(
+                            text = stringResource(R.string.dashboard_subscriptions_empty),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 12.dp, bottom = 8.dp)
+                        )
+                    }
+                } else {
+                    items(
+                        items = filteredSubscriptions,
+                        key = { bill -> "subscription_${bill.id}" }
+                    ) { bill ->
+                        SubscriptionWeedFlowerRow(
+                            bill = bill,
+                            onRowClick = { onSelectBillForEdit(bill) },
+                            onKeep = { onKeepSubscription(bill) },
+                            onPull = { onPullSubscription(bill) },
+                            modifier = Modifier.padding(top = 10.dp)
+                        )
+                    }
+                }
+
+                item(key = "bottom_spacer") {
+                    Spacer(modifier = Modifier.height(88.dp))
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun CategoryLegend(
-    categoryTotals: Map<BillCategory, Double>
+private fun DashboardGreetingRow(
+    userName: String,
+    formattedDate: String
 ) {
-    val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
-
-    Column(
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        categoryTotals.entries.sortedByDescending { it.value }.forEach { (category, amount) ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .background(categoryColor(category))
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = categoryDisplayName(category),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = currencyFormat.format(amount),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(MeadowSage, MeadowSky)
+                    )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = userName.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                style = MaterialTheme.typography.titleMedium,
+                color = MeadowWhite,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column {
+            Text(
+                text = stringResource(R.string.dashboard_welcome_back, userName),
+                style = MaterialTheme.typography.titleMedium,
+                color = MeadowGreenDark,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = formattedDate,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
 
 @Composable
-private fun UpcomingBillsSectionHeader() {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = stringResource(R.string.upcoming_bills_title),
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            text = stringResource(R.string.upcoming_bills_subtitle),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-    }
-}
-
-@Composable
-private fun UpcomingBillsEmptyCard() {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 10.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
-    ) {
-        Text(
-            text = "No upcoming bills — your garden is clear!",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(20.dp)
-        )
-    }
-}
-
-@Composable
-private fun UpcomingBillCard(
-    bill: Bill,
+private fun TotalUpcomingSummaryCard(
+    totalUpcoming: Double,
+    billCount: Int,
     currencyFormat: NumberFormat,
-    dateFormat: DateTimeFormatter,
-    onShare: () -> Unit,
-    onLinkRoots: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MeadowWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 24.dp, vertical = 20.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(categoryColor(bill.category).copy(alpha = 0.25f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = billInitial(bill.name),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MeadowGreenDark,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = bill.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "${categoryDisplayName(bill.category)} · Due ${bill.dueDate.format(dateFormat)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = currencyFormat.format(bill.amount),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-
-            IconButton(onClick = onLinkRoots) {
-                Icon(
-                    imageVector = Icons.Default.Nature,
-                    contentDescription = stringResource(R.string.link_roots_icon),
-                    tint = MeadowEarth,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            IconButton(onClick = onShare) {
-                Icon(
-                    imageVector = Icons.Default.LocalFlorist,
-                    contentDescription = stringResource(R.string.cross_pollinate_share),
-                    tint = MeadowGreen,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
+            Text(
+                text = stringResource(R.string.dashboard_total_upcoming_label),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            MeadowTickerAmount(
+                amount = totalUpcoming,
+                formatter = currencyFormat,
+                style = MaterialTheme.typography.displaySmall,
+                color = Color(0xFF1F4E79),
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = stringResource(R.string.dashboard_bill_count, billCount),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 }
 
 @Composable
-private fun SubscriptionsSectionHeader() {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "Subscriptions: Weeds or Flowers?",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            text = "Tend your garden — keep what blooms, pull what doesn't",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-    }
-}
-
-@Composable
-private fun SubscriptionsEmptyCard() {
+private fun FinancialBloomCard(
+    categoryTotals: Map<BillCategory, Double>,
+    pendingSubscriptionCount: Int,
+    monthlyBudget: Double,
+    selectedBottomNavItem: DashboardBottomNavItem,
+    onBloomSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 10.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MeadowWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.dashboard_financial_bloom_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MeadowGreenDark,
+                    fontWeight = FontWeight.Bold
+                )
+                IconButton(onClick = onBloomSettingsClick) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = stringResource(R.string.dashboard_bloom_settings),
+                        tint = MeadowGreenDark
+                    )
+                }
+            }
+
+            BloomCanvas(
+                categoryTotals = categoryTotals,
+                pendingSubscriptionCount = pendingSubscriptionCount,
+                monthlyBudget = monthlyBudget,
+                highlightedCategory = selectedBottomNavItem.toHighlightCategory(),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+private fun SubscriptionsWeedsHeader(modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            text = "No subscriptions sprouting — your garden is clear!",
-            style = MaterialTheme.typography.bodyLarge,
+            text = stringResource(R.string.dashboard_subscriptions_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = MeadowGreenDark,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = stringResource(R.string.dashboard_weeds_or_flowers),
+            style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(20.dp)
+            fontWeight = FontWeight.SemiBold
         )
     }
 }
 
 @Composable
-private fun SubscriptionBillCard(
+private fun SubscriptionWeedFlowerRow(
     bill: Bill,
-    currencyFormat: NumberFormat,
-    dateFormat: DateTimeFormatter,
+    onRowClick: () -> Unit,
     onKeep: () -> Unit,
     onPull: () -> Unit,
-    onShare: () -> Unit,
-    onLinkRoots: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onRowClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
+        colors = CardDefaults.cardColors(containerColor = MeadowWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(MeadowGreenLight.copy(alpha = 0.3f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = billInitial(bill.name),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MeadowGreenDark,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
+            SubscriptionBrandIcon(bill = bill)
             Spacer(modifier = Modifier.width(12.dp))
-
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = bill.name,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "Due ${bill.dueDate.format(dateFormat)} · ${currencyFormat.format(bill.amount)}/mo",
+                    text = stringResource(R.string.dashboard_keep_pull_prompt),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-
-            IconButton(onClick = onLinkRoots) {
-                Icon(
-                    imageVector = Icons.Default.Nature,
-                    contentDescription = stringResource(R.string.link_roots_icon),
-                    tint = MeadowEarth,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            IconButton(onClick = onShare) {
-                Icon(
-                    imageVector = Icons.Default.LocalFlorist,
-                    contentDescription = stringResource(R.string.cross_pollinate_share),
-                    tint = MeadowGreen,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            IconButton(onClick = onKeep) {
-                Icon(
-                    imageVector = Icons.Filled.Eco,
-                    contentDescription = "Keep subscription",
-                    tint = LeafGreen,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
             IconButton(onClick = onPull) {
                 Icon(
-                    imageVector = Icons.Filled.Delete,
-                    contentDescription = "Pull subscription",
+                    imageVector = Icons.Default.Eco,
+                    contentDescription = stringResource(R.string.dashboard_pull_weed),
                     tint = WeedRed,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+            IconButton(onClick = onKeep) {
+                Icon(
+                    imageVector = Icons.Default.Eco,
+                    contentDescription = stringResource(R.string.dashboard_keep_flower),
+                    tint = LeafGreen,
+                    modifier = Modifier.size(26.dp)
                 )
             }
         }
     }
 }
 
-private fun eligibleParentBills(childBill: Bill, allBills: List<Bill>): List<Bill> {
-    val descendantIds = collectDescendantBillIds(childBill.id, allBills)
-    return allBills.filter { bill ->
-        bill.id != childBill.id && bill.id !in descendantIds
-    }
-}
-
-private fun collectDescendantBillIds(parentId: Long, bills: List<Bill>): Set<Long> {
-    return bills
-        .filter { bill -> bill.parentBillId == parentId }
-        .flatMap { child ->
-            setOf(child.id) + collectDescendantBillIds(child.id, bills)
-        }
-        .toSet()
-}
-
-private fun previewDummyBills(): List<Bill> {
-    val today = LocalDate.of(2026, 9, 4)
-    return listOf(
-        Bill(1, "Maple Street Apartment", 1_450.00, today.plusDays(3), BillCategory.RENT),
-        Bill(2, "Whole Foods Groceries", 186.42, today.plusDays(5), BillCategory.FOOD),
-        Bill(3, "Pacific Gas & Electric", 94.17, today.plusDays(8), BillCategory.UTILITIES),
-        Bill(4, "Spotify Premium", 11.99, today.plusDays(12), BillCategory.SUBSCRIPTIONS),
-        Bill(5, "Netflix", 15.49, today.plusDays(12), BillCategory.SUBSCRIPTIONS),
-        Bill(6, "Adobe Creative Cloud", 54.99, today.plusDays(15), BillCategory.SUBSCRIPTIONS),
-        Bill(7, "LA Metro Pass", 100.00, today.plusDays(18), BillCategory.TRANSPORTATION),
-        Bill(8, "Kaiser Health", 325.00, today.plusDays(22), BillCategory.HEALTHCARE),
-        Bill(9, "Trader Joe's", 72.30, today.plusDays(6), BillCategory.FOOD),
-        Bill(10, "Disney+", 13.99, today.plusDays(20), BillCategory.SUBSCRIPTIONS)
-    )
-}
-
-@Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun DashboardScreenPreview() {
-    val bills = previewDummyBills()
-    val categoryTotals = bills
-        .groupBy { it.category }
-        .mapValues { (_, items) -> items.sumOf { it.amount } }
-
-    ChargeMeNotTheme {
-        DashboardScreen(
-            uiState = DashboardUiState(
-                greeting = "Good morning",
-                totalUpcoming = bills.sumOf { it.amount },
-                upcomingBills = bills,
-                subscriptionBills = bills.filter { it.category == BillCategory.SUBSCRIPTIONS },
-                allBills = bills,
-                categoryTotals = categoryTotals,
-                isLoading = false
-            ),
-            settingsUiState = SettingsUiState(isNagModeEnabled = true),
-            onKeepSubscription = {},
-            onPullSubscription = {},
-            onMonthlyBudgetChange = {},
-            onNagModeToggleRequested = {},
-            onNotificationPermissionResult = {},
-            onNotificationPermissionRequestHandled = {},
-            onRefreshNotificationPermissionState = {},
-            onNavigateToPruningSimulator = {},
-            onNavigateToWeedWhacker = {},
-            onNavigateToCompostBin = {},
-            onLinkBillToParent = { _, _ -> }
+private fun DashboardBottomNavigationBar(
+    selectedItem: DashboardBottomNavItem,
+    onSelectItem: (DashboardBottomNavItem) -> Unit
+) {
+    NavigationBar(
+        containerColor = MeadowWhite,
+        tonalElevation = 4.dp
+    ) {
+        NavigationBarItem(
+            selected = selectedItem == DashboardBottomNavItem.RENT,
+            onClick = { onSelectItem(DashboardBottomNavItem.RENT) },
+            icon = { Icon(Icons.Default.Home, contentDescription = null) },
+            label = { Text(stringResource(R.string.dashboard_nav_rent)) }
+        )
+        NavigationBarItem(
+            selected = selectedItem == DashboardBottomNavItem.LOANS,
+            onClick = { onSelectItem(DashboardBottomNavItem.LOANS) },
+            icon = { Icon(Icons.Default.DirectionsCar, contentDescription = null) },
+            label = { Text(stringResource(R.string.dashboard_nav_loans)) }
+        )
+        NavigationBarItem(
+            selected = selectedItem == DashboardBottomNavItem.UTILITIES,
+            onClick = { onSelectItem(DashboardBottomNavItem.UTILITIES) },
+            icon = { Icon(Icons.Default.Bolt, contentDescription = null) },
+            label = { Text(stringResource(R.string.dashboard_nav_utilities)) }
+        )
+        NavigationBarItem(
+            selected = selectedItem == DashboardBottomNavItem.OTHERS,
+            onClick = { onSelectItem(DashboardBottomNavItem.OTHERS) },
+            icon = { Icon(Icons.Default.Build, contentDescription = null) },
+            label = { Text(stringResource(R.string.dashboard_nav_others)) }
         )
     }
 }
 
-@Preview(showBackground = true, name = "Empty Bloom")
 @Composable
-private fun DashboardScreenEmptyPreview() {
+private fun DrawerNavRow(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 24.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = MeadowGreen)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MeadowGreenDark
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DashboardScreenPreview() {
+    val today = LocalDate.of(2026, 9, 4)
+    val bills = listOf(
+        Bill(4, "Netflix", 15.49, today.plusDays(12), BillCategory.SUBSCRIPTIONS),
+        Bill(5, "Spotify Premium", 11.99, today.plusDays(12), BillCategory.SUBSCRIPTIONS)
+    )
     ChargeMeNotTheme {
         DashboardScreen(
             uiState = DashboardUiState(
-                greeting = "Good evening",
-                totalUpcoming = 0.0,
+                userDisplayName = "Sarah",
+                formattedDate = "(Friday, September 4, 2026)",
+                totalUpcoming = 1_230.0,
+                upcomingBillCount = 12,
+                subscriptionBills = bills,
+                categoryTotals = mapOf(
+                    BillCategory.RENT to 1_450.0,
+                    BillCategory.SUBSCRIPTIONS to 27.48
+                ),
                 isLoading = false
             ),
             settingsUiState = SettingsUiState(),
+            selectedBillForEdit = null,
             onKeepSubscription = {},
             onPullSubscription = {},
             onMonthlyBudgetChange = {},
@@ -965,7 +610,11 @@ private fun DashboardScreenEmptyPreview() {
             onNavigateToPruningSimulator = {},
             onNavigateToWeedWhacker = {},
             onNavigateToCompostBin = {},
-            onLinkBillToParent = { _, _ -> }
+            onSelectBillForEdit = {},
+            onClearEditSelection = {},
+            onSaveBillEdits = {},
+            onSelectBottomNavItem = {},
+            onBloomSettingsClick = {}
         )
     }
 }

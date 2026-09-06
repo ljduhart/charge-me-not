@@ -8,10 +8,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.DocumentScanner
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,7 +26,11 @@ import com.artie.chargemenot.ui.navigation.AppRoutes
 import com.artie.chargemenot.ui.navigation.ChargeMeNotNavHost
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.MeadowGreen
+import com.artie.chargemenot.ui.theme.MeadowGreenDark
+import com.artie.chargemenot.ui.theme.MeadowSky
 import com.artie.chargemenot.ui.theme.MeadowWhite
+import androidx.compose.ui.res.stringResource
+import com.artie.chargemenot.R
 
 class MainActivity : ComponentActivity() {
 
@@ -55,6 +61,7 @@ class MainActivity : ComponentActivity() {
                 val pruningUiState by pruningViewModel.uiState.collectAsStateWithLifecycle()
                 val weedWhackerUiState by weedWhackerViewModel.uiState.collectAsStateWithLifecycle()
                 val compostBinUiState by compostBinViewModel.uiState.collectAsStateWithLifecycle()
+                val selectedBillForEdit by dashboardViewModel.selectedBillForEdit.collectAsStateWithLifecycle()
 
                 LaunchedEffect(pendingNavigationRoute) {
                     val route = pendingNavigationRoute
@@ -74,26 +81,31 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     floatingActionButton = {
                         if (currentRoute == AppRoutes.DASHBOARD) {
-                            FloatingActionButton(
+                            ExtendedFloatingActionButton(
                                 onClick = {
                                     navController.navigate(AppRoutes.SCANNER) {
                                         launchSingleTop = true
                                     }
                                 },
-                                containerColor = MeadowGreen,
-                                contentColor = MeadowWhite
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.DocumentScanner,
-                                    contentDescription = "Scan bill"
-                                )
-                            }
+                                containerColor = MeadowSky,
+                                contentColor = MeadowGreenDark,
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.Default.CameraAlt,
+                                        contentDescription = stringResource(R.string.dashboard_add_bill)
+                                    )
+                                },
+                                text = {
+                                    Text(stringResource(R.string.dashboard_add_bill))
+                                }
+                            )
                         }
                     }
                 ) { innerPadding ->
                     ChargeMeNotNavHost(
                         navController = navController,
                         dashboardUiState = dashboardUiState,
+                        selectedBillForEdit = selectedBillForEdit,
                         scannerUiState = scannerUiState,
                         settingsUiState = settingsUiState,
                         pruningUiState = pruningUiState,
@@ -160,6 +172,11 @@ class MainActivity : ComponentActivity() {
                         onCompostBinNavigateBack = {
                             navController.popBackStack()
                         },
+                        onSelectBillForEdit = dashboardViewModel::selectBillForEdit,
+                        onClearEditSelection = dashboardViewModel::clearEditSelection,
+                        onSaveBillEdits = dashboardViewModel::saveBillEdits,
+                        onSelectBottomNavItem = dashboardViewModel::selectBottomNavItem,
+                        onBloomSettingsClick = dashboardViewModel::openBloomSettingsEdit,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
