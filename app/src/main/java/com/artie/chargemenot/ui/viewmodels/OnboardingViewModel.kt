@@ -92,6 +92,10 @@ class OnboardingViewModel(
     }
 
     fun saveOnboardingData(onComplete: () -> Unit) {
+        if (_uiState.value.isSaving) {
+            return
+        }
+
         val state = _uiState.value
         val monthlyBudget = if (state.budgetEnabled) {
             state.budgetAmount.toDouble()
@@ -99,22 +103,28 @@ class OnboardingViewModel(
             UserSettings.DEFAULT_MONTHLY_BUDGET
         }
 
+        _uiState.update { current -> current.copy(isSaving = true) }
+
         coroutineScope.launch(ioDispatcher) {
-            userSettingsRepository.saveOnboardingPreferences(
-                monthlyBudget = monthlyBudget,
-                selectedCurrency = state.selectedCurrency.code,
-                isNagModeEnabled = state.nagModeEnabled
-            )
-            if (state.nagModeEnabled) {
-                nagModeScheduler.enableNagMode()
-            } else {
-                nagModeScheduler.disableNagMode()
-            }
-            _uiState.update { current ->
-                current.copy(isOnboardingComplete = true)
-            }
-            withContext(Dispatchers.Main) {
-                onComplete()
+            try {
+                userSettingsRepository.saveOnboardingPreferences(
+                    monthlyBudget = monthlyBudget,
+                    selectedCurrency = state.selectedCurrency.code,
+                    isNagModeEnabled = state.nagModeEnabled
+                )
+                if (state.nagModeEnabled) {
+                    nagModeScheduler.enableNagMode()
+                } else {
+                    nagModeScheduler.disableNagMode()
+                }
+                _uiState.update { current ->
+                    current.copy(isOnboardingComplete = true)
+                }
+                withContext(Dispatchers.Main) {
+                    onComplete()
+                }
+            } finally {
+                _uiState.update { current -> current.copy(isSaving = false) }
             }
         }
     }

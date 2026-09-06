@@ -148,7 +148,6 @@ fun OnboardingScreen(
                 )
                 3 -> WateringSchedulePage(
                     nagModeEnabled = uiState.nagModeEnabled,
-                    notificationPermissionGranted = uiState.notificationPermissionGranted,
                     onRequestWateringSchedule = onRequestWateringSchedule
                 )
                 4 -> FirstSproutPage()
@@ -191,6 +190,7 @@ fun OnboardingScreen(
             if (isLastPage) {
                 Button(
                     onClick = onSaveOnboardingData,
+                    enabled = !uiState.isSaving,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -429,7 +429,6 @@ private fun CurrencySelectionRow(
 @Composable
 private fun WateringSchedulePage(
     nagModeEnabled: Boolean,
-    notificationPermissionGranted: Boolean,
     onRequestWateringSchedule: () -> Unit
 ) {
     OnboardingPageScaffold(
@@ -460,7 +459,7 @@ private fun WateringSchedulePage(
             )
         }
 
-        if (nagModeEnabled || notificationPermissionGranted) {
+        if (nagModeEnabled) {
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = stringResource(R.string.onboarding_watering_enabled),

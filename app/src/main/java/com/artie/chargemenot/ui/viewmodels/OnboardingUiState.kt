@@ -10,6 +10,7 @@ data class OnboardingUiState(
     val nagModeEnabled: Boolean = false,
     val isOnboardingComplete: Boolean = false,
     val isLoading: Boolean = true,
+    val isSaving: Boolean = false,
     val shouldRequestNotificationPermission: Boolean = false,
     val notificationPermissionGranted: Boolean = false
 )

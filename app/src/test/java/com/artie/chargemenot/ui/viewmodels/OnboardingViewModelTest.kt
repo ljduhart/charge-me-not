@@ -9,6 +9,7 @@ import com.artie.chargemenot.domain.repository.NagModeScheduler
 import com.artie.chargemenot.domain.repository.NotificationPermissionGateway
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -69,6 +70,32 @@ class OnboardingViewModelTest {
     }
 
     @Test
+    fun saveOnboardingData_ignoresDuplicateSaveWhileInFlight() {
+        val blockingDao = BlockingSettingsDao()
+        val viewModel = OnboardingViewModel(
+            userSettingsRepository = UserSettingsRepository(blockingDao),
+            nagModeScheduler = nagModeScheduler,
+            notificationPermissionGateway = FakeNotificationPermissionGateway(),
+            coroutineScope = testScope,
+            ioDispatcher = testDispatcher
+        )
+        testScope.advanceUntilIdle()
+
+        var completionCount = 0
+        viewModel.saveOnboardingData(onComplete = { completionCount++ })
+        viewModel.saveOnboardingData(onComplete = { completionCount++ })
+
+        assertTrue(viewModel.uiState.value.isSaving)
+        assertEquals(1, blockingDao.saveCount)
+
+        blockingDao.releaseSave()
+        testScope.advanceUntilIdle()
+
+        assertEquals(1, completionCount)
+        assertEquals(1, blockingDao.saveCount)
+    }
+
+    @Test
     fun saveOnboardingData_invokesOnCompleteCallback() {
         val viewModel = createViewModel()
         testScope.advanceUntilIdle()
@@ -109,6 +136,7 @@ class OnboardingViewModelTest {
 
     private class TrackingSettingsDao : UserSettingsDao {
         var lastSaved: UserSettingsEntity? = null
+        var saveCount = 0
 
         private val settings = MutableStateFlow(
             UserSettingsEntity(
@@ -121,7 +149,35 @@ class OnboardingViewModelTest {
 
         override suspend fun upsertSettings(settings: UserSettingsEntity) {
             lastSaved = settings
+            saveCount++
             this.settings.value = settings
+        }
+
+        override suspend fun getSettings(settingsId: Int): UserSettingsEntity? = settings.value
+
+        override suspend fun getSettingsCount(settingsId: Int): Int = 1
+    }
+
+    private class BlockingSettingsDao : UserSettingsDao {
+        var saveCount = 0
+        private val saveGate = CompletableDeferred<Unit>()
+        private val settings = MutableStateFlow(
+            UserSettingsEntity(
+                monthlyBudget = UserSettings.DEFAULT_MONTHLY_BUDGET,
+                isOnboardingComplete = false
+            )
+        )
+
+        override fun observeSettings(settingsId: Int): Flow<UserSettingsEntity?> = settings
+
+        override suspend fun upsertSettings(settings: UserSettingsEntity) {
+            saveCount++
+            saveGate.await()
+            this.settings.value = settings
+        }
+
+        fun releaseSave() {
+            saveGate.complete(Unit)
         }
 
         override suspend fun getSettings(settingsId: Int): UserSettingsEntity? = settings.value
