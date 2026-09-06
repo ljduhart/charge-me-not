@@ -16,6 +16,7 @@ import com.artie.chargemenot.ui.dashboard.DashboardViewModel
 import com.artie.chargemenot.ui.viewmodels.CompostBinViewModel
 import com.artie.chargemenot.ui.viewmodels.PruningViewModel
 import com.artie.chargemenot.ui.viewmodels.ScannerViewModel
+import com.artie.chargemenot.ui.viewmodels.OnboardingViewModel
 import com.artie.chargemenot.ui.viewmodels.SettingsViewModel
 import com.artie.chargemenot.ui.viewmodels.WeedWhackerViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -93,6 +94,15 @@ class ChargeMeNotApplication : Application() {
     val compostBinViewModel: CompostBinViewModel by lazy {
         CompostBinViewModel(
             billRepository = billRepository,
+            coroutineScope = applicationScope
+        )
+    }
+
+    val onboardingViewModel: OnboardingViewModel by lazy {
+        OnboardingViewModel(
+            userSettingsRepository = userSettingsRepository,
+            nagModeScheduler = nagModeScheduler,
+            notificationPermissionGateway = notificationPermissionGateway,
             coroutineScope = applicationScope
         )
     }

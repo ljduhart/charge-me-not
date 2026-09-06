@@ -16,15 +16,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.artie.chargemenot.ui.navigation.AppRoutes
+import com.artie.chargemenot.ui.screens.onboarding.OnboardingLoadingScreen
 import com.artie.chargemenot.ui.navigation.ChargeMeNotNavHost
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
-import com.artie.chargemenot.ui.theme.MeadowGreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowSky
 import com.artie.chargemenot.ui.theme.MeadowWhite
@@ -47,6 +48,7 @@ class MainActivity : ComponentActivity() {
         val pruningViewModel = app.pruningViewModel
         val weedWhackerViewModel = app.weedWhackerViewModel
         val compostBinViewModel = app.compostBinViewModel
+        val onboardingViewModel = app.onboardingViewModel
 
         setContent {
             ChargeMeNotTheme {
@@ -61,6 +63,18 @@ class MainActivity : ComponentActivity() {
                 val weedWhackerUiState by weedWhackerViewModel.uiState.collectAsStateWithLifecycle()
                 val compostBinUiState by compostBinViewModel.uiState.collectAsStateWithLifecycle()
                 val selectedBillForEdit by dashboardViewModel.selectedBillForEdit.collectAsStateWithLifecycle()
+                val onboardingUiState by onboardingViewModel.uiState.collectAsStateWithLifecycle()
+
+                var graphStartDestination by remember { mutableStateOf<String?>(null) }
+                LaunchedEffect(onboardingUiState.isLoading) {
+                    if (!onboardingUiState.isLoading && graphStartDestination == null) {
+                        graphStartDestination = if (onboardingUiState.isOnboardingComplete) {
+                            AppRoutes.DASHBOARD
+                        } else {
+                            AppRoutes.ONBOARDING
+                        }
+                    }
+                }
 
                 LaunchedEffect(currentRoute) {
                     if (currentRoute != null && currentRoute != AppRoutes.DASHBOARD) {
@@ -68,9 +82,12 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                LaunchedEffect(pendingNavigationRoute) {
+                LaunchedEffect(pendingNavigationRoute, onboardingUiState.isLoading, onboardingUiState.isOnboardingComplete) {
                     val route = pendingNavigationRoute
-                    if (route != null) {
+                    if (route != null &&
+                        !onboardingUiState.isLoading &&
+                        onboardingUiState.isOnboardingComplete
+                    ) {
                         if (route == AppRoutes.WEED_WHACKER) {
                             weedWhackerViewModel.restartAuditSession()
                         }
@@ -82,6 +99,9 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                if (onboardingUiState.isLoading || graphStartDestination == null) {
+                    OnboardingLoadingScreen(modifier = Modifier.fillMaxSize())
+                } else {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     floatingActionButton = {
@@ -109,6 +129,23 @@ class MainActivity : ComponentActivity() {
                 ) { innerPadding ->
                     ChargeMeNotNavHost(
                         navController = navController,
+                        startDestination = graphStartDestination!!,
+                        onboardingUiState = onboardingUiState,
+                        onBudgetEnabledChange = onboardingViewModel::setBudgetEnabled,
+                        onBudgetAmountChange = onboardingViewModel::setBudgetAmount,
+                        onCurrencySelected = onboardingViewModel::selectCurrency,
+                        onRequestWateringSchedule = onboardingViewModel::requestWateringSchedule,
+                        onOnboardingNotificationPermissionResult = onboardingViewModel::onNotificationPermissionResult,
+                        onOnboardingNotificationPermissionRequestHandled = onboardingViewModel::onNotificationPermissionRequestHandled,
+                        onRefreshOnboardingNotificationPermissionState = onboardingViewModel::refreshNotificationPermissionState,
+                        onSaveOnboardingData = {
+                            onboardingViewModel.saveOnboardingData {
+                                navController.navigate(AppRoutes.DASHBOARD) {
+                                    popUpTo(AppRoutes.ONBOARDING) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            }
+                        },
                         dashboardUiState = dashboardUiState,
                         selectedBillForEdit = selectedBillForEdit,
                         scannerUiState = scannerUiState,
@@ -184,6 +221,7 @@ class MainActivity : ComponentActivity() {
                         onBloomSettingsClick = dashboardViewModel::openBloomSettingsEdit,
                         modifier = Modifier.padding(innerPadding)
                     )
+                }
                 }
             }
         }
