@@ -102,6 +102,17 @@ class DashboardViewModelBloomTest {
     }
 
     @Test
+    fun selectBottomNavItem_clearsSelectedCategory() {
+        val viewModel = createViewModel()
+        viewModel.onPetalTapped("Food")
+
+        viewModel.selectBottomNavItem(DashboardBottomNavItem.RENT)
+
+        assertNull(viewModel.selectedCategoryForEdit.value)
+        assertEquals(DashboardBottomNavItem.RENT, viewModel.uiState.value.selectedBottomNavItem)
+    }
+
+    @Test
     fun categoryBills_emitsBillsForSelectedCategory() {
         val viewModel = createViewModel()
         testScope.advanceUntilIdle()

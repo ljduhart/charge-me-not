@@ -169,6 +169,7 @@ class DashboardViewModel(
     }
 
     fun selectBottomNavItem(item: DashboardBottomNavItem) {
+        _selectedCategoryForEdit.value = null
         _uiState.update { current -> current.copy(selectedBottomNavItem = item) }
     }
 
