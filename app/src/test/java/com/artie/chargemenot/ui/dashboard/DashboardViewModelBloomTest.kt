@@ -126,6 +126,27 @@ class DashboardViewModelBloomTest {
         assertEquals(BillCategory.RENT, bills.first().category)
     }
 
+    @Test
+    fun updateDisplayName_persistsThroughRepository() {
+        val settingsDao = FakeSettingsDao()
+        val viewModel = DashboardViewModel(
+            billRepository = BillRepository(
+                billDao = CategoryTrackingBillDao(),
+                compostDao = FakeCompostDao()
+            ),
+            userSettingsRepository = UserSettingsRepository(settingsDao),
+            forecastUseCase = ForecastUseCase(CategoryTrackingBillDao()),
+            coroutineScope = testScope,
+            ioDispatcher = testDispatcher
+        )
+        testScope.advanceUntilIdle()
+
+        viewModel.updateDisplayName("Morgan")
+        testScope.advanceUntilIdle()
+
+        assertEquals("Morgan", settingsDao.lastSaved?.displayName)
+    }
+
     private fun createViewModel(): DashboardViewModel {
         return DashboardViewModel(
             billRepository = BillRepository(
@@ -206,10 +227,14 @@ class DashboardViewModelBloomTest {
     }
 
     private class FakeSettingsDao : UserSettingsDao {
+        var lastSaved: UserSettingsEntity? = null
+
         override fun observeSettings(settingsId: Int): Flow<UserSettingsEntity?> =
             MutableStateFlow(UserSettingsEntity(monthlyBudget = 2_500.0, isOnboardingComplete = true))
 
-        override suspend fun upsertSettings(settings: UserSettingsEntity) = Unit
+        override suspend fun upsertSettings(settings: UserSettingsEntity) {
+            lastSaved = settings
+        }
 
         override suspend fun getSettings(settingsId: Int): UserSettingsEntity? =
             UserSettingsEntity(monthlyBudget = 2_500.0, isOnboardingComplete = true)

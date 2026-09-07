@@ -81,8 +81,8 @@ class DashboardViewModel(
             combine(
                 billRepository.getUpcomingBills(),
                 billRepository.getAllBills(),
-                userSettingsRepository.observeMonthlyBudget()
-            ) { upcoming, all, monthlyBudget ->
+                userSettingsRepository.observeUserSettings()
+            ) { upcoming, all, settings ->
                 val subscriptions = all.filter { it.category == BillCategory.SUBSCRIPTIONS && !it.isPaid }
                 val categoryTotals = upcoming
                     .groupBy { it.category }
@@ -93,12 +93,12 @@ class DashboardViewModel(
                 )
 
                 DashboardUiState(
-                    userDisplayName = _uiState.value.userDisplayName,
+                    userDisplayName = settings.displayName,
                     formattedDate = formatDisplayDate(LocalDate.now()),
                     greeting = resolveGreeting(),
                     totalUpcoming = upcoming.sumOf { it.amount },
                     upcomingBillCount = upcoming.size,
-                    monthlyBudget = monthlyBudget,
+                    monthlyBudget = settings.monthlyBudget,
                     upcomingBills = upcoming,
                     subscriptionBills = subscriptions,
                     allBills = all,
@@ -140,6 +140,18 @@ class DashboardViewModel(
 
         coroutineScope.launch(ioDispatcher) {
             userSettingsRepository.updateMonthlyBudget(parsedBudget)
+        }
+    }
+
+    fun updateDisplayName(displayName: String) {
+        coroutineScope.launch(ioDispatcher) {
+            userSettingsRepository.updateDisplayName(displayName)
+        }
+    }
+
+    fun insertManualBill(bill: Bill) {
+        coroutineScope.launch(ioDispatcher) {
+            billRepository.insertBill(bill)
         }
     }
 

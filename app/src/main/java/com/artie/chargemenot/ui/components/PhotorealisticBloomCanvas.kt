@@ -41,6 +41,7 @@ fun PhotorealisticBloomCanvas(
     categoryTotals: Map<BillCategory, Double>,
     monthlyBudget: Double,
     highlightedCategory: BillCategory?,
+    pendingSubscriptionCount: Int,
     onPetalTapped: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -68,18 +69,26 @@ fun PhotorealisticBloomCanvas(
 
     val labelPaint = remember {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = MeadowWhite.toArgb()
-            textSize = 26f
+            color = Color(0xFF1A1A1A).toArgb()
+            textSize = 24f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             textAlign = Paint.Align.CENTER
-            setShadowLayer(6f, 0f, 2f, MeadowGreenDark.copy(alpha = 0.65f).toArgb())
+        }
+    }
+
+    val tooltipPaint = remember {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color(0xFF1A1A1A).toArgb()
+            textSize = 22f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textAlign = Paint.Align.LEFT
         }
     }
 
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .height(380.dp)
+            .height(420.dp)
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
                     val centerX = size.width / 2f
@@ -149,12 +158,28 @@ fun PhotorealisticBloomCanvas(
             }
 
             val labelAngleRadians = Math.toRadians((sliceAngle - 90f).toDouble())
-            val labelRadius = maxRadius * 0.78f
+            val labelRadius = maxRadius * 1.28f
             val labelX = centerX + cos(labelAngleRadians).toFloat() * labelRadius
             val labelY = centerY + sin(labelAngleRadians).toFloat() * labelRadius
+            val petalTipRadius = maxRadius * 0.92f
+            val petalTipX = centerX + cos(labelAngleRadians).toFloat() * petalTipRadius
+            val petalTipY = centerY + sin(labelAngleRadians).toFloat() * petalTipRadius
+
+            drawLine(
+                color = Color(0xFF1A1A1A).copy(alpha = 0.35f * alphaMultiplier),
+                start = Offset(petalTipX, petalTipY),
+                end = Offset(labelX, labelY),
+                strokeWidth = 1.5f
+            )
+
+            labelPaint.textAlign = when {
+                labelX < centerX - maxRadius * 0.08f -> Paint.Align.RIGHT
+                labelX > centerX + maxRadius * 0.08f -> Paint.Align.LEFT
+                else -> Paint.Align.CENTER
+            }
 
             drawContext.canvas.nativeCanvas.drawText(
-                definition.displayName.uppercase(),
+                definition.bloomLabel,
                 labelX,
                 labelY,
                 labelPaint.apply {
@@ -165,6 +190,15 @@ fun PhotorealisticBloomCanvas(
 
         drawFlowerCenter(center = center, radius = maxRadius * 0.14f)
         drawStemAndLeaves(center = center, maxRadius = maxRadius)
+
+        if (pendingSubscriptionCount > 0) {
+            val stemTop = Offset(centerX, centerY + maxRadius * 0.12f)
+            drawPendingCullTooltip(
+                anchor = Offset(centerX + maxRadius * 0.35f, stemTop.y + 24f),
+                pendingCount = pendingSubscriptionCount,
+                textPaint = tooltipPaint
+            )
+        }
     }
 }
 
@@ -333,5 +367,51 @@ private fun DrawScope.drawStemAndLeaves(center: Offset, maxRadius: Float) {
             start = rightLeaf.getBounds().topLeft,
             end = rightLeaf.getBounds().bottomRight
         )
+    )
+}
+
+private fun DrawScope.drawPendingCullTooltip(
+    anchor: Offset,
+    pendingCount: Int,
+    textPaint: Paint
+) {
+    val message = "$pendingCount SUBSCRIPTIONS PENDING CULL!"
+    val bubbleWidth = 320f
+    val bubbleHeight = 56f
+    val bubbleTopLeft = Offset(anchor.x - 12f, anchor.y)
+
+    drawRoundRect(
+        color = MeadowWhite,
+        topLeft = bubbleTopLeft,
+        size = androidx.compose.ui.geometry.Size(bubbleWidth, bubbleHeight),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(14f, 14f)
+    )
+    drawRoundRect(
+        color = MeadowGreenDark.copy(alpha = 0.2f),
+        topLeft = bubbleTopLeft,
+        size = androidx.compose.ui.geometry.Size(bubbleWidth, bubbleHeight),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(14f, 14f),
+        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f)
+    )
+
+    drawContext.canvas.nativeCanvas.drawText(
+        message,
+        bubbleTopLeft.x + 16f,
+        bubbleTopLeft.y + 36f,
+        textPaint
+    )
+
+    val badgeCenter = Offset(bubbleTopLeft.x + bubbleWidth - 22f, bubbleTopLeft.y + bubbleHeight / 2f)
+    drawCircle(color = Color(0xFF4A7FC1), radius = 16f, center = badgeCenter)
+    drawContext.canvas.nativeCanvas.drawText(
+        pendingCount.toString(),
+        badgeCenter.x,
+        badgeCenter.y + 8f,
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = MeadowWhite.toArgb()
+            textSize = 22f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textAlign = Paint.Align.CENTER
+        }
     )
 }

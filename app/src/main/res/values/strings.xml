@@ -148,4 +148,19 @@
     <string name="category_detail_add_bill">Add New Bill to %1$s</string>
     <string name="category_detail_empty">No active %1$s bills in your garden right now.</string>
     <string name="category_detail_bill_due">Due %1$s</string>
+
+    <string name="profile_edit_title">Edit Profile</string>
+    <string name="profile_edit_subtitle">Update the name shown on your garden dashboard.</string>
+    <string name="profile_edit_name_label">Your name</string>
+    <string name="profile_edit_save">Save Profile</string>
+    <string name="profile_edit_tap_hint">Tap to edit your profile name</string>
+
+    <string name="manual_bill_title">Add Bill Manually</string>
+    <string name="manual_bill_subtitle">Plant a new bill or subscription without scanning a receipt.</string>
+    <string name="manual_bill_name_placeholder">Netflix, PG&amp;E, Rent…</string>
+    <string name="manual_bill_save">Plant Bill</string>
+    <string name="manual_bill_pick_date">Pick due date</string>
+    <string name="manual_bill_date_confirm">Set Date</string>
+    <string name="dashboard_manual_bill_entry">Add Bill Manually</string>
+    <string name="dashboard_manual_bill_entry_subtitle">Type bill details and choose a due date from the calendar</string>
 </resources>

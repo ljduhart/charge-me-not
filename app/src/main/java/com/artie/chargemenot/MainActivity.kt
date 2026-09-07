@@ -234,6 +234,8 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         },
+                        onUpdateDisplayName = dashboardViewModel::updateDisplayName,
+                        onSaveManualBill = dashboardViewModel::insertManualBill,
                         onSelectBottomNavItem = dashboardViewModel::selectBottomNavItem,
                         onBloomSettingsClick = dashboardViewModel::openBloomSettingsEdit,
                         modifier = Modifier.padding(innerPadding)

@@ -10,7 +10,8 @@ data class UserSettingsEntity(
     val monthlyBudget: Double,
     val isNagModeEnabled: Boolean = false,
     val selectedCurrency: String = com.artie.chargemenot.domain.model.UserSettings.DEFAULT_CURRENCY,
-    val isOnboardingComplete: Boolean = false
+    val isOnboardingComplete: Boolean = false,
+    val displayName: String = com.artie.chargemenot.domain.model.UserSettings.DEFAULT_DISPLAY_NAME
 ) {
     companion object {
         const val SETTINGS_ID = 1

@@ -50,28 +50,24 @@ import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditBillBottomSheet(
-    selectedBill: Bill?,
+fun ManualBillBottomSheet(
+    isVisible: Boolean,
+    defaultCategory: BillCategory = BillCategory.SUBSCRIPTIONS,
     onDismiss: () -> Unit,
     onSave: (Bill) -> Unit
 ) {
-    if (selectedBill == null) {
+    if (!isVisible) {
         return
     }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val dateFormat = remember { DateTimeFormatter.ofPattern("MMM d, yyyy") }
-
-    var nameInput by remember(selectedBill.id) { mutableStateOf(selectedBill.name) }
-    var amountInput by remember(selectedBill.id) {
-        mutableStateOf(String.format("%.2f", selectedBill.amount))
-    }
-    var selectedDueDate by remember(selectedBill.id) { mutableStateOf(selectedBill.dueDate) }
-    var categoryInput by remember(selectedBill.id) {
-        mutableStateOf(selectedBill.category.name)
-    }
-    var validationError by remember(selectedBill.id) { mutableStateOf<String?>(null) }
-    var showDatePicker by remember(selectedBill.id) { mutableStateOf(false) }
+    var nameInput by remember { mutableStateOf("") }
+    var amountInput by remember { mutableStateOf("") }
+    var selectedDueDate by remember { mutableStateOf(LocalDate.now().plusDays(14)) }
+    var categoryInput by remember(defaultCategory) { mutableStateOf(defaultCategory.name) }
+    var validationError by remember { mutableStateOf<String?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
@@ -118,10 +114,16 @@ fun EditBillBottomSheet(
                 .padding(horizontal = 24.dp, vertical = 12.dp)
         ) {
             Text(
-                text = stringResource(R.string.edit_bill_title),
+                text = stringResource(R.string.manual_bill_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = MeadowGreenDark,
                 fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = stringResource(R.string.manual_bill_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -131,6 +133,7 @@ fun EditBillBottomSheet(
                 onValueChange = { nameInput = it },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(stringResource(R.string.edit_bill_name_label)) },
+                placeholder = { Text(stringResource(R.string.manual_bill_name_placeholder)) },
                 singleLine = true
             )
 
@@ -171,7 +174,7 @@ fun EditBillBottomSheet(
                 onValueChange = { categoryInput = it.uppercase() },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(stringResource(R.string.edit_bill_category_label)) },
-                placeholder = { Text("UTILITIES") },
+                placeholder = { Text("SUBSCRIPTIONS") },
                 singleLine = true
             )
 
@@ -216,12 +219,12 @@ fun EditBillBottomSheet(
                                 validationError = "Enter a valid amount."
                             }
                             parsedCategory == null -> {
-                                validationError = "Enter a valid category (e.g. UTILITIES)."
+                                validationError = "Enter a valid category (e.g. SUBSCRIPTIONS)."
                             }
                             else -> {
                                 validationError = null
                                 onSave(
-                                    selectedBill.copy(
+                                    Bill(
                                         name = nameInput.trim(),
                                         amount = parsedAmount,
                                         dueDate = selectedDueDate,
@@ -237,7 +240,7 @@ fun EditBillBottomSheet(
                         contentColor = MeadowWhite
                     )
                 ) {
-                    Text(stringResource(R.string.edit_bill_save))
+                    Text(stringResource(R.string.manual_bill_save))
                 }
             }
 

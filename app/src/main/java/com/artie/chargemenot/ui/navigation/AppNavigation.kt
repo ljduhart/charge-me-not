@@ -117,6 +117,8 @@ fun ChargeMeNotNavHost(
     onPetalTapped: (String) -> Unit,
     onClearCategorySelection: () -> Unit,
     onAddBillToCategory: (String) -> Unit,
+    onUpdateDisplayName: (String) -> Unit,
+    onSaveManualBill: (Bill) -> Unit,
     onSelectBottomNavItem: (DashboardBottomNavItem) -> Unit,
     onBloomSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -176,6 +178,8 @@ fun ChargeMeNotNavHost(
                 onPetalTapped = onPetalTapped,
                 onClearCategorySelection = onClearCategorySelection,
                 onAddBillToCategory = onAddBillToCategory,
+                onUpdateDisplayName = onUpdateDisplayName,
+                onSaveManualBill = onSaveManualBill,
                 onSelectBottomNavItem = onSelectBottomNavItem,
                 onBloomSettingsClick = onBloomSettingsClick
             )
