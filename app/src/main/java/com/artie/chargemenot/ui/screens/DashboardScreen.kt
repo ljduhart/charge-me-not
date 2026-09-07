@@ -24,28 +24,20 @@ import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Recycling
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.ContentCut
-import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.LocalFlorist
 import androidx.compose.material.icons.filled.Nature
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
@@ -53,12 +45,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,15 +62,10 @@ import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
-import com.artie.chargemenot.ui.components.CategoryDetailBottomSheet
 import com.artie.chargemenot.ui.components.PhotorealisticBloomCanvas
 import com.artie.chargemenot.ui.components.CrossPollinateShareDialog
-import com.artie.chargemenot.ui.components.EditBillBottomSheet
 import com.artie.chargemenot.ui.components.LinkRootBottomSheet
-import com.artie.chargemenot.ui.components.ManualBillBottomSheet
 import com.artie.chargemenot.ui.components.MeadowTickerAmount
-import com.artie.chargemenot.ui.components.NagModeCard
-import com.artie.chargemenot.ui.components.ProfileEditBottomSheet
 import com.artie.chargemenot.ui.components.SubscriptionBrandIcon
 import com.artie.chargemenot.ui.components.WeatherForecastCard
 import com.artie.chargemenot.ui.dashboard.DashboardBottomNavItem
@@ -99,8 +84,6 @@ import com.artie.chargemenot.ui.theme.MeadowSage
 import com.artie.chargemenot.ui.theme.MeadowSky
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import com.artie.chargemenot.ui.theme.WeedRed
-import com.artie.chargemenot.ui.viewmodels.SettingsUiState
-import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.util.Locale
@@ -109,43 +92,19 @@ import java.util.Locale
 @Composable
 fun DashboardScreen(
     uiState: DashboardUiState,
-    settingsUiState: SettingsUiState,
-    selectedBillForEdit: Bill?,
-    selectedCategoryForEdit: String?,
-    categoryBills: List<Bill>,
-    isProfileEditVisible: Boolean,
-    isManualBillVisible: Boolean,
-    manualBillEntrySession: Int,
+    onOpenDrawer: () -> Unit,
     onKeepSubscription: (Bill) -> Unit,
     onPullSubscription: (Bill) -> Unit,
     onMonthlyBudgetChange: (String) -> Unit,
-    onNagModeToggleRequested: (Boolean) -> Unit,
-    onNotificationPermissionResult: (Boolean) -> Unit,
-    onNotificationPermissionRequestHandled: () -> Unit,
-    onRefreshNotificationPermissionState: () -> Unit,
-    onNavigateToPruningSimulator: () -> Unit,
-    onNavigateToWeedWhacker: () -> Unit,
-    onNavigateToCompostBin: () -> Unit,
     onLinkBillToParent: (Long, Long?) -> Unit,
     onSelectBillForEdit: (Bill) -> Unit,
-    onClearEditSelection: () -> Unit,
-    onSaveBillEdits: (Bill) -> Unit,
     onPetalTapped: (String) -> Unit,
-    onClearCategorySelection: () -> Unit,
-    onAddBillToCategory: (String) -> Unit,
-    onUpdateDisplayName: (String) -> Unit,
-    onSaveManualBill: (Bill) -> Unit,
     onShowProfileEdit: () -> Unit,
-    onDismissProfileEdit: () -> Unit,
-    onShowManualBillEntry: () -> Unit,
-    onDismissManualBillEntry: () -> Unit,
     onSelectBottomNavItem: (DashboardBottomNavItem) -> Unit,
     onBloomSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
     var isSearchVisible by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var billToShare by remember { mutableStateOf<Bill?>(null) }
@@ -172,40 +131,6 @@ fun DashboardScreen(
         )
     }
 
-    EditBillBottomSheet(
-        selectedBill = selectedBillForEdit,
-        onDismiss = onClearEditSelection,
-        onSave = onSaveBillEdits
-    )
-
-    if (selectedCategoryForEdit != null && selectedBillForEdit == null) {
-        CategoryDetailBottomSheet(
-            selectedCategory = selectedCategoryForEdit,
-            bills = categoryBills,
-            onDismiss = onClearCategorySelection,
-            onAddNewBill = onAddBillToCategory,
-            onBillClick = onSelectBillForEdit
-        )
-    }
-
-    if (isProfileEditVisible && selectedBillForEdit == null && selectedCategoryForEdit == null) {
-        ProfileEditBottomSheet(
-            currentDisplayName = uiState.userDisplayName,
-            isVisible = true,
-            onDismiss = onDismissProfileEdit,
-            onSave = onUpdateDisplayName
-        )
-    }
-
-    if (isManualBillVisible && selectedBillForEdit == null && selectedCategoryForEdit == null) {
-        ManualBillBottomSheet(
-            isVisible = true,
-            sessionKey = manualBillEntrySession,
-            onDismiss = onDismissManualBillEntry,
-            onSave = onSaveManualBill
-        )
-    }
-
     val filteredSubscriptions = remember(uiState.subscriptionBills, searchQuery) {
         if (searchQuery.isBlank()) {
             uiState.subscriptionBills
@@ -216,80 +141,25 @@ fun DashboardScreen(
         }
     }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet {
-                Text(
-                    text = stringResource(R.string.dashboard_drawer_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MeadowGreenDark,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)
-                )
-                DrawerNavRow(
-                    label = stringResource(R.string.dashboard_manual_bill_entry),
-                    icon = Icons.Default.Add,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        onShowManualBillEntry()
-                    }
-                )
-                DrawerNavRow(
-                    label = stringResource(R.string.pruning_simulator_entry),
-                    icon = Icons.Default.ContentCut,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        onNavigateToPruningSimulator()
-                    }
-                )
-                DrawerNavRow(
-                    label = stringResource(R.string.weed_whacker_entry),
-                    icon = Icons.Default.Grass,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        onNavigateToWeedWhacker()
-                    }
-                )
-                DrawerNavRow(
-                    label = stringResource(R.string.compost_bin_entry),
-                    icon = Icons.Default.Recycling,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        onNavigateToCompostBin()
-                    }
-                )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                NagModeCard(
-                    uiState = settingsUiState,
-                    onNagModeToggleRequested = onNagModeToggleRequested,
-                    onNotificationPermissionResult = onNotificationPermissionResult,
-                    onNotificationPermissionRequestHandled = onNotificationPermissionRequestHandled,
-                    onRefreshPermissionState = onRefreshNotificationPermissionState,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-            }
-        }
-    ) {
-        Scaffold(
-            modifier = modifier.fillMaxSize(),
-            containerColor = MeadowCream,
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = stringResource(R.string.dashboard_title),
-                            fontWeight = FontWeight.Bold
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        containerColor = MeadowCream,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.dashboard_title),
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onOpenDrawer) {
+                        Icon(
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = stringResource(R.string.dashboard_menu)
                         )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = stringResource(R.string.dashboard_menu)
-                            )
-                        }
-                    },
+                    }
+                },
                     actions = {
                         IconButton(
                             onClick = {
@@ -421,7 +291,6 @@ fun DashboardScreen(
                 }
             }
         }
-    }
 }
 
 @Composable
@@ -776,29 +645,6 @@ private fun DashboardBottomNavigationBar(
     }
 }
 
-@Composable
-private fun DrawerNavRow(
-    label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 24.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Icon(imageVector = icon, contentDescription = null, tint = MeadowGreen)
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MeadowGreenDark
-        )
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
 private fun DashboardScreenPreview() {
@@ -821,36 +667,14 @@ private fun DashboardScreenPreview() {
                 ),
                 isLoading = false
             ),
-            settingsUiState = SettingsUiState(),
-            selectedBillForEdit = null,
-            selectedCategoryForEdit = null,
-            categoryBills = emptyList(),
-            isProfileEditVisible = false,
-            isManualBillVisible = false,
-            manualBillEntrySession = 0,
+            onOpenDrawer = {},
             onKeepSubscription = {},
             onPullSubscription = {},
             onMonthlyBudgetChange = {},
-            onNagModeToggleRequested = {},
-            onNotificationPermissionResult = {},
-            onNotificationPermissionRequestHandled = {},
-            onRefreshNotificationPermissionState = {},
-            onNavigateToPruningSimulator = {},
-            onNavigateToWeedWhacker = {},
-            onNavigateToCompostBin = {},
             onLinkBillToParent = { _, _ -> },
             onSelectBillForEdit = {},
-            onClearEditSelection = {},
-            onSaveBillEdits = {},
             onPetalTapped = {},
-            onClearCategorySelection = {},
-            onAddBillToCategory = {},
-            onUpdateDisplayName = {},
-            onSaveManualBill = {},
             onShowProfileEdit = {},
-            onDismissProfileEdit = {},
-            onShowManualBillEntry = {},
-            onDismissManualBillEntry = {},
             onSelectBottomNavItem = {},
             onBloomSettingsClick = {}
         )

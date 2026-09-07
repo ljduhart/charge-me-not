@@ -15,7 +15,11 @@ import com.artie.chargemenot.ui.dashboard.DashboardBottomNavItem
 import com.artie.chargemenot.ui.dashboard.DashboardUiState
 import com.artie.chargemenot.ui.screens.CompostBinScreen
 import com.artie.chargemenot.ui.screens.DashboardScreen
+import com.artie.chargemenot.ui.screens.GreenhouseSettingsScreen
+import com.artie.chargemenot.ui.screens.HarvestReportScreen
+import com.artie.chargemenot.ui.screens.PetalsAndWeedsScreen
 import com.artie.chargemenot.ui.screens.PruningSimulatorScreen
+import com.artie.chargemenot.ui.screens.RichSoilScreen
 import com.artie.chargemenot.ui.screens.ScannerScreen
 import com.artie.chargemenot.ui.screens.WeedWhackerScreen
 import com.artie.chargemenot.ui.viewmodels.CompostBinUiState
@@ -76,12 +80,6 @@ fun ChargeMeNotNavHost(
     onRefreshOnboardingNotificationPermissionState: () -> Unit,
     onSaveOnboardingData: () -> Unit,
     dashboardUiState: DashboardUiState,
-    selectedBillForEdit: Bill?,
-    selectedCategoryForEdit: String?,
-    categoryBills: List<Bill>,
-    isProfileEditVisible: Boolean,
-    isManualBillVisible: Boolean,
-    manualBillEntrySession: Int,
     scannerUiState: ScannerUiState,
     settingsUiState: SettingsUiState,
     pruningUiState: PruningUiState,
@@ -92,7 +90,6 @@ fun ChargeMeNotNavHost(
     onNotificationPermissionResult: (Boolean) -> Unit,
     onNotificationPermissionRequestHandled: () -> Unit,
     onRefreshNotificationPermissionState: () -> Unit,
-    onNavigateToPruningSimulator: () -> Unit,
     onToggleBillStatus: (Long, Boolean) -> Unit,
     onToggleRootExpansion: (Long) -> Unit,
     onResetSandbox: () -> Unit,
@@ -107,27 +104,17 @@ fun ChargeMeNotNavHost(
     onRecordAuditResponse: (Long, Boolean) -> Unit,
     onRestartAuditSession: () -> Unit,
     onWeedWhackerNavigateBack: () -> Unit,
-    onNavigateToWeedWhacker: () -> Unit,
     onLinkBillToParent: (Long, Long?) -> Unit,
-    onNavigateToCompostBin: () -> Unit,
     onSaveScannedBill: () -> Unit,
     compostBinUiState: CompostBinUiState,
     onCompostSearchQueryChanged: (String) -> Unit,
     onCompostBinNavigateBack: () -> Unit,
     onSelectBillForEdit: (Bill) -> Unit,
-    onClearEditSelection: () -> Unit,
-    onSaveBillEdits: (Bill) -> Unit,
     onPetalTapped: (String) -> Unit,
-    onClearCategorySelection: () -> Unit,
-    onAddBillToCategory: (String) -> Unit,
-    onUpdateDisplayName: (String) -> Unit,
-    onSaveManualBill: (Bill) -> Unit,
     onShowProfileEdit: () -> Unit,
-    onDismissProfileEdit: () -> Unit,
-    onShowManualBillEntry: () -> Unit,
-    onDismissManualBillEntry: () -> Unit,
     onSelectBottomNavItem: (DashboardBottomNavItem) -> Unit,
     onBloomSettingsClick: () -> Unit,
+    onOpenDrawer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -164,38 +151,77 @@ fun ChargeMeNotNavHost(
         ) {
             DashboardScreen(
                 uiState = dashboardUiState,
-                settingsUiState = settingsUiState,
-                selectedBillForEdit = selectedBillForEdit,
-                selectedCategoryForEdit = selectedCategoryForEdit,
-                categoryBills = categoryBills,
-                isProfileEditVisible = isProfileEditVisible,
-                isManualBillVisible = isManualBillVisible,
-                manualBillEntrySession = manualBillEntrySession,
+                onOpenDrawer = onOpenDrawer,
                 onKeepSubscription = onKeepSubscription,
                 onPullSubscription = onPullSubscription,
                 onMonthlyBudgetChange = onMonthlyBudgetChange,
+                onLinkBillToParent = onLinkBillToParent,
+                onSelectBillForEdit = onSelectBillForEdit,
+                onPetalTapped = onPetalTapped,
+                onShowProfileEdit = onShowProfileEdit,
+                onSelectBottomNavItem = onSelectBottomNavItem,
+                onBloomSettingsClick = onBloomSettingsClick
+            )
+        }
+
+        composable(
+            route = AppRoutes.PETALS_AND_WEEDS,
+            enterTransition = { meadowEnterTransition },
+            exitTransition = { meadowExitTransition },
+            popEnterTransition = { meadowPopEnterTransition },
+            popExitTransition = { meadowPopExitTransition }
+        ) {
+            PetalsAndWeedsScreen(
+                upcomingBills = dashboardUiState.upcomingBills,
+                onOpenDrawer = onOpenDrawer,
+                onSelectBillForEdit = onSelectBillForEdit
+            )
+        }
+
+        composable(
+            route = AppRoutes.RICH_SOIL,
+            enterTransition = { meadowEnterTransition },
+            exitTransition = { meadowExitTransition },
+            popEnterTransition = { meadowPopEnterTransition },
+            popExitTransition = { meadowPopExitTransition }
+        ) {
+            RichSoilScreen(
+                monthlyBudget = dashboardUiState.monthlyBudget,
+                totalUpcoming = dashboardUiState.totalUpcoming,
+                onOpenDrawer = onOpenDrawer
+            )
+        }
+
+        composable(
+            route = AppRoutes.HARVEST_REPORT,
+            enterTransition = { meadowEnterTransition },
+            exitTransition = { meadowExitTransition },
+            popEnterTransition = { meadowPopEnterTransition },
+            popExitTransition = { meadowPopExitTransition }
+        ) {
+            HarvestReportScreen(
+                forecastResult = dashboardUiState.forecastResult,
+                onOpenDrawer = onOpenDrawer
+            )
+        }
+
+        composable(
+            route = AppRoutes.GREENHOUSE_SETTINGS,
+            enterTransition = { meadowEnterTransition },
+            exitTransition = { meadowExitTransition },
+            popEnterTransition = { meadowPopEnterTransition },
+            popExitTransition = { meadowPopExitTransition }
+        ) {
+            GreenhouseSettingsScreen(
+                userDisplayName = dashboardUiState.userDisplayName,
+                selectedCurrencyCode = dashboardUiState.selectedCurrency,
+                settingsUiState = settingsUiState,
+                onOpenDrawer = onOpenDrawer,
+                onShowProfileEdit = onShowProfileEdit,
                 onNagModeToggleRequested = onNagModeToggleRequested,
                 onNotificationPermissionResult = onNotificationPermissionResult,
                 onNotificationPermissionRequestHandled = onNotificationPermissionRequestHandled,
-                onRefreshNotificationPermissionState = onRefreshNotificationPermissionState,
-                onNavigateToPruningSimulator = onNavigateToPruningSimulator,
-                onNavigateToWeedWhacker = onNavigateToWeedWhacker,
-                onNavigateToCompostBin = onNavigateToCompostBin,
-                onLinkBillToParent = onLinkBillToParent,
-                onSelectBillForEdit = onSelectBillForEdit,
-                onClearEditSelection = onClearEditSelection,
-                onSaveBillEdits = onSaveBillEdits,
-                onPetalTapped = onPetalTapped,
-                onClearCategorySelection = onClearCategorySelection,
-                onAddBillToCategory = onAddBillToCategory,
-                onUpdateDisplayName = onUpdateDisplayName,
-                onSaveManualBill = onSaveManualBill,
-                onShowProfileEdit = onShowProfileEdit,
-                onDismissProfileEdit = onDismissProfileEdit,
-                onShowManualBillEntry = onShowManualBillEntry,
-                onDismissManualBillEntry = onDismissManualBillEntry,
-                onSelectBottomNavItem = onSelectBottomNavItem,
-                onBloomSettingsClick = onBloomSettingsClick
+                onRefreshNotificationPermissionState = onRefreshNotificationPermissionState
             )
         }
 
@@ -210,7 +236,8 @@ fun ChargeMeNotNavHost(
                 uiState = weedWhackerUiState,
                 onRecordAuditResponse = onRecordAuditResponse,
                 onRestartAuditSession = onRestartAuditSession,
-                onNavigateBack = onWeedWhackerNavigateBack
+                onNavigateBack = onWeedWhackerNavigateBack,
+                onOpenDrawer = onOpenDrawer
             )
         }
 
@@ -226,7 +253,8 @@ fun ChargeMeNotNavHost(
                 onToggleBillStatus = onToggleBillStatus,
                 onToggleRootExpansion = onToggleRootExpansion,
                 onResetSandbox = onResetSandbox,
-                onNavigateBack = onPruningNavigateBack
+                onNavigateBack = onPruningNavigateBack,
+                onOpenDrawer = onOpenDrawer
             )
         }
 
@@ -259,7 +287,8 @@ fun ChargeMeNotNavHost(
             CompostBinScreen(
                 uiState = compostBinUiState,
                 onSearchQueryChanged = onCompostSearchQueryChanged,
-                onNavigateBack = onCompostBinNavigateBack
+                onNavigateBack = onCompostBinNavigateBack,
+                onOpenDrawer = onOpenDrawer
             )
         }
     }

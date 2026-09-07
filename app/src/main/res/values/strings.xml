@@ -163,4 +163,28 @@
     <string name="manual_bill_date_confirm">Set Date</string>
     <string name="dashboard_manual_bill_entry">Add Bill Manually</string>
     <string name="dashboard_manual_bill_entry_subtitle">Type bill details and choose a due date from the calendar</string>
+    <string name="greenhouse_currency_label">Garden currency</string>
+
+    <string name="meadow_route_garden_hub">Garden Hub</string>
+    <string name="meadow_route_petals_and_weeds">Petals &amp; Weeds</string>
+    <string name="meadow_route_rich_soil">Rich Soil</string>
+    <string name="meadow_route_compost_bin">The Compost Bin</string>
+    <string name="meadow_route_pruning_skills">Test Your Pruning Skills</string>
+    <string name="meadow_route_weed_whacker">Weed Whacker Audit</string>
+    <string name="meadow_route_harvest_report">Harvest Report</string>
+    <string name="meadow_route_greenhouse_settings">Greenhouse Settings</string>
+
+    <string name="petals_and_weeds_empty">No unpaid petals or weeds are sprouting in your garden right now.</string>
+    <string name="petals_and_weeds_bill_meta">%1$s · Due %2$s</string>
+
+    <string name="rich_soil_subtitle">Track how much fertile soil remains in your monthly garden bed.</string>
+    <string name="rich_soil_monthly_budget">Monthly soil capacity</string>
+    <string name="rich_soil_upcoming_outflow">Upcoming bill outflow</string>
+    <string name="rich_soil_nutrients_remaining">Nutrients remaining</string>
+    <string name="rich_soil_fertility_label">Soil fertility</string>
+    <string name="rich_soil_fertility_value">%1$d%% fertile</string>
+    <string name="rich_soil_fertility_hint">Higher fertility means more room for new blooms before your budget is fully planted.</string>
+
+    <string name="harvest_report_empty">Your harvest forecast needs more bill history before the weather report can bloom.</string>
+    <string name="greenhouse_profile_label">Gardener profile</string>
 </resources>

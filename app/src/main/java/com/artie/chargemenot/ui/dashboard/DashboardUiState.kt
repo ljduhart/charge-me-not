@@ -45,5 +45,6 @@ data class DashboardUiState(
     val categoryTotals: Map<BillCategory, Double> = emptyMap(),
     val forecastResult: ForecastResult? = null,
     val selectedBottomNavItem: DashboardBottomNavItem = DashboardBottomNavItem.RENT,
+    val selectedCurrency: String = UserSettings.DEFAULT_CURRENCY,
     val isLoading: Boolean = true
 )

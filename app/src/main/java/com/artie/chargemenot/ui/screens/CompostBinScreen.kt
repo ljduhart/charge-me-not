@@ -18,7 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -71,6 +71,7 @@ fun CompostBinScreen(
     uiState: CompostBinUiState,
     onSearchQueryChanged: (String) -> Unit,
     onNavigateBack: () -> Unit,
+    onOpenDrawer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dateFormat = DateTimeFormatter.ofPattern("MMM d, yyyy")
@@ -89,10 +90,10 @@ fun CompostBinScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = onOpenDrawer) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.compost_bin_back)
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = stringResource(R.string.dashboard_menu)
                         )
                     }
                 },
@@ -328,7 +329,8 @@ private fun CompostBinScreenPreview() {
                 )
             ),
             onSearchQueryChanged = {},
-            onNavigateBack = {}
+            onNavigateBack = {},
+            onOpenDrawer = {}
         )
     }
 }

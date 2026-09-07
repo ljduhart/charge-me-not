@@ -114,6 +114,7 @@ class DashboardViewModel(
                     categoryTotals = categoryTotals,
                     forecastResult = forecast,
                     selectedBottomNavItem = _uiState.value.selectedBottomNavItem,
+                    selectedCurrency = settings.selectedCurrency,
                     isLoading = false
                 )
             }.collect { state ->
