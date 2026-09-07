@@ -25,6 +25,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
@@ -125,6 +126,28 @@ class DashboardViewModelBloomTest {
         assertEquals(1, bills.size)
         assertEquals("Maple Street Apartment", bills.first().name)
         assertEquals(BillCategory.RENT, bills.first().category)
+    }
+
+    @Test
+    fun showManualBillEntry_clearsCategorySelection() {
+        val viewModel = createViewModel()
+        viewModel.onPetalTapped("Food")
+
+        viewModel.showManualBillEntry()
+
+        assertNull(viewModel.selectedCategoryForEdit.value)
+        assertTrue(viewModel.isManualBillVisible.value)
+    }
+
+    @Test
+    fun showProfileEdit_clearsCategorySelection() {
+        val viewModel = createViewModel()
+        viewModel.onPetalTapped("Rent")
+
+        viewModel.showProfileEdit()
+
+        assertNull(viewModel.selectedCategoryForEdit.value)
+        assertTrue(viewModel.isProfileEditVisible.value)
     }
 
     @Test

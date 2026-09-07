@@ -168,6 +168,7 @@ class DashboardViewModel(
 
     fun showProfileEdit() {
         dismissDashboardOverlays()
+        clearBillAndCategorySelection()
         _isProfileEditVisible.value = true
     }
 
@@ -177,6 +178,7 @@ class DashboardViewModel(
 
     fun showManualBillEntry() {
         dismissDashboardOverlays()
+        clearBillAndCategorySelection()
         _manualBillEntrySession.update { session -> session + 1 }
         _isManualBillVisible.value = true
     }
@@ -187,7 +189,7 @@ class DashboardViewModel(
 
     fun selectBillForEdit(bill: Bill) {
         dismissDashboardOverlays()
-        _selectedCategoryForEdit.value = null
+        clearBillAndCategorySelection()
         _selectedBillForEdit.value = bill
     }
 
@@ -197,7 +199,7 @@ class DashboardViewModel(
 
     fun onPetalTapped(category: String) {
         dismissDashboardOverlays()
-        _selectedBillForEdit.value = null
+        clearBillAndCategorySelection()
         _selectedCategoryForEdit.value = category
     }
 
@@ -214,19 +216,23 @@ class DashboardViewModel(
 
     fun selectBottomNavItem(item: DashboardBottomNavItem) {
         dismissDashboardOverlays()
-        _selectedCategoryForEdit.value = null
+        clearBillAndCategorySelection()
         _uiState.update { current -> current.copy(selectedBottomNavItem = item) }
     }
 
     fun clearDashboardTransientState() {
         dismissDashboardOverlays()
-        clearEditSelection()
-        clearCategorySelection()
+        clearBillAndCategorySelection()
     }
 
     private fun dismissDashboardOverlays() {
         _isProfileEditVisible.value = false
         _isManualBillVisible.value = false
+    }
+
+    private fun clearBillAndCategorySelection() {
+        _selectedBillForEdit.value = null
+        _selectedCategoryForEdit.value = null
     }
 
     fun openBloomSettingsEdit() {
