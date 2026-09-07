@@ -23,7 +23,9 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
@@ -126,6 +128,105 @@ class DashboardViewModelBloomTest {
         assertEquals(BillCategory.RENT, bills.first().category)
     }
 
+    @Test
+    fun showManualBillEntry_clearsCategorySelection() {
+        val viewModel = createViewModel()
+        viewModel.onPetalTapped("Food")
+
+        viewModel.showManualBillEntry()
+
+        assertNull(viewModel.selectedCategoryForEdit.value)
+        assertTrue(viewModel.isManualBillVisible.value)
+    }
+
+    @Test
+    fun showProfileEdit_clearsCategorySelection() {
+        val viewModel = createViewModel()
+        viewModel.onPetalTapped("Rent")
+
+        viewModel.showProfileEdit()
+
+        assertNull(viewModel.selectedCategoryForEdit.value)
+        assertTrue(viewModel.isProfileEditVisible.value)
+    }
+
+    @Test
+    fun selectBillForEdit_dismissesProfileAndManualOverlays() {
+        val viewModel = createViewModel()
+        viewModel.showProfileEdit()
+        viewModel.showManualBillEntry()
+
+        viewModel.selectBillForEdit(
+            Bill(
+                id = 1L,
+                name = "Netflix",
+                amount = 15.49,
+                dueDate = LocalDate.of(2026, 9, 12),
+                category = BillCategory.SUBSCRIPTIONS
+            )
+        )
+
+        assertFalse(viewModel.isProfileEditVisible.value)
+        assertFalse(viewModel.isManualBillVisible.value)
+        assertEquals("Netflix", viewModel.selectedBillForEdit.value?.name)
+    }
+
+    @Test
+    fun showManualBillEntry_incrementsSessionForFreshForm() {
+        val viewModel = createViewModel()
+
+        viewModel.showManualBillEntry()
+        val firstSession = viewModel.manualBillEntrySession.value
+        viewModel.dismissManualBillEntry()
+        viewModel.showManualBillEntry()
+
+        assertEquals(firstSession + 1, viewModel.manualBillEntrySession.value)
+    }
+
+    @Test
+    fun clearDashboardTransientState_resetsAllOverlaySelections() {
+        val viewModel = createViewModel()
+        viewModel.showProfileEdit()
+        viewModel.onPetalTapped("Rent")
+        viewModel.selectBillForEdit(
+            Bill(
+                id = 1L,
+                name = "Netflix",
+                amount = 15.49,
+                dueDate = LocalDate.of(2026, 9, 12),
+                category = BillCategory.SUBSCRIPTIONS
+            )
+        )
+
+        viewModel.clearDashboardTransientState()
+
+        assertFalse(viewModel.isProfileEditVisible.value)
+        assertFalse(viewModel.isManualBillVisible.value)
+        assertNull(viewModel.selectedBillForEdit.value)
+        assertNull(viewModel.selectedCategoryForEdit.value)
+    }
+
+    @Test
+    fun updateDisplayName_persistsThroughRepository() {
+        val settingsDao = FakeSettingsDao()
+        val viewModel = DashboardViewModel(
+            billRepository = BillRepository(
+                billDao = CategoryTrackingBillDao(),
+                compostDao = FakeCompostDao()
+            ),
+            userSettingsRepository = UserSettingsRepository(settingsDao),
+            forecastUseCase = ForecastUseCase(CategoryTrackingBillDao()),
+            coroutineScope = testScope,
+            ioDispatcher = testDispatcher
+        )
+        testScope.advanceUntilIdle()
+
+        viewModel.updateDisplayName("Morgan")
+        testScope.advanceUntilIdle()
+
+        assertEquals("Morgan", settingsDao.lastSaved?.displayName)
+    }
+
     private fun createViewModel(): DashboardViewModel {
         return DashboardViewModel(
             billRepository = BillRepository(
@@ -206,10 +307,14 @@ class DashboardViewModelBloomTest {
     }
 
     private class FakeSettingsDao : UserSettingsDao {
+        var lastSaved: UserSettingsEntity? = null
+
         override fun observeSettings(settingsId: Int): Flow<UserSettingsEntity?> =
             MutableStateFlow(UserSettingsEntity(monthlyBudget = 2_500.0, isOnboardingComplete = true))
 
-        override suspend fun upsertSettings(settings: UserSettingsEntity) = Unit
+        override suspend fun upsertSettings(settings: UserSettingsEntity) {
+            lastSaved = settings
+        }
 
         override suspend fun getSettings(settingsId: Int): UserSettingsEntity? =
             UserSettingsEntity(monthlyBudget = 2_500.0, isOnboardingComplete = true)

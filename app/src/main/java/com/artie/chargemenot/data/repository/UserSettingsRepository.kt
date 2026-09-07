@@ -47,6 +47,14 @@ class UserSettingsRepository(
         )
     }
 
+    suspend fun updateDisplayName(displayName: String) {
+        val sanitizedName = displayName.trim().ifBlank { UserSettings.DEFAULT_DISPLAY_NAME }
+        val current = userSettingsDao.getSettings()?.toDomain() ?: UserSettings()
+        userSettingsDao.upsertSettings(
+            current.copy(displayName = sanitizedName).toEntity()
+        )
+    }
+
     suspend fun updateMonthlyBudget(monthlyBudget: Double) {
         val current = userSettingsDao.getSettings()?.toDomain() ?: UserSettings()
         val sanitizedBudget = monthlyBudget.coerceAtLeast(UserSettings.MIN_MONTHLY_BUDGET)

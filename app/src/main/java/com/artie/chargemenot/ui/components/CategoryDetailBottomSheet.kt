@@ -175,8 +175,8 @@ private fun CategoryBillRow(
                 Text(
                     text = bill.name,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MeadowGreenDark,
-                    fontWeight = FontWeight.SemiBold
+                    color = androidx.compose.ui.graphics.Color(0xFF1A1A1A),
+                    fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = stringResource(

@@ -6,12 +6,14 @@ fun UserSettingsEntity.toDomain(): UserSettings = UserSettings(
     monthlyBudget = monthlyBudget,
     isNagModeEnabled = isNagModeEnabled,
     selectedCurrency = selectedCurrency,
-    isOnboardingComplete = isOnboardingComplete
+    isOnboardingComplete = isOnboardingComplete,
+    displayName = displayName
 )
 
 fun UserSettings.toEntity(): UserSettingsEntity = UserSettingsEntity(
     monthlyBudget = monthlyBudget,
     isNagModeEnabled = isNagModeEnabled,
     selectedCurrency = selectedCurrency,
-    isOnboardingComplete = isOnboardingComplete
+    isOnboardingComplete = isOnboardingComplete,
+    displayName = displayName
 )

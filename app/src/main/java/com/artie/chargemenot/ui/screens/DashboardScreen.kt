@@ -33,7 +33,9 @@ import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.LocalFlorist
 import androidx.compose.material.icons.filled.Nature
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
@@ -75,8 +77,10 @@ import com.artie.chargemenot.ui.components.PhotorealisticBloomCanvas
 import com.artie.chargemenot.ui.components.CrossPollinateShareDialog
 import com.artie.chargemenot.ui.components.EditBillBottomSheet
 import com.artie.chargemenot.ui.components.LinkRootBottomSheet
+import com.artie.chargemenot.ui.components.ManualBillBottomSheet
 import com.artie.chargemenot.ui.components.MeadowTickerAmount
 import com.artie.chargemenot.ui.components.NagModeCard
+import com.artie.chargemenot.ui.components.ProfileEditBottomSheet
 import com.artie.chargemenot.ui.components.SubscriptionBrandIcon
 import com.artie.chargemenot.ui.components.WeatherForecastCard
 import com.artie.chargemenot.ui.dashboard.DashboardBottomNavItem
@@ -109,6 +113,9 @@ fun DashboardScreen(
     selectedBillForEdit: Bill?,
     selectedCategoryForEdit: String?,
     categoryBills: List<Bill>,
+    isProfileEditVisible: Boolean,
+    isManualBillVisible: Boolean,
+    manualBillEntrySession: Int,
     onKeepSubscription: (Bill) -> Unit,
     onPullSubscription: (Bill) -> Unit,
     onMonthlyBudgetChange: (String) -> Unit,
@@ -126,6 +133,12 @@ fun DashboardScreen(
     onPetalTapped: (String) -> Unit,
     onClearCategorySelection: () -> Unit,
     onAddBillToCategory: (String) -> Unit,
+    onUpdateDisplayName: (String) -> Unit,
+    onSaveManualBill: (Bill) -> Unit,
+    onShowProfileEdit: () -> Unit,
+    onDismissProfileEdit: () -> Unit,
+    onShowManualBillEntry: () -> Unit,
+    onDismissManualBillEntry: () -> Unit,
     onSelectBottomNavItem: (DashboardBottomNavItem) -> Unit,
     onBloomSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -175,6 +188,24 @@ fun DashboardScreen(
         )
     }
 
+    if (isProfileEditVisible && selectedBillForEdit == null && selectedCategoryForEdit == null) {
+        ProfileEditBottomSheet(
+            currentDisplayName = uiState.userDisplayName,
+            isVisible = true,
+            onDismiss = onDismissProfileEdit,
+            onSave = onUpdateDisplayName
+        )
+    }
+
+    if (isManualBillVisible && selectedBillForEdit == null && selectedCategoryForEdit == null) {
+        ManualBillBottomSheet(
+            isVisible = true,
+            sessionKey = manualBillEntrySession,
+            onDismiss = onDismissManualBillEntry,
+            onSave = onSaveManualBill
+        )
+    }
+
     val filteredSubscriptions = remember(uiState.subscriptionBills, searchQuery) {
         if (searchQuery.isBlank()) {
             uiState.subscriptionBills
@@ -195,6 +226,14 @@ fun DashboardScreen(
                     color = MeadowGreenDark,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)
+                )
+                DrawerNavRow(
+                    label = stringResource(R.string.dashboard_manual_bill_entry),
+                    icon = Icons.Default.Add,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onShowManualBillEntry()
+                    }
                 )
                 DrawerNavRow(
                     label = stringResource(R.string.pruning_simulator_entry),
@@ -291,7 +330,8 @@ fun DashboardScreen(
                 item(key = "greeting_row") {
                     DashboardGreetingRow(
                         userName = uiState.userDisplayName,
-                        formattedDate = uiState.formattedDate
+                        formattedDate = uiState.formattedDate,
+                        onEditProfile = onShowProfileEdit
                     )
                 }
 
@@ -337,15 +377,6 @@ fun DashboardScreen(
                     )
                 }
 
-                uiState.forecastResult?.let { forecast ->
-                    item(key = "weather_forecast") {
-                        WeatherForecastCard(
-                            forecastResult = forecast,
-                            modifier = Modifier.padding(top = 16.dp)
-                        )
-                    }
-                }
-
                 item(key = "subscriptions_header") {
                     SubscriptionsWeedsHeader(modifier = Modifier.padding(top = 20.dp))
                 }
@@ -376,6 +407,15 @@ fun DashboardScreen(
                     }
                 }
 
+                uiState.forecastResult?.let { forecast ->
+                    item(key = "weather_forecast") {
+                        WeatherForecastCard(
+                            forecastResult = forecast,
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
+                    }
+                }
+
                 item(key = "bottom_spacer") {
                     Spacer(modifier = Modifier.height(88.dp))
                 }
@@ -387,10 +427,13 @@ fun DashboardScreen(
 @Composable
 private fun DashboardGreetingRow(
     userName: String,
-    formattedDate: String
+    formattedDate: String,
+    onEditProfile: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onEditProfile),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -423,6 +466,13 @@ private fun DashboardGreetingRow(
                 text = formattedDate,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        IconButton(onClick = onEditProfile) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = stringResource(R.string.profile_edit_tap_hint),
+                tint = MeadowGreenDark
             )
         }
     }
@@ -521,6 +571,7 @@ private fun FinancialBloomCard(
                 categoryTotals = categoryTotals,
                 monthlyBudget = monthlyBudget,
                 highlightedCategory = selectedBottomNavItem.toHighlightCategory(),
+                pendingSubscriptionCount = pendingSubscriptionCount,
                 onPetalTapped = onPetalTapped,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -602,7 +653,7 @@ private fun SubscriptionsWeedsHeader(modifier: Modifier = Modifier) {
         Text(
             text = stringResource(R.string.dashboard_subscriptions_title),
             style = MaterialTheme.typography.titleMedium,
-            color = MeadowGreenDark,
+            color = Color(0xFF1A1A1A),
             fontWeight = FontWeight.Bold
         )
         Text(
@@ -644,8 +695,8 @@ private fun SubscriptionWeedFlowerRow(
                 Text(
                     text = bill.name,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.SemiBold
+                    color = Color(0xFF1A1A1A),
+                    fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = stringResource(R.string.dashboard_keep_pull_prompt),
@@ -774,6 +825,9 @@ private fun DashboardScreenPreview() {
             selectedBillForEdit = null,
             selectedCategoryForEdit = null,
             categoryBills = emptyList(),
+            isProfileEditVisible = false,
+            isManualBillVisible = false,
+            manualBillEntrySession = 0,
             onKeepSubscription = {},
             onPullSubscription = {},
             onMonthlyBudgetChange = {},
@@ -791,6 +845,12 @@ private fun DashboardScreenPreview() {
             onPetalTapped = {},
             onClearCategorySelection = {},
             onAddBillToCategory = {},
+            onUpdateDisplayName = {},
+            onSaveManualBill = {},
+            onShowProfileEdit = {},
+            onDismissProfileEdit = {},
+            onShowManualBillEntry = {},
+            onDismissManualBillEntry = {},
             onSelectBottomNavItem = {},
             onBloomSettingsClick = {}
         )

@@ -7,6 +7,7 @@ import kotlin.math.sqrt
 
 data class BloomCategoryDefinition(
     val displayName: String,
+    val bloomLabel: String,
     val billCategory: BillCategory,
     val baseColor: Color,
     val midColor: Color,
@@ -21,6 +22,7 @@ object BloomCategoryDefinitions {
     val categories: List<BloomCategoryDefinition> = listOf(
         BloomCategoryDefinition(
             displayName = "Rent",
+            bloomLabel = "RENT/MORTGAGE",
             billCategory = BillCategory.RENT,
             baseColor = Color(0xFF8B3A2E),
             midColor = Color(0xFFE07A5F),
@@ -29,6 +31,7 @@ object BloomCategoryDefinitions {
         ),
         BloomCategoryDefinition(
             displayName = "Health",
+            bloomLabel = "HEALTH",
             billCategory = BillCategory.HEALTHCARE,
             baseColor = Color(0xFF9E4F57),
             midColor = Color(0xFFE8B4B8),
@@ -37,6 +40,7 @@ object BloomCategoryDefinitions {
         ),
         BloomCategoryDefinition(
             displayName = "Food",
+            bloomLabel = "FOOD",
             billCategory = BillCategory.FOOD,
             baseColor = Color(0xFFB8860B),
             midColor = Color(0xFFF2CC8F),
@@ -45,6 +49,7 @@ object BloomCategoryDefinitions {
         ),
         BloomCategoryDefinition(
             displayName = "Subscriptions",
+            bloomLabel = "SUBSCRIPTIONS",
             billCategory = BillCategory.SUBSCRIPTIONS,
             baseColor = Color(0xFF6B5B8A),
             midColor = Color(0xFFB8A9C9),
@@ -53,6 +58,7 @@ object BloomCategoryDefinitions {
         ),
         BloomCategoryDefinition(
             displayName = "Utilities",
+            bloomLabel = "UTILITIES",
             billCategory = BillCategory.UTILITIES,
             baseColor = Color(0xFF2F6B55),
             midColor = Color(0xFF81B29A),
@@ -61,6 +67,7 @@ object BloomCategoryDefinitions {
         ),
         BloomCategoryDefinition(
             displayName = "Loans",
+            bloomLabel = "LOANS",
             billCategory = BillCategory.TRANSPORTATION,
             baseColor = Color(0xFF2F4F7A),
             midColor = Color(0xFF6D9DC5),

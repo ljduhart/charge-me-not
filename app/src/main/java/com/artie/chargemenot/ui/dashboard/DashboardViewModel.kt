@@ -45,6 +45,15 @@ class DashboardViewModel(
     private val _selectedCategoryForEdit = MutableStateFlow<String?>(null)
     val selectedCategoryForEdit: StateFlow<String?> = _selectedCategoryForEdit.asStateFlow()
 
+    private val _isProfileEditVisible = MutableStateFlow(false)
+    val isProfileEditVisible: StateFlow<Boolean> = _isProfileEditVisible.asStateFlow()
+
+    private val _isManualBillVisible = MutableStateFlow(false)
+    val isManualBillVisible: StateFlow<Boolean> = _isManualBillVisible.asStateFlow()
+
+    private val _manualBillEntrySession = MutableStateFlow(0)
+    val manualBillEntrySession: StateFlow<Int> = _manualBillEntrySession.asStateFlow()
+
     val categoryBills: StateFlow<List<Bill>> = _selectedCategoryForEdit
         .flatMapLatest { categoryName ->
             if (categoryName == null) {
@@ -81,8 +90,8 @@ class DashboardViewModel(
             combine(
                 billRepository.getUpcomingBills(),
                 billRepository.getAllBills(),
-                userSettingsRepository.observeMonthlyBudget()
-            ) { upcoming, all, monthlyBudget ->
+                userSettingsRepository.observeUserSettings()
+            ) { upcoming, all, settings ->
                 val subscriptions = all.filter { it.category == BillCategory.SUBSCRIPTIONS && !it.isPaid }
                 val categoryTotals = upcoming
                     .groupBy { it.category }
@@ -93,12 +102,12 @@ class DashboardViewModel(
                 )
 
                 DashboardUiState(
-                    userDisplayName = _uiState.value.userDisplayName,
+                    userDisplayName = settings.displayName,
                     formattedDate = formatDisplayDate(LocalDate.now()),
                     greeting = resolveGreeting(),
                     totalUpcoming = upcoming.sumOf { it.amount },
                     upcomingBillCount = upcoming.size,
-                    monthlyBudget = monthlyBudget,
+                    monthlyBudget = settings.monthlyBudget,
                     upcomingBills = upcoming,
                     subscriptionBills = subscriptions,
                     allBills = all,
@@ -143,8 +152,44 @@ class DashboardViewModel(
         }
     }
 
+    fun updateDisplayName(displayName: String) {
+        coroutineScope.launch(ioDispatcher) {
+            userSettingsRepository.updateDisplayName(displayName)
+            _isProfileEditVisible.value = false
+        }
+    }
+
+    fun insertManualBill(bill: Bill) {
+        coroutineScope.launch(ioDispatcher) {
+            billRepository.insertBill(bill)
+            _isManualBillVisible.value = false
+        }
+    }
+
+    fun showProfileEdit() {
+        dismissDashboardOverlays()
+        clearBillAndCategorySelection()
+        _isProfileEditVisible.value = true
+    }
+
+    fun dismissProfileEdit() {
+        _isProfileEditVisible.value = false
+    }
+
+    fun showManualBillEntry() {
+        dismissDashboardOverlays()
+        clearBillAndCategorySelection()
+        _manualBillEntrySession.update { session -> session + 1 }
+        _isManualBillVisible.value = true
+    }
+
+    fun dismissManualBillEntry() {
+        _isManualBillVisible.value = false
+    }
+
     fun selectBillForEdit(bill: Bill) {
-        _selectedCategoryForEdit.value = null
+        dismissDashboardOverlays()
+        clearBillAndCategorySelection()
         _selectedBillForEdit.value = bill
     }
 
@@ -153,7 +198,8 @@ class DashboardViewModel(
     }
 
     fun onPetalTapped(category: String) {
-        _selectedBillForEdit.value = null
+        dismissDashboardOverlays()
+        clearBillAndCategorySelection()
         _selectedCategoryForEdit.value = category
     }
 
@@ -169,8 +215,24 @@ class DashboardViewModel(
     }
 
     fun selectBottomNavItem(item: DashboardBottomNavItem) {
-        _selectedCategoryForEdit.value = null
+        dismissDashboardOverlays()
+        clearBillAndCategorySelection()
         _uiState.update { current -> current.copy(selectedBottomNavItem = item) }
+    }
+
+    fun clearDashboardTransientState() {
+        dismissDashboardOverlays()
+        clearBillAndCategorySelection()
+    }
+
+    private fun dismissDashboardOverlays() {
+        _isProfileEditVisible.value = false
+        _isManualBillVisible.value = false
+    }
+
+    private fun clearBillAndCategorySelection() {
+        _selectedBillForEdit.value = null
+        _selectedCategoryForEdit.value = null
     }
 
     fun openBloomSettingsEdit() {
