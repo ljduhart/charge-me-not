@@ -1,5 +1,6 @@
 package com.artie.chargemenot.ui.components
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -25,12 +26,17 @@ import com.artie.chargemenot.ui.theme.MeadowGreenDark
 fun MeadowHubScaffold(
     title: String,
     onOpenDrawer: () -> Unit,
+    onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
+    floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit
 ) {
+    BackHandler(onBack = onNavigateBack)
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MeadowCream,
+        floatingActionButton = floatingActionButton,
         topBar = {
             TopAppBar(
                 title = {

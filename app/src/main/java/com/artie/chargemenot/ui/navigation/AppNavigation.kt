@@ -115,6 +115,8 @@ fun ChargeMeNotNavHost(
     onSelectBottomNavItem: (DashboardBottomNavItem) -> Unit,
     onBloomSettingsClick: () -> Unit,
     onOpenDrawer: () -> Unit,
+    onMeadowHubNavigateBack: () -> Unit,
+    onShowManualBillEntry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -174,7 +176,9 @@ fun ChargeMeNotNavHost(
             PetalsAndWeedsScreen(
                 upcomingBills = dashboardUiState.upcomingBills,
                 onOpenDrawer = onOpenDrawer,
-                onSelectBillForEdit = onSelectBillForEdit
+                onNavigateBack = onMeadowHubNavigateBack,
+                onSelectBillForEdit = onSelectBillForEdit,
+                onShowManualBillEntry = onShowManualBillEntry
             )
         }
 
@@ -188,7 +192,8 @@ fun ChargeMeNotNavHost(
             RichSoilScreen(
                 monthlyBudget = dashboardUiState.monthlyBudget,
                 totalUpcoming = dashboardUiState.totalUpcoming,
-                onOpenDrawer = onOpenDrawer
+                onOpenDrawer = onOpenDrawer,
+                onNavigateBack = onMeadowHubNavigateBack
             )
         }
 
@@ -201,7 +206,8 @@ fun ChargeMeNotNavHost(
         ) {
             HarvestReportScreen(
                 forecastResult = dashboardUiState.forecastResult,
-                onOpenDrawer = onOpenDrawer
+                onOpenDrawer = onOpenDrawer,
+                onNavigateBack = onMeadowHubNavigateBack
             )
         }
 
@@ -217,6 +223,7 @@ fun ChargeMeNotNavHost(
                 selectedCurrencyCode = dashboardUiState.selectedCurrency,
                 settingsUiState = settingsUiState,
                 onOpenDrawer = onOpenDrawer,
+                onNavigateBack = onMeadowHubNavigateBack,
                 onShowProfileEdit = onShowProfileEdit,
                 onNagModeToggleRequested = onNagModeToggleRequested,
                 onNotificationPermissionResult = onNotificationPermissionResult,

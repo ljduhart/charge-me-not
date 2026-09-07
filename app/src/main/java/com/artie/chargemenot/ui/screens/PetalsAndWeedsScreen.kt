@@ -11,9 +11,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -26,6 +31,7 @@ import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.ui.components.MeadowHubScaffold
 import com.artie.chargemenot.ui.theme.MeadowCream
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
+import com.artie.chargemenot.ui.theme.MeadowSky
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
@@ -35,7 +41,9 @@ import java.util.Locale
 fun PetalsAndWeedsScreen(
     upcomingBills: List<Bill>,
     onOpenDrawer: () -> Unit,
+    onNavigateBack: () -> Unit,
     onSelectBillForEdit: (Bill) -> Unit,
+    onShowManualBillEntry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currencyFormat = rememberCurrencyFormat()
@@ -44,7 +52,24 @@ fun PetalsAndWeedsScreen(
     MeadowHubScaffold(
         title = stringResource(R.string.meadow_route_petals_and_weeds),
         onOpenDrawer = onOpenDrawer,
-        modifier = modifier
+        onNavigateBack = onNavigateBack,
+        modifier = modifier,
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = onShowManualBillEntry,
+                containerColor = MeadowSky,
+                contentColor = MeadowGreenDark,
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = stringResource(R.string.dashboard_manual_bill_entry)
+                    )
+                },
+                text = {
+                    Text(stringResource(R.string.dashboard_manual_bill_entry))
+                }
+            )
+        }
     ) { innerPadding ->
         if (upcomingBills.isEmpty()) {
             Text(

@@ -21,11 +21,13 @@ import com.artie.chargemenot.ui.theme.MeadowCream
 fun HarvestReportScreen(
     forecastResult: ForecastResult?,
     onOpenDrawer: () -> Unit,
+    onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     MeadowHubScaffold(
         title = stringResource(R.string.meadow_route_harvest_report),
         onOpenDrawer = onOpenDrawer,
+        onNavigateBack = onNavigateBack,
         modifier = modifier
     ) { innerPadding ->
         if (forecastResult == null) {

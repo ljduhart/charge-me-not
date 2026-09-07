@@ -33,6 +33,7 @@ fun RichSoilScreen(
     monthlyBudget: Double,
     totalUpcoming: Double,
     onOpenDrawer: () -> Unit,
+    onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
@@ -46,6 +47,7 @@ fun RichSoilScreen(
     MeadowHubScaffold(
         title = stringResource(R.string.meadow_route_rich_soil),
         onOpenDrawer = onOpenDrawer,
+        onNavigateBack = onNavigateBack,
         modifier = modifier
     ) { innerPadding ->
         Column(

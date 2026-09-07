@@ -35,7 +35,7 @@ private val MeadowHeaderSage = Color(0xFF9CAF88)
 
 @Composable
 fun MeadowDrawerSheet(
-    selectedRoute: MeadowRoute,
+    selectedRoute: MeadowRoute?,
     userDisplayName: String,
     onNavigate: (MeadowRoute) -> Unit,
     modifier: Modifier = Modifier

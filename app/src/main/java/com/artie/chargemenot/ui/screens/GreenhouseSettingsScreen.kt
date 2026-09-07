@@ -39,6 +39,7 @@ fun GreenhouseSettingsScreen(
     selectedCurrencyCode: String,
     settingsUiState: SettingsUiState,
     onOpenDrawer: () -> Unit,
+    onNavigateBack: () -> Unit,
     onShowProfileEdit: () -> Unit,
     onNagModeToggleRequested: (Boolean) -> Unit,
     onNotificationPermissionResult: (Boolean) -> Unit,
@@ -49,6 +50,7 @@ fun GreenhouseSettingsScreen(
     MeadowHubScaffold(
         title = stringResource(R.string.meadow_route_greenhouse_settings),
         onOpenDrawer = onOpenDrawer,
+        onNavigateBack = onNavigateBack,
         modifier = modifier
     ) { innerPadding ->
         LazyColumn(

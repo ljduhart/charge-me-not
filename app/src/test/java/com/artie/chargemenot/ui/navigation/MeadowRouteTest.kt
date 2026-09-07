@@ -1,5 +1,6 @@
 package com.artie.chargemenot.ui.navigation
 
+import com.artie.chargemenot.ui.navigation.AppRoutes
 import com.artie.chargemenot.ui.navigation.AppRoutes.DASHBOARD
 import com.artie.chargemenot.ui.navigation.AppRoutes.GREENHOUSE_SETTINGS
 import com.artie.chargemenot.ui.navigation.AppRoutes.HARVEST_REPORT
@@ -17,6 +18,20 @@ class MeadowRouteTest {
         assertEquals(MeadowRoute.RichSoil, MeadowRoute.fromNavRoute(RICH_SOIL))
         assertEquals(MeadowRoute.HarvestReport, MeadowRoute.fromNavRoute(HARVEST_REPORT))
         assertEquals(MeadowRoute.GreenhouseSettings, MeadowRoute.fromNavRoute(GREENHOUSE_SETTINGS))
+    }
+
+    @Test
+    fun fromNavRouteOrNull_returnsNullForNonMeadowRoutes() {
+        assertEquals(null, MeadowRoute.fromNavRouteOrNull("scanner"))
+        assertEquals(null, MeadowRoute.fromNavRouteOrNull("onboarding"))
+        assertEquals(null, MeadowRoute.fromNavRouteOrNull(null))
+    }
+
+    @Test
+    fun fromNavRouteOrNull_mapsDrawerDestinations() {
+        assertEquals(MeadowRoute.CompostBin, MeadowRoute.fromNavRouteOrNull(AppRoutes.COMPOST_BIN))
+        assertEquals(MeadowRoute.PruningSkills, MeadowRoute.fromNavRouteOrNull(AppRoutes.PRUNING_SIMULATOR))
+        assertEquals(MeadowRoute.WeedWhacker, MeadowRoute.fromNavRouteOrNull(AppRoutes.WEED_WHACKER))
     }
 
     @Test

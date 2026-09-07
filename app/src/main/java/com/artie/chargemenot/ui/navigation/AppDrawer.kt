@@ -11,7 +11,7 @@ import com.artie.chargemenot.ui.components.MeadowDrawerSheet
 @Composable
 fun AppDrawer(
     drawerState: DrawerState,
-    selectedRoute: MeadowRoute,
+    selectedRoute: MeadowRoute?,
     userDisplayName: String,
     drawerEnabled: Boolean,
     onNavigate: (MeadowRoute) -> Unit,

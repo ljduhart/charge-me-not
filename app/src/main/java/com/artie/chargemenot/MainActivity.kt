@@ -125,12 +125,15 @@ class MainActivity : ComponentActivity() {
                     coroutineScope.launch {
                         drawerState.close()
                     }
-                    when (meadowRoute) {
-                        MeadowRoute.PruningSkills -> pruningViewModel.resetSandbox()
-                        MeadowRoute.WeedWhacker -> weedWhackerViewModel.restartAuditSession()
-                        else -> Unit
+                    if (currentRoute == AppRoutes.SCANNER) {
+                        scannerViewModel.resetScanSession()
                     }
                     if (meadowRoute.route != currentRoute) {
+                        when (meadowRoute) {
+                            MeadowRoute.PruningSkills -> pruningViewModel.resetSandbox()
+                            MeadowRoute.WeedWhacker -> weedWhackerViewModel.restartAuditSession()
+                            else -> Unit
+                        }
                         navController.navigate(meadowRoute.route) {
                             launchSingleTop = true
                             popUpTo(AppRoutes.DASHBOARD) {
@@ -147,7 +150,7 @@ class MainActivity : ComponentActivity() {
                 } else {
                     AppDrawer(
                         drawerState = drawerState,
-                        selectedRoute = MeadowRoute.fromNavRoute(currentRoute),
+                        selectedRoute = MeadowRoute.fromNavRouteOrNull(currentRoute),
                         userDisplayName = dashboardUiState.userDisplayName,
                         drawerEnabled = currentRoute != AppRoutes.ONBOARDING,
                         onNavigate = navigateMeadowRoute
@@ -279,6 +282,10 @@ class MainActivity : ComponentActivity() {
                                 onSelectBottomNavItem = dashboardViewModel::selectBottomNavItem,
                                 onBloomSettingsClick = dashboardViewModel::openBloomSettingsEdit,
                                 onOpenDrawer = openDrawer,
+                                onMeadowHubNavigateBack = {
+                                    navController.popBackStack()
+                                },
+                                onShowManualBillEntry = dashboardViewModel::showManualBillEntry,
                                 modifier = Modifier.padding(innerPadding)
                             )
                         }
