@@ -66,6 +66,9 @@ class MainActivity : ComponentActivity() {
                 val selectedBillForEdit by dashboardViewModel.selectedBillForEdit.collectAsStateWithLifecycle()
                 val selectedCategoryForEdit by dashboardViewModel.selectedCategoryForEdit.collectAsStateWithLifecycle()
                 val categoryBills by dashboardViewModel.categoryBills.collectAsStateWithLifecycle()
+                val isProfileEditVisible by dashboardViewModel.isProfileEditVisible.collectAsStateWithLifecycle()
+                val isManualBillVisible by dashboardViewModel.isManualBillVisible.collectAsStateWithLifecycle()
+                val manualBillEntrySession by dashboardViewModel.manualBillEntrySession.collectAsStateWithLifecycle()
                 val onboardingUiState by onboardingViewModel.uiState.collectAsStateWithLifecycle()
 
                 var graphStartDestination by remember { mutableStateOf<String?>(null) }
@@ -81,8 +84,7 @@ class MainActivity : ComponentActivity() {
 
                 LaunchedEffect(currentRoute) {
                     if (currentRoute != null && currentRoute != AppRoutes.DASHBOARD) {
-                        dashboardViewModel.clearEditSelection()
-                        dashboardViewModel.clearCategorySelection()
+                        dashboardViewModel.clearDashboardTransientState()
                     }
                 }
 
@@ -154,6 +156,9 @@ class MainActivity : ComponentActivity() {
                         selectedBillForEdit = selectedBillForEdit,
                         selectedCategoryForEdit = selectedCategoryForEdit,
                         categoryBills = categoryBills,
+                        isProfileEditVisible = isProfileEditVisible,
+                        isManualBillVisible = isManualBillVisible,
+                        manualBillEntrySession = manualBillEntrySession,
                         scannerUiState = scannerUiState,
                         settingsUiState = settingsUiState,
                         pruningUiState = pruningUiState,
@@ -236,6 +241,10 @@ class MainActivity : ComponentActivity() {
                         },
                         onUpdateDisplayName = dashboardViewModel::updateDisplayName,
                         onSaveManualBill = dashboardViewModel::insertManualBill,
+                        onShowProfileEdit = dashboardViewModel::showProfileEdit,
+                        onDismissProfileEdit = dashboardViewModel::dismissProfileEdit,
+                        onShowManualBillEntry = dashboardViewModel::showManualBillEntry,
+                        onDismissManualBillEntry = dashboardViewModel::dismissManualBillEntry,
                         onSelectBottomNavItem = dashboardViewModel::selectBottomNavItem,
                         onBloomSettingsClick = dashboardViewModel::openBloomSettingsEdit,
                         modifier = Modifier.padding(innerPadding)

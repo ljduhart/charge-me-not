@@ -52,6 +52,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun ManualBillBottomSheet(
     isVisible: Boolean,
+    sessionKey: Int,
     defaultCategory: BillCategory = BillCategory.SUBSCRIPTIONS,
     onDismiss: () -> Unit,
     onSave: (Bill) -> Unit
@@ -62,12 +63,12 @@ fun ManualBillBottomSheet(
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val dateFormat = remember { DateTimeFormatter.ofPattern("MMM d, yyyy") }
-    var nameInput by remember { mutableStateOf("") }
-    var amountInput by remember { mutableStateOf("") }
-    var selectedDueDate by remember { mutableStateOf(LocalDate.now().plusDays(14)) }
-    var categoryInput by remember(defaultCategory) { mutableStateOf(defaultCategory.name) }
-    var validationError by remember { mutableStateOf<String?>(null) }
-    var showDatePicker by remember { mutableStateOf(false) }
+    var nameInput by remember(sessionKey) { mutableStateOf("") }
+    var amountInput by remember(sessionKey) { mutableStateOf("") }
+    var selectedDueDate by remember(sessionKey) { mutableStateOf(LocalDate.now().plusDays(14)) }
+    var categoryInput by remember(sessionKey) { mutableStateOf(defaultCategory.name) }
+    var validationError by remember(sessionKey) { mutableStateOf<String?>(null) }
+    var showDatePicker by remember(sessionKey) { mutableStateOf(false) }
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(

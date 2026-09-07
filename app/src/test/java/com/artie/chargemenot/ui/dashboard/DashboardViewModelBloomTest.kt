@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -124,6 +125,62 @@ class DashboardViewModelBloomTest {
         assertEquals(1, bills.size)
         assertEquals("Maple Street Apartment", bills.first().name)
         assertEquals(BillCategory.RENT, bills.first().category)
+    }
+
+    @Test
+    fun selectBillForEdit_dismissesProfileAndManualOverlays() {
+        val viewModel = createViewModel()
+        viewModel.showProfileEdit()
+        viewModel.showManualBillEntry()
+
+        viewModel.selectBillForEdit(
+            Bill(
+                id = 1L,
+                name = "Netflix",
+                amount = 15.49,
+                dueDate = LocalDate.of(2026, 9, 12),
+                category = BillCategory.SUBSCRIPTIONS
+            )
+        )
+
+        assertFalse(viewModel.isProfileEditVisible.value)
+        assertFalse(viewModel.isManualBillVisible.value)
+        assertEquals("Netflix", viewModel.selectedBillForEdit.value?.name)
+    }
+
+    @Test
+    fun showManualBillEntry_incrementsSessionForFreshForm() {
+        val viewModel = createViewModel()
+
+        viewModel.showManualBillEntry()
+        val firstSession = viewModel.manualBillEntrySession.value
+        viewModel.dismissManualBillEntry()
+        viewModel.showManualBillEntry()
+
+        assertEquals(firstSession + 1, viewModel.manualBillEntrySession.value)
+    }
+
+    @Test
+    fun clearDashboardTransientState_resetsAllOverlaySelections() {
+        val viewModel = createViewModel()
+        viewModel.showProfileEdit()
+        viewModel.onPetalTapped("Rent")
+        viewModel.selectBillForEdit(
+            Bill(
+                id = 1L,
+                name = "Netflix",
+                amount = 15.49,
+                dueDate = LocalDate.of(2026, 9, 12),
+                category = BillCategory.SUBSCRIPTIONS
+            )
+        )
+
+        viewModel.clearDashboardTransientState()
+
+        assertFalse(viewModel.isProfileEditVisible.value)
+        assertFalse(viewModel.isManualBillVisible.value)
+        assertNull(viewModel.selectedBillForEdit.value)
+        assertNull(viewModel.selectedCategoryForEdit.value)
     }
 
     @Test

@@ -113,6 +113,9 @@ fun DashboardScreen(
     selectedBillForEdit: Bill?,
     selectedCategoryForEdit: String?,
     categoryBills: List<Bill>,
+    isProfileEditVisible: Boolean,
+    isManualBillVisible: Boolean,
+    manualBillEntrySession: Int,
     onKeepSubscription: (Bill) -> Unit,
     onPullSubscription: (Bill) -> Unit,
     onMonthlyBudgetChange: (String) -> Unit,
@@ -132,6 +135,10 @@ fun DashboardScreen(
     onAddBillToCategory: (String) -> Unit,
     onUpdateDisplayName: (String) -> Unit,
     onSaveManualBill: (Bill) -> Unit,
+    onShowProfileEdit: () -> Unit,
+    onDismissProfileEdit: () -> Unit,
+    onShowManualBillEntry: () -> Unit,
+    onDismissManualBillEntry: () -> Unit,
     onSelectBottomNavItem: (DashboardBottomNavItem) -> Unit,
     onBloomSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -143,8 +150,6 @@ fun DashboardScreen(
     var searchQuery by remember { mutableStateOf("") }
     var billToShare by remember { mutableStateOf<Bill?>(null) }
     var billToLink by remember { mutableStateOf<Bill?>(null) }
-    var isProfileEditVisible by remember { mutableStateOf(false) }
-    var isManualBillVisible by remember { mutableStateOf(false) }
 
     billToShare?.let { bill ->
         CrossPollinateShareDialog(
@@ -183,24 +188,23 @@ fun DashboardScreen(
         )
     }
 
-    ProfileEditBottomSheet(
-        currentDisplayName = uiState.userDisplayName,
-        isVisible = isProfileEditVisible,
-        onDismiss = { isProfileEditVisible = false },
-        onSave = { updatedName ->
-            onUpdateDisplayName(updatedName)
-            isProfileEditVisible = false
-        }
-    )
+    if (isProfileEditVisible && selectedBillForEdit == null && selectedCategoryForEdit == null) {
+        ProfileEditBottomSheet(
+            currentDisplayName = uiState.userDisplayName,
+            isVisible = true,
+            onDismiss = onDismissProfileEdit,
+            onSave = onUpdateDisplayName
+        )
+    }
 
-    ManualBillBottomSheet(
-        isVisible = isManualBillVisible,
-        onDismiss = { isManualBillVisible = false },
-        onSave = { bill ->
-            onSaveManualBill(bill)
-            isManualBillVisible = false
-        }
-    )
+    if (isManualBillVisible && selectedBillForEdit == null && selectedCategoryForEdit == null) {
+        ManualBillBottomSheet(
+            isVisible = true,
+            sessionKey = manualBillEntrySession,
+            onDismiss = onDismissManualBillEntry,
+            onSave = onSaveManualBill
+        )
+    }
 
     val filteredSubscriptions = remember(uiState.subscriptionBills, searchQuery) {
         if (searchQuery.isBlank()) {
@@ -228,7 +232,7 @@ fun DashboardScreen(
                     icon = Icons.Default.Add,
                     onClick = {
                         scope.launch { drawerState.close() }
-                        isManualBillVisible = true
+                        onShowManualBillEntry()
                     }
                 )
                 DrawerNavRow(
@@ -327,7 +331,7 @@ fun DashboardScreen(
                     DashboardGreetingRow(
                         userName = uiState.userDisplayName,
                         formattedDate = uiState.formattedDate,
-                        onEditProfile = { isProfileEditVisible = true }
+                        onEditProfile = onShowProfileEdit
                     )
                 }
 
@@ -821,6 +825,9 @@ private fun DashboardScreenPreview() {
             selectedBillForEdit = null,
             selectedCategoryForEdit = null,
             categoryBills = emptyList(),
+            isProfileEditVisible = false,
+            isManualBillVisible = false,
+            manualBillEntrySession = 0,
             onKeepSubscription = {},
             onPullSubscription = {},
             onMonthlyBudgetChange = {},
@@ -840,6 +847,10 @@ private fun DashboardScreenPreview() {
             onAddBillToCategory = {},
             onUpdateDisplayName = {},
             onSaveManualBill = {},
+            onShowProfileEdit = {},
+            onDismissProfileEdit = {},
+            onShowManualBillEntry = {},
+            onDismissManualBillEntry = {},
             onSelectBottomNavItem = {},
             onBloomSettingsClick = {}
         )
