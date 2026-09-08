@@ -12,7 +12,8 @@ data class BloomCategoryDefinition(
     val baseColor: Color,
     val midColor: Color,
     val highlightColor: Color,
-    val shadowColor: Color
+    val shadowColor: Color,
+    val labelAngleOffsetDegrees: Float = 0f
 )
 
 object BloomCategoryDefinitions {
@@ -63,7 +64,8 @@ object BloomCategoryDefinitions {
             baseColor = Color(0xFF9E4F57),
             midColor = Color(0xFFE8B4B8),
             highlightColor = Color(0xFFF5D0D3),
-            shadowColor = Color(0xFF5A2A30)
+            shadowColor = Color(0xFF5A2A30),
+            labelAngleOffsetDegrees = -18f
         ),
         BloomCategoryDefinition(
             displayName = "Wildflowers",
@@ -72,7 +74,8 @@ object BloomCategoryDefinitions {
             baseColor = Color(0xFF2F6B55),
             midColor = Color(0xFF81B29A),
             highlightColor = Color(0xFFB8E0CC),
-            shadowColor = Color(0xFF1A3D30)
+            shadowColor = Color(0xFF1A3D30),
+            labelAngleOffsetDegrees = 18f
         )
     )
 
@@ -111,24 +114,29 @@ data class BloomLayoutSpec(
 )
 
 object BloomLayout {
+    private const val FLOWER_RADIUS_FACTOR = 0.48f
+    private const val UNIFORM_INSET_DP = 12f
     private val labelSamples = BloomCategoryDefinitions.categories.map { definition -> definition.bloomLabel }
 
     fun compute(canvasWidth: Float, canvasHeight: Float, density: Float): BloomLayoutSpec {
-        val horizontalInset = 28f * density
-        val verticalInset = 24f * density
-        val drawableWidth = (canvasWidth - horizontalInset * 2f).coerceAtLeast(1f)
-        val drawableHeight = (canvasHeight - verticalInset * 2f).coerceAtLeast(1f)
-        val maxRadius = minOf(drawableWidth, drawableHeight) * 0.24f
+        val uniformInset = UNIFORM_INSET_DP * density
+        val drawableWidth = (canvasWidth - uniformInset * 2f).coerceAtLeast(1f)
+        val drawableHeight = (canvasHeight - uniformInset * 2f).coerceAtLeast(1f)
         val centerX = canvasWidth / 2f
-        val centerY = verticalInset + drawableHeight * 0.46f
+        val centerY = canvasHeight / 2f
+        val drawableMin = minOf(drawableWidth, drawableHeight)
+        val labelBand = drawableMin * 0.18f
+        val maxRadius = ((drawableMin / 2f) - labelBand)
+            .coerceAtLeast(drawableMin * 0.2f)
+            .coerceAtMost(drawableMin * FLOWER_RADIUS_FACTOR)
         val petalLength = maxRadius * 0.9f
         val petalWidth = maxRadius * 0.56f
-        val labelRadius = maxRadius * 1.14f
-        val maxLabelWidth = drawableWidth * 0.34f
+        val labelRadius = maxRadius * 1.08f
+        val maxLabelWidth = drawableWidth * 0.28f
         val labelTextSizePx = fitLabelTextSize(
             labels = labelSamples,
             maxWidth = maxLabelWidth,
-            baseTextSize = 11f * density
+            baseTextSize = 10f * density
         )
 
         return BloomLayoutSpec(
@@ -141,7 +149,7 @@ object BloomLayout {
             innerTouchRadius = maxRadius * 0.16f,
             outerTouchRadius = maxRadius * 0.98f,
             labelTouchRadius = (labelRadius + labelTextSizePx * 0.55f)
-                .coerceAtMost(minOf(canvasWidth, canvasHeight) * 0.48f),
+                .coerceAtMost(minOf(canvasWidth, canvasHeight) * 0.49f),
             labelTextSizePx = labelTextSizePx
         )
     }

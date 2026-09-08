@@ -82,8 +82,8 @@ fun PhotorealisticBloomCanvas(
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .height(500.dp)
-            .padding(horizontal = 4.dp)
+            .height(350.dp)
+            .padding(horizontal = 2.dp)
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
                     val layout = BloomLayout.compute(
@@ -173,12 +173,14 @@ private fun DrawScope.drawCategoryLabel(
     alphaMultiplier: Float,
     labelPaint: Paint
 ) {
-    val labelAngleRadians = Math.toRadians((sliceAngle - 90f).toDouble())
+    val labelAngleDegrees = sliceAngle - 90f + definition.labelAngleOffsetDegrees
+    val labelAngleRadians = Math.toRadians(labelAngleDegrees.toDouble())
     val labelX = layout.centerX + cos(labelAngleRadians).toFloat() * layout.labelRadius
     val labelY = layout.centerY + sin(labelAngleRadians).toFloat() * layout.labelRadius
+    val connectorAngleRadians = Math.toRadians((sliceAngle - 90f).toDouble())
     val petalTipRadius = layout.maxRadius * 0.82f
-    val petalTipX = layout.centerX + cos(labelAngleRadians).toFloat() * petalTipRadius
-    val petalTipY = layout.centerY + sin(labelAngleRadians).toFloat() * petalTipRadius
+    val petalTipX = layout.centerX + cos(connectorAngleRadians).toFloat() * petalTipRadius
+    val petalTipY = layout.centerY + sin(connectorAngleRadians).toFloat() * petalTipRadius
 
     drawLine(
         color = MeadowGreenDark.copy(alpha = 0.28f * alphaMultiplier),
@@ -187,17 +189,25 @@ private fun DrawScope.drawCategoryLabel(
         strokeWidth = 1.25f
     )
 
-    val horizontalMargin = layout.maxRadius * 0.12f
-    labelPaint.textAlign = when {
-        labelX > layout.centerX + horizontalMargin -> Paint.Align.RIGHT
-        labelX < layout.centerX - horizontalMargin -> Paint.Align.LEFT
-        else -> Paint.Align.CENTER
+    val horizontalMargin = layout.maxRadius * 0.1f
+    labelPaint.textAlign = when (definition.displayName) {
+        "Pollinators" -> Paint.Align.RIGHT
+        "Wildflowers" -> Paint.Align.LEFT
+        else -> when {
+            labelX > layout.centerX + horizontalMargin -> Paint.Align.RIGHT
+            labelX < layout.centerX - horizontalMargin -> Paint.Align.LEFT
+            else -> Paint.Align.CENTER
+        }
     }
 
-    val baselineOffset = when {
-        labelY < layout.centerY - layout.maxRadius * 0.2f -> layout.labelTextSizePx * 0.35f
-        labelY > layout.centerY + layout.maxRadius * 0.2f -> -layout.labelTextSizePx * 0.15f
-        else -> layout.labelTextSizePx * 0.35f
+    val baselineOffset = when (definition.displayName) {
+        "Pollinators" -> layout.labelTextSizePx * 0.2f
+        "Wildflowers" -> layout.labelTextSizePx * 0.2f
+        else -> when {
+            labelY < layout.centerY - layout.maxRadius * 0.2f -> layout.labelTextSizePx * 0.35f
+            labelY > layout.centerY + layout.maxRadius * 0.2f -> -layout.labelTextSizePx * 0.15f
+            else -> layout.labelTextSizePx * 0.35f
+        }
     }
 
     drawContext.canvas.nativeCanvas.drawText(
@@ -410,8 +420,8 @@ private fun DrawScope.drawFlowerCenter(center: Offset, radius: Float) {
 }
 
 private fun DrawScope.drawStemAndLeaves(center: Offset, maxRadius: Float) {
-    val stemTop = Offset(center.x, center.y + maxRadius * 0.14f)
-    val stemBottom = Offset(center.x, center.y + maxRadius * 0.82f)
+    val stemTop = Offset(center.x, center.y + maxRadius * 0.12f)
+    val stemBottom = Offset(center.x, center.y + maxRadius * 0.48f)
 
     drawLine(
         brush = Brush.verticalGradient(

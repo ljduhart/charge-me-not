@@ -1,6 +1,7 @@
 package com.artie.chargemenot.ui.components
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -55,29 +56,48 @@ class BloomTouchMathTest {
     fun bloomLayout_usesEqualPetalDimensions() {
         val layout = BloomLayout.compute(
             canvasWidth = 1080f,
-            canvasHeight = 1500f,
+            canvasHeight = 1050f,
             density = 3f
         )
 
+        assertEquals(540f, layout.centerX, 0.1f)
+        assertEquals(525f, layout.centerY, 0.1f)
         assertEquals(layout.petalLength, layout.maxRadius * 0.9f)
         assertEquals(layout.petalWidth, layout.maxRadius * 0.56f)
         assertTrue(layout.labelTouchRadius >= layout.outerTouchRadius)
+        assertTrue(layout.maxRadius > 1080f * 0.24f)
     }
 
     @Test
     fun bloomLayout_fitsLongestCategoryLabel() {
         val layout = BloomLayout.compute(
             canvasWidth = 360f,
-            canvasHeight = 500f,
+            canvasHeight = 350f,
             density = 2f
         )
         val longestLabelLength = BloomCategoryDefinitions.categories.maxOf { definition ->
             definition.bloomLabel.length
         }
         val estimatedWidth = longestLabelLength * layout.labelTextSizePx * 0.62f
-        val maxLabelWidth = (360f - 56f) * 0.34f
+        val maxLabelWidth = (360f - 48f) * 0.28f
 
         assertTrue(estimatedWidth <= maxLabelWidth + 1f)
+    }
+
+    @Test
+    fun bloomCategoryDefinitions_separatesBottomLabelAngles() {
+        val pollinators = BloomCategoryDefinitions.fromDisplayName("Pollinators")
+        val wildflowers = BloomCategoryDefinitions.fromDisplayName("Wildflowers")
+
+        assertNotNull(pollinators)
+        assertNotNull(wildflowers)
+        assertTrue(pollinators!!.labelAngleOffsetDegrees < 0f)
+        assertTrue(wildflowers!!.labelAngleOffsetDegrees > 0f)
+        assertTrue(
+            kotlin.math.abs(
+                pollinators.labelAngleOffsetDegrees - wildflowers.labelAngleOffsetDegrees
+            ) >= 30f
+        )
     }
 
     @Test
@@ -95,7 +115,7 @@ class BloomTouchMathTest {
     fun sliceIndexAtPoint_acceptsLabelRadiusTap() {
         val layout = BloomLayout.compute(
             canvasWidth = 360f,
-            canvasHeight = 500f,
+            canvasHeight = 350f,
             density = 2f
         )
         val labelAngleRadians = Math.toRadians(-90.0)
@@ -119,7 +139,7 @@ class BloomTouchMathTest {
     fun sliceIndexAtPoint_rejectsTapOutsideLabelRadius() {
         val layout = BloomLayout.compute(
             canvasWidth = 360f,
-            canvasHeight = 500f,
+            canvasHeight = 350f,
             density = 2f
         )
 
