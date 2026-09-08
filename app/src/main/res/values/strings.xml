@@ -187,4 +187,12 @@
 
     <string name="harvest_report_empty">Your harvest forecast needs more bill history before the weather report can bloom.</string>
     <string name="greenhouse_profile_label">Gardener profile</string>
+
+    <string name="meadow_bill_calendar_title">Bill Due Date Calendar</string>
+    <string name="meadow_bill_calendar_month_flower">%1$s %2$d · %3$s bloom</string>
+    <string name="meadow_bill_calendar_expand">Expand calendar</string>
+    <string name="meadow_bill_calendar_collapse">Collapse calendar</string>
+    <string name="meadow_bill_calendar_previous_month">Previous month</string>
+    <string name="meadow_bill_calendar_next_month">Next month</string>
+    <string name="meadow_bill_calendar_tap_hint">Tap any day to plant a bill due date. Tap a green dot to edit an existing bill.</string>
 </resources>

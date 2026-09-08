@@ -79,6 +79,7 @@ class MainActivity : ComponentActivity() {
                 val isProfileEditVisible by dashboardViewModel.isProfileEditVisible.collectAsStateWithLifecycle()
                 val isManualBillVisible by dashboardViewModel.isManualBillVisible.collectAsStateWithLifecycle()
                 val manualBillEntrySession by dashboardViewModel.manualBillEntrySession.collectAsStateWithLifecycle()
+                val manualBillPrefillDate by dashboardViewModel.manualBillPrefillDate.collectAsStateWithLifecycle()
                 val onboardingUiState by onboardingViewModel.uiState.collectAsStateWithLifecycle()
 
                 var graphStartDestination by remember { mutableStateOf<String?>(null) }
@@ -162,6 +163,7 @@ class MainActivity : ComponentActivity() {
                             isProfileEditVisible = isProfileEditVisible,
                             isManualBillVisible = isManualBillVisible,
                             manualBillEntrySession = manualBillEntrySession,
+                            manualBillPrefillDate = manualBillPrefillDate,
                             userDisplayName = dashboardUiState.userDisplayName,
                             onClearEditSelection = dashboardViewModel::clearEditSelection,
                             onSaveBillEdits = dashboardViewModel::saveBillEdits,
@@ -279,7 +281,11 @@ class MainActivity : ComponentActivity() {
                                 onSelectBillForEdit = dashboardViewModel::selectBillForEdit,
                                 onPetalTapped = dashboardViewModel::onPetalTapped,
                                 onShowProfileEdit = dashboardViewModel::showProfileEdit,
-                                onSelectBottomNavItem = dashboardViewModel::selectBottomNavItem,
+                                onToggleBillCalendarExpanded = dashboardViewModel::toggleBillCalendarExpanded,
+                                onPreviousCalendarMonth = dashboardViewModel::showPreviousCalendarMonth,
+                                onNextCalendarMonth = dashboardViewModel::showNextCalendarMonth,
+                                onCalendarDayTapped = dashboardViewModel::onCalendarDayTapped,
+                                onCalendarBillTapped = dashboardViewModel::onCalendarBillTapped,
                                 onBloomSettingsClick = dashboardViewModel::openBloomSettingsEdit,
                                 onOpenDrawer = openDrawer,
                                 onMeadowHubNavigateBack = {

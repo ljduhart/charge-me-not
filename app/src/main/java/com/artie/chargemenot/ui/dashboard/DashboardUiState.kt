@@ -4,33 +4,8 @@ import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.domain.model.ForecastResult
 import com.artie.chargemenot.domain.model.UserSettings
-
-enum class DashboardBottomNavItem {
-    RENT,
-    LOANS,
-    UTILITIES,
-    OTHERS
-}
-
-fun DashboardBottomNavItem.toHighlightCategory(): BillCategory? = when (this) {
-    DashboardBottomNavItem.RENT -> BillCategory.RENT
-    DashboardBottomNavItem.LOANS -> BillCategory.TRANSPORTATION
-    DashboardBottomNavItem.UTILITIES -> BillCategory.UTILITIES
-    DashboardBottomNavItem.OTHERS -> BillCategory.OTHER
-}
-
-fun BillCategory.matchesDashboardNav(item: DashboardBottomNavItem): Boolean {
-    return when (item) {
-        DashboardBottomNavItem.RENT -> this == BillCategory.RENT
-        DashboardBottomNavItem.LOANS -> this == BillCategory.TRANSPORTATION
-        DashboardBottomNavItem.UTILITIES -> this == BillCategory.UTILITIES
-        DashboardBottomNavItem.OTHERS -> this !in setOf(
-            BillCategory.RENT,
-            BillCategory.TRANSPORTATION,
-            BillCategory.UTILITIES
-        )
-    }
-}
+import java.time.LocalDate
+import java.time.YearMonth
 
 data class DashboardUiState(
     val userDisplayName: String = "Sarah",
@@ -44,7 +19,11 @@ data class DashboardUiState(
     val allBills: List<Bill> = emptyList(),
     val categoryTotals: Map<BillCategory, Double> = emptyMap(),
     val forecastResult: ForecastResult? = null,
-    val selectedBottomNavItem: DashboardBottomNavItem = DashboardBottomNavItem.RENT,
+    val highlightedBloomCategory: BillCategory? = null,
     val selectedCurrency: String = UserSettings.DEFAULT_CURRENCY,
+    val isBillCalendarExpanded: Boolean = false,
+    val calendarVisibleMonth: YearMonth = YearMonth.now(),
+    val billsByDueDate: Map<LocalDate, List<Bill>> = emptyMap(),
+    val selectedCalendarDate: LocalDate? = null,
     val isLoading: Boolean = true
 )

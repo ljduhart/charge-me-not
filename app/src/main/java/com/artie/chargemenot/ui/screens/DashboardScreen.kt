@@ -19,27 +19,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.DirectionsCar
-import androidx.compose.material.icons.filled.Eco
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.LocalFlorist
 import androidx.compose.material.icons.filled.Nature
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -65,13 +59,12 @@ import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.ui.components.PhotorealisticBloomCanvas
 import com.artie.chargemenot.ui.components.CrossPollinateShareDialog
 import com.artie.chargemenot.ui.components.LinkRootBottomSheet
+import com.artie.chargemenot.ui.components.MeadowBillCalendarCard
 import com.artie.chargemenot.ui.components.MeadowTickerAmount
 import com.artie.chargemenot.ui.components.SubscriptionBrandIcon
 import com.artie.chargemenot.ui.components.WeatherForecastCard
-import com.artie.chargemenot.ui.dashboard.DashboardBottomNavItem
 import com.artie.chargemenot.domain.model.UserSettings
 import com.artie.chargemenot.ui.dashboard.DashboardUiState
-import com.artie.chargemenot.ui.dashboard.toHighlightCategory
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import com.artie.chargemenot.ui.theme.MeadowEarth
@@ -100,7 +93,11 @@ fun DashboardScreen(
     onSelectBillForEdit: (Bill) -> Unit,
     onPetalTapped: (String) -> Unit,
     onShowProfileEdit: () -> Unit,
-    onSelectBottomNavItem: (DashboardBottomNavItem) -> Unit,
+    onToggleBillCalendarExpanded: () -> Unit,
+    onPreviousCalendarMonth: () -> Unit,
+    onNextCalendarMonth: () -> Unit,
+    onCalendarDayTapped: (LocalDate) -> Unit,
+    onCalendarBillTapped: (Bill) -> Unit,
     onBloomSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -182,12 +179,6 @@ fun DashboardScreen(
                         actionIconContentColor = MeadowGreenDark
                     )
                 )
-            },
-            bottomBar = {
-                DashboardBottomNavigationBar(
-                    selectedItem = uiState.selectedBottomNavItem,
-                    onSelectItem = onSelectBottomNavItem
-                )
             }
         ) { innerPadding ->
             LazyColumn(
@@ -239,7 +230,7 @@ fun DashboardScreen(
                         categoryTotals = uiState.categoryTotals,
                         pendingSubscriptionCount = uiState.subscriptionBills.size,
                         monthlyBudget = uiState.monthlyBudget,
-                        selectedBottomNavItem = uiState.selectedBottomNavItem,
+                        highlightedBloomCategory = uiState.highlightedBloomCategory,
                         onBloomSettingsClick = onBloomSettingsClick,
                         onMonthlyBudgetChange = onMonthlyBudgetChange,
                         onPetalTapped = onPetalTapped,
@@ -275,6 +266,21 @@ fun DashboardScreen(
                             modifier = Modifier.padding(top = 10.dp)
                         )
                     }
+                }
+
+                item(key = "bill_due_calendar") {
+                    MeadowBillCalendarCard(
+                        visibleMonth = uiState.calendarVisibleMonth,
+                        isExpanded = uiState.isBillCalendarExpanded,
+                        billsByDueDate = uiState.billsByDueDate,
+                        selectedDate = uiState.selectedCalendarDate,
+                        onToggleExpanded = onToggleBillCalendarExpanded,
+                        onPreviousMonth = onPreviousCalendarMonth,
+                        onNextMonth = onNextCalendarMonth,
+                        onDayTapped = onCalendarDayTapped,
+                        onBillTapped = onCalendarBillTapped,
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
                 }
 
                 uiState.forecastResult?.let { forecast ->
@@ -394,7 +400,7 @@ private fun FinancialBloomCard(
     categoryTotals: Map<BillCategory, Double>,
     pendingSubscriptionCount: Int,
     monthlyBudget: Double,
-    selectedBottomNavItem: DashboardBottomNavItem,
+    highlightedBloomCategory: BillCategory?,
     onBloomSettingsClick: () -> Unit,
     onMonthlyBudgetChange: (String) -> Unit,
     onPetalTapped: (String) -> Unit,
@@ -439,7 +445,7 @@ private fun FinancialBloomCard(
             PhotorealisticBloomCanvas(
                 categoryTotals = categoryTotals,
                 monthlyBudget = monthlyBudget,
-                highlightedCategory = selectedBottomNavItem.toHighlightCategory(),
+                highlightedCategory = highlightedBloomCategory,
                 pendingSubscriptionCount = pendingSubscriptionCount,
                 onPetalTapped = onPetalTapped,
                 modifier = Modifier.fillMaxWidth()
@@ -609,42 +615,6 @@ private fun SubscriptionWeedFlowerRow(
     }
 }
 
-@Composable
-private fun DashboardBottomNavigationBar(
-    selectedItem: DashboardBottomNavItem,
-    onSelectItem: (DashboardBottomNavItem) -> Unit
-) {
-    NavigationBar(
-        containerColor = MeadowWhite,
-        tonalElevation = 4.dp
-    ) {
-        NavigationBarItem(
-            selected = selectedItem == DashboardBottomNavItem.RENT,
-            onClick = { onSelectItem(DashboardBottomNavItem.RENT) },
-            icon = { Icon(Icons.Default.Home, contentDescription = null) },
-            label = { Text(stringResource(R.string.dashboard_nav_rent)) }
-        )
-        NavigationBarItem(
-            selected = selectedItem == DashboardBottomNavItem.LOANS,
-            onClick = { onSelectItem(DashboardBottomNavItem.LOANS) },
-            icon = { Icon(Icons.Default.DirectionsCar, contentDescription = null) },
-            label = { Text(stringResource(R.string.dashboard_nav_loans)) }
-        )
-        NavigationBarItem(
-            selected = selectedItem == DashboardBottomNavItem.UTILITIES,
-            onClick = { onSelectItem(DashboardBottomNavItem.UTILITIES) },
-            icon = { Icon(Icons.Default.Bolt, contentDescription = null) },
-            label = { Text(stringResource(R.string.dashboard_nav_utilities)) }
-        )
-        NavigationBarItem(
-            selected = selectedItem == DashboardBottomNavItem.OTHERS,
-            onClick = { onSelectItem(DashboardBottomNavItem.OTHERS) },
-            icon = { Icon(Icons.Default.Build, contentDescription = null) },
-            label = { Text(stringResource(R.string.dashboard_nav_others)) }
-        )
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
 private fun DashboardScreenPreview() {
@@ -675,7 +645,11 @@ private fun DashboardScreenPreview() {
             onSelectBillForEdit = {},
             onPetalTapped = {},
             onShowProfileEdit = {},
-            onSelectBottomNavItem = {},
+            onToggleBillCalendarExpanded = {},
+            onPreviousCalendarMonth = {},
+            onNextCalendarMonth = {},
+            onCalendarDayTapped = {},
+            onCalendarBillTapped = {},
             onBloomSettingsClick = {}
         )
     }
