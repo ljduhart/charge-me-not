@@ -306,7 +306,13 @@ private fun MeadowBillCalendarDayCell(
                 color = borderColor,
                 shape = RoundedCornerShape(10.dp)
             )
-            .clickable { onDayTapped(date) }
+            .then(
+                if (!showBillDots) {
+                    Modifier.clickable { onDayTapped(date) }
+                } else {
+                    Modifier
+                }
+            )
             .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -315,21 +321,37 @@ private fun MeadowBillCalendarDayCell(
             text = date.dayOfMonth.toString(),
             style = MaterialTheme.typography.labelMedium,
             color = if (isToday) MeadowGreenDark else Color(0xFF1A1A1A),
-            fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Medium
+            fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Medium,
+            modifier = if (showBillDots) {
+                Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .clickable { onDayTapped(date) }
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            } else {
+                Modifier
+            }
         )
         if (showBillDots && bills.isNotEmpty()) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier.padding(top = 2.dp)
             ) {
                 bills.take(3).forEach { bill ->
                     Box(
                         modifier = Modifier
-                            .size(6.dp)
+                            .size(12.dp)
                             .clip(CircleShape)
                             .background(MeadowGreen)
-                            .clickable { onBillTapped(bill) }
-                    )
+                            .clickable { onBillTapped(bill) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(MeadowGreenDark)
+                        )
+                    }
                 }
             }
             if (bills.size > 3) {

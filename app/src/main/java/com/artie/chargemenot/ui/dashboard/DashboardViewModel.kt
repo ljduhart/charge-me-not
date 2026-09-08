@@ -177,6 +177,7 @@ class DashboardViewModel(
             billRepository.insertBill(bill)
             _isManualBillVisible.value = false
             _manualBillPrefillDate.value = null
+            _uiState.update { current -> current.copy(selectedCalendarDate = null) }
         }
     }
 
@@ -201,6 +202,7 @@ class DashboardViewModel(
     fun dismissManualBillEntry() {
         _isManualBillVisible.value = false
         _manualBillPrefillDate.value = null
+        _uiState.update { current -> current.copy(selectedCalendarDate = null) }
     }
 
     fun selectBillForEdit(bill: Bill) {
@@ -264,6 +266,9 @@ class DashboardViewModel(
     }
 
     fun onCalendarBillTapped(bill: Bill) {
+        _uiState.update { current ->
+            current.copy(selectedCalendarDate = bill.dueDate)
+        }
         selectBillForEdit(bill)
     }
 

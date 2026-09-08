@@ -206,6 +206,30 @@ class DashboardViewModelBloomTest {
     }
 
     @Test
+    fun dismissManualBillEntry_clearsSelectedCalendarDate() {
+        val viewModel = createViewModel()
+        val dueDate = LocalDate.of(2026, 9, 18)
+
+        viewModel.onCalendarDayTapped(dueDate)
+        viewModel.dismissManualBillEntry()
+
+        assertNull(viewModel.uiState.value.selectedCalendarDate)
+        assertFalse(viewModel.isManualBillVisible.value)
+    }
+
+    @Test
+    fun onCalendarBillTapped_opensBillEditAndHighlightsDueDate() {
+        val viewModel = createViewModel()
+        testScope.advanceUntilIdle()
+        val bill = viewModel.uiState.value.allBills.first()
+
+        viewModel.onCalendarBillTapped(bill)
+
+        assertEquals(bill.dueDate, viewModel.uiState.value.selectedCalendarDate)
+        assertEquals(bill.id, viewModel.selectedBillForEdit.value?.id)
+    }
+
+    @Test
     fun clearDashboardTransientState_resetsAllOverlaySelections() {
         val viewModel = createViewModel()
         viewModel.showProfileEdit()
