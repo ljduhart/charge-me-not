@@ -32,7 +32,6 @@ import com.artie.chargemenot.ui.viewmodels.WeedWhackerUiState
 import com.artie.chargemenot.data.model.CrossPollinationPayload
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.scanner.OcrScanResult
-import com.artie.chargemenot.domain.model.BillCategory
 
 private const val MEADOW_TRANSITION_DURATION_MS = 320
 private const val MEADOW_SLIDE_FRACTION = 12
@@ -94,7 +93,7 @@ fun ChargeMeNotNavHost(
     onResetSandbox: () -> Unit,
     onScanResult: (OcrScanResult, String?) -> Unit,
     onQrPayloadDetected: (CrossPollinationPayload) -> Unit,
-    onCategorySelected: (BillCategory) -> Unit,
+    onCategorySelected: (String) -> Unit,
     onAcceptPollinatedBill: () -> Unit,
     onDiscardPollen: () -> Unit,
     onScannerNavigateBack: () -> Unit,

@@ -1,6 +1,6 @@
 package com.artie.chargemenot.ui.viewmodels
 
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import java.time.LocalDate
 
 data class ScannedBillData(
@@ -11,7 +11,7 @@ data class ScannedBillData(
 )
 
 data class PredictiveImpact(
-    val category: BillCategory,
+    val parentCategory: String,
     val newPetalSizePercent: Double,
     val scannedAmount: Double,
     val withinBudget: Boolean,
@@ -22,13 +22,15 @@ data class PollenReceivedState(
     val name: String,
     val amount: Double,
     val dueDate: LocalDate,
-    val category: BillCategory
+    val parentCategory: String,
+    val subCategory: String
 )
 
 data class ScannerUiState(
     val scannedBill: ScannedBillData = ScannedBillData(),
-    val selectedCategory: BillCategory = BillCategory.UTILITIES,
-    val categoryTotals: Map<BillCategory, Double> = emptyMap(),
+    val selectedParentCategory: String = MeadowCategories.ROOT_SYSTEM,
+    val selectedSubCategory: String = MeadowCategories.defaultSubcategoryByParent[MeadowCategories.ROOT_SYSTEM]!!,
+    val parentCategoryTotals: Map<String, Double> = emptyMap(),
     val monthlyBudget: Double = com.artie.chargemenot.domain.model.UserSettings.DEFAULT_MONTHLY_BUDGET,
     val predictiveImpact: PredictiveImpact? = null,
     val scanStatusMessage: String = "Point camera at your bill to scan",

@@ -27,7 +27,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.ui.theme.MeadowEarth
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowWhite
@@ -38,9 +38,9 @@ import kotlin.math.sin
 
 @Composable
 fun PhotorealisticBloomCanvas(
-    categoryTotals: Map<BillCategory, Double>,
+    parentCategoryTotals: Map<String, Double>,
     monthlyBudget: Double,
-    highlightedCategory: BillCategory?,
+    highlightedParent: String?,
     pendingSubscriptionCount: Int,
     onPetalTapped: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -132,7 +132,7 @@ fun PhotorealisticBloomCanvas(
         )
 
         BloomCategoryDefinitions.categories.forEachIndexed { index, definition ->
-            val amount = categoryTotals[definition.billCategory] ?: 0.0
+            val amount = parentCategoryTotals[definition.parentName] ?: 0.0
             val proportion = if (amount <= 0.0) {
                 0.35f
             } else {
@@ -141,7 +141,7 @@ fun PhotorealisticBloomCanvas(
             val petalLength = maxRadius * (0.68f + proportion * 0.32f)
             val petalWidth = maxRadius * 0.82f * proportion.coerceAtLeast(0.42f)
             val sliceAngle = -90f + index * BloomCategoryDefinitions.SLICE_DEGREES
-            val isHighlighted = highlightedCategory == null || highlightedCategory == definition.billCategory
+            val isHighlighted = highlightedParent == null || highlightedParent == definition.parentName
             val alphaMultiplier = if (isHighlighted) 1f else 0.5f
             val scale = categoryScales[definition.displayName]?.value ?: 1f
 

@@ -3,6 +3,7 @@ package com.artie.chargemenot.data.model
 import com.artie.chargemenot.data.local.BillEntity
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import org.json.JSONObject
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -12,7 +13,8 @@ data class CrossPollinationPayload(
     val name: String,
     val amount: Double,
     val dueDate: String,
-    val category: String
+    val parentCategory: String,
+    val subCategory: String
 ) {
 
     fun toJson(): String {
@@ -22,7 +24,8 @@ data class CrossPollinationPayload(
             .put(KEY_NAME, name)
             .put(KEY_AMOUNT, amount)
             .put(KEY_DUE_DATE, dueDate)
-            .put(KEY_CATEGORY, category)
+            .put(KEY_PARENT_CATEGORY, parentCategory)
+            .put(KEY_SUB_CATEGORY, subCategory)
             .toString()
     }
 
@@ -40,22 +43,25 @@ data class CrossPollinationPayload(
             LocalDate.parse(dueDate.trim(), DATE_FORMATTER)
         }.getOrNull() ?: return null
 
-        val parsedCategory = runCatching {
-            BillCategory.valueOf(category.trim().uppercase())
-        }.getOrNull() ?: return null
+        val trimmedParent = parentCategory.trim()
+        val trimmedSub = subCategory.trim()
+        if (trimmedParent.isBlank() || trimmedSub.isBlank()) {
+            return null
+        }
 
         return BillEntity(
             name = sanitizedName,
             amount = amount,
             dueDate = parsedDueDate,
-            category = parsedCategory,
+            parentCategory = trimmedParent,
+            subCategory = trimmedSub,
             isPaid = false
         )
     }
 
     companion object {
         private const val APP_IDENTIFIER = "charge-me-not"
-        private const val SCHEMA_VERSION = 1
+        private const val SCHEMA_VERSION = 2
         private const val MAX_NAME_LENGTH = 120
         private const val MAX_AMOUNT = 1_000_000.0
 
@@ -65,6 +71,8 @@ data class CrossPollinationPayload(
         private const val KEY_AMOUNT = "amount"
         private const val KEY_DUE_DATE = "dueDate"
         private const val KEY_CATEGORY = "category"
+        private const val KEY_PARENT_CATEGORY = "parentCategory"
+        private const val KEY_SUB_CATEGORY = "subCategory"
 
         private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
@@ -73,7 +81,8 @@ data class CrossPollinationPayload(
                 name = entity.name,
                 amount = entity.amount,
                 dueDate = entity.dueDate.format(DATE_FORMATTER),
-                category = entity.category.name
+                parentCategory = entity.parentCategory,
+                subCategory = entity.subCategory
             )
         }
 
@@ -82,7 +91,8 @@ data class CrossPollinationPayload(
                 name = bill.name,
                 amount = bill.amount,
                 dueDate = bill.dueDate.format(DATE_FORMATTER),
-                category = bill.category.name
+                parentCategory = bill.parentCategory,
+                subCategory = bill.subCategory
             )
         }
 
@@ -95,7 +105,7 @@ data class CrossPollinationPayload(
                 }
 
                 val version = json.optInt(KEY_VERSION, SCHEMA_VERSION)
-                if (version != SCHEMA_VERSION) {
+                if (version != SCHEMA_VERSION && version != 1) {
                     return null
                 }
 
@@ -104,7 +114,7 @@ data class CrossPollinationPayload(
                     return null
                 }
 
-                if (!json.has(KEY_AMOUNT) || !json.has(KEY_DUE_DATE) || !json.has(KEY_CATEGORY)) {
+                if (!json.has(KEY_AMOUNT) || !json.has(KEY_DUE_DATE)) {
                     return null
                 }
 
@@ -116,15 +126,35 @@ data class CrossPollinationPayload(
                 val dueDate = json.getString(KEY_DUE_DATE).trim()
                 validateDueDate(dueDate)
 
-                val category = json.getString(KEY_CATEGORY).trim()
-                BillCategory.valueOf(category.uppercase())
-
-                CrossPollinationPayload(
-                    name = name,
-                    amount = amount,
-                    dueDate = dueDate,
-                    category = category.uppercase()
-                )
+                if (version == SCHEMA_VERSION) {
+                    if (!json.has(KEY_PARENT_CATEGORY) || !json.has(KEY_SUB_CATEGORY)) {
+                        return null
+                    }
+                    val parentCategory = json.getString(KEY_PARENT_CATEGORY).trim()
+                    val subCategory = json.getString(KEY_SUB_CATEGORY).trim()
+                    if (parentCategory.isBlank() || subCategory.isBlank()) {
+                        return null
+                    }
+                    CrossPollinationPayload(
+                        name = name,
+                        amount = amount,
+                        dueDate = dueDate,
+                        parentCategory = parentCategory,
+                        subCategory = subCategory
+                    )
+                } else {
+                    val category = json.getString(KEY_CATEGORY).trim()
+                    val taxonomy = MeadowCategories.legacyBillCategoryToTaxonomy(
+                        BillCategory.valueOf(category.uppercase())
+                    )
+                    CrossPollinationPayload(
+                        name = name,
+                        amount = amount,
+                        dueDate = dueDate,
+                        parentCategory = taxonomy.first,
+                        subCategory = taxonomy.second
+                    )
+                }
             }.getOrNull()
         }
 

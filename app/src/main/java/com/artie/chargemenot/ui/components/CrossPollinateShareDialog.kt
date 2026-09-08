@@ -111,7 +111,7 @@ fun CrossPollinateShareDialog(
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = "${categoryDisplayName(bill.category)} · ${currencyFormat.format(bill.amount)}",
+                        text = "${categoryDisplayName(bill.parentCategory, bill.subCategory)} · ${currencyFormat.format(bill.amount)}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,

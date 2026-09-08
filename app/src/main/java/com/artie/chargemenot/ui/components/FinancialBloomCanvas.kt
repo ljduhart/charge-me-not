@@ -19,17 +19,13 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
-import com.artie.chargemenot.domain.model.BillCategory
-import com.artie.chargemenot.ui.theme.MeadowBlush
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.ui.theme.MeadowEarth
 import com.artie.chargemenot.ui.theme.MeadowGreen
-import com.artie.chargemenot.ui.theme.MeadowGreenLight
-import com.artie.chargemenot.ui.theme.MeadowLavender
-import com.artie.chargemenot.ui.theme.MeadowRose
 import com.artie.chargemenot.ui.theme.MeadowSage
-import com.artie.chargemenot.ui.theme.MeadowSky
 import com.artie.chargemenot.ui.theme.MeadowSunflower
 import com.artie.chargemenot.ui.theme.MeadowWhite
+import com.artie.chargemenot.ui.theme.meadowParentColor
 import kotlin.math.min
 
 private val meadowPetalSpring = spring<Float>(
@@ -39,18 +35,18 @@ private val meadowPetalSpring = spring<Float>(
 
 @Composable
 fun FinancialBloomCanvas(
-    categoryTotals: Map<BillCategory, Double>,
+    parentCategoryTotals: Map<String, Double>,
     modifier: Modifier = Modifier,
-    highlightedCategory: BillCategory? = null,
-    projectedCategoryTotals: Map<BillCategory, Double> = categoryTotals,
+    highlightedParent: String? = null,
+    projectedParentCategoryTotals: Map<String, Double> = parentCategoryTotals,
     monthlyBudget: Double = 2_500.0,
     sizeByMonthlyBudget: Boolean = false,
-    categoryAlphas: Map<BillCategory, Float> = emptyMap()
+    parentCategoryAlphas: Map<String, Float> = emptyMap()
 ) {
-    val displayTotals = if (projectedCategoryTotals.isNotEmpty()) {
-        projectedCategoryTotals
+    val displayTotals = if (projectedParentCategoryTotals.isNotEmpty()) {
+        projectedParentCategoryTotals
     } else {
-        categoryTotals
+        parentCategoryTotals
     }
 
     var bloomTriggered by remember { mutableStateOf(false) }
@@ -65,11 +61,13 @@ fun FinancialBloomCanvas(
     )
 
     val animatedAmounts = rememberAnimatedPetalAmounts(displayTotals)
-    val animatedAlphas = rememberAnimatedCategoryAlphas(categoryAlphas)
+    val animatedAlphas = rememberAnimatedParentAlphas(parentCategoryAlphas)
 
     val entries = animatedAmounts.entries
         .filter { (_, amount) -> amount > 0f }
-        .sortedBy { (category, _) -> category.ordinal }
+        .sortedBy { (parent, _) ->
+            MeadowCategories.parentNames.indexOf(parent).takeIf { it >= 0 } ?: Int.MAX_VALUE
+        }
 
     val totalAmount = entries.sumOf { it.value.toDouble() }.coerceAtLeast(1.0)
     val safeBudget = monthlyBudget.coerceAtLeast(1.0)
@@ -95,7 +93,7 @@ fun FinancialBloomCanvas(
 
         val angleStep = 360f / entries.size
 
-        entries.forEachIndexed { index, (category, amount) ->
+        entries.forEachIndexed { index, (parentCategory, amount) ->
             val proportion = if (sizeByMonthlyBudget) {
                 (amount / safeBudget).toFloat()
             } else {
@@ -104,15 +102,15 @@ fun FinancialBloomCanvas(
             val petalLength = maxRadius * (0.45f + proportion * 0.55f) * bloomProgress
             val petalWidth = maxRadius * 0.34f * proportion.coerceAtLeast(0.35f) * bloomProgress
             val angle = index * angleStep - 90f
-            val isHighlighted = category == highlightedCategory
-            val alphaScale = (animatedAlphas[category] ?: 1f) * bloomProgress
+            val isHighlighted = parentCategory == highlightedParent
+            val alphaScale = (animatedAlphas[parentCategory] ?: 1f) * bloomProgress
 
             rotate(angle, center) {
                 drawPetal(
                     center = center,
                     length = petalLength,
                     width = petalWidth,
-                    color = categoryColor(category),
+                    color = meadowParentColor(parentCategory),
                     highlighted = isHighlighted,
                     alphaScale = alphaScale
                 )
@@ -134,37 +132,48 @@ fun FinancialBloomCanvas(
 
 @Composable
 private fun rememberAnimatedPetalAmounts(
-    targetTotals: Map<BillCategory, Double>
-): Map<BillCategory, Float> {
-    val amounts = remember { mutableStateMapOf<BillCategory, Float>() }
-    BillCategory.entries.forEach { category ->
-        key(category) {
-            val target = (targetTotals[category] ?: 0.0).toFloat()
+    targetTotals: Map<String, Double>
+): Map<String, Float> {
+    val amounts = remember { mutableStateMapOf<String, Float>() }
+    MeadowCategories.parentNames.forEach { parent ->
+        key(parent) {
+            val target = (targetTotals[parent] ?: 0.0).toFloat()
             val animated by animateFloatAsState(
                 targetValue = target,
                 animationSpec = meadowPetalSpring,
-                label = "petalAmount_${category.name}"
+                label = "petalAmount_$parent"
             )
-            amounts[category] = animated
+            amounts[parent] = animated
+        }
+    }
+    targetTotals.keys.filter { it !in MeadowCategories.parentNames }.forEach { parent ->
+        key(parent) {
+            val target = (targetTotals[parent] ?: 0.0).toFloat()
+            val animated by animateFloatAsState(
+                targetValue = target,
+                animationSpec = meadowPetalSpring,
+                label = "petalAmount_$parent"
+            )
+            amounts[parent] = animated
         }
     }
     return amounts.toMap()
 }
 
 @Composable
-private fun rememberAnimatedCategoryAlphas(
-    targetAlphas: Map<BillCategory, Float>
-): Map<BillCategory, Float> {
-    val alphas = remember { mutableStateMapOf<BillCategory, Float>() }
-    BillCategory.entries.forEach { category ->
-        key(category) {
-            val target = targetAlphas[category] ?: 1f
+private fun rememberAnimatedParentAlphas(
+    targetAlphas: Map<String, Float>
+): Map<String, Float> {
+    val alphas = remember { mutableStateMapOf<String, Float>() }
+    MeadowCategories.parentNames.forEach { parent ->
+        key(parent) {
+            val target = targetAlphas[parent] ?: 1f
             val animated by animateFloatAsState(
                 targetValue = target,
                 animationSpec = meadowPetalSpring,
-                label = "petalAlpha_${category.name}"
+                label = "petalAlpha_$parent"
             )
-            alphas[category] = animated
+            alphas[parent] = animated
         }
     }
     return alphas.toMap()
@@ -216,26 +225,13 @@ private fun DrawScope.drawPetal(
     )
 }
 
-fun categoryColor(category: BillCategory): Color = when (category) {
-    BillCategory.RENT -> MeadowRose
-    BillCategory.FOOD -> MeadowSunflower
-    BillCategory.UTILITIES -> MeadowSky
-    BillCategory.SUBSCRIPTIONS -> MeadowLavender
-    BillCategory.TRANSPORTATION -> MeadowEarth
-    BillCategory.HEALTHCARE -> MeadowBlush
-    BillCategory.ENTERTAINMENT -> MeadowGreenLight
-    BillCategory.OTHER -> MeadowSage
-}
-
-fun categoryDisplayName(category: BillCategory): String = when (category) {
-    BillCategory.RENT -> "Rent"
-    BillCategory.FOOD -> "Groceries"
-    BillCategory.UTILITIES -> "Utilities"
-    BillCategory.SUBSCRIPTIONS -> "Subscriptions"
-    BillCategory.TRANSPORTATION -> "Transportation"
-    BillCategory.HEALTHCARE -> "Healthcare"
-    BillCategory.ENTERTAINMENT -> "Entertainment"
-    BillCategory.OTHER -> "Other"
+fun categoryDisplayName(parentCategory: String, subCategory: String? = null): String {
+    val parentLabel = MeadowCategories.shortDisplayName(parentCategory)
+    return if (subCategory.isNullOrBlank()) {
+        parentLabel
+    } else {
+        "$parentLabel · $subCategory"
+    }
 }
 
 fun billInitial(name: String): String {

@@ -3,7 +3,7 @@ package com.artie.chargemenot.domain.usecase
 import com.artie.chargemenot.data.local.BillDao
 import com.artie.chargemenot.data.local.BillEntity
 import com.artie.chargemenot.domain.model.Bill
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.model.ForecastResult
 import com.artie.chargemenot.domain.model.ForecastTimelinePoint
 import com.artie.chargemenot.domain.model.WeatherStatus
@@ -44,7 +44,7 @@ class ForecastUseCase(
 
         val monthlyTotals = bills
             .asSequence()
-            .filter { bill -> bill.category in VARIABLE_CATEGORIES }
+            .filter { bill -> bill.parentCategory in VARIABLE_PARENT_CATEGORIES }
             .groupBy { bill -> YearMonth.from(bill.dueDate) }
             .mapValues { (_, monthBills) -> monthBills.sumOf { bill -> bill.amount } }
             .filterValues { total -> total > 0.0 }
@@ -177,7 +177,8 @@ class ForecastUseCase(
             name = name,
             amount = amount,
             dueDate = dueDate,
-            category = category,
+            parentCategory = parentCategory,
+            subCategory = subCategory,
             isPaid = isPaid,
             usageCount = usageCount,
             auditPromptCount = auditPromptCount,
@@ -187,9 +188,9 @@ class ForecastUseCase(
     }
 
     companion object {
-        private val VARIABLE_CATEGORIES = setOf(
-            BillCategory.UTILITIES,
-            BillCategory.FOOD
+        private val VARIABLE_PARENT_CATEGORIES = setOf(
+            MeadowCategories.ROOT_SYSTEM,
+            MeadowCategories.FERTILIZER
         )
 
         const val MIN_HISTORICAL_MONTHS = 2

@@ -55,7 +55,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.ui.components.PhotorealisticBloomCanvas
 import com.artie.chargemenot.ui.components.CrossPollinateShareDialog
 import com.artie.chargemenot.ui.components.LinkRootBottomSheet
@@ -227,10 +227,10 @@ fun DashboardScreen(
 
                 item(key = "financial_bloom_card") {
                     FinancialBloomCard(
-                        categoryTotals = uiState.categoryTotals,
+                        parentCategoryTotals = uiState.parentCategoryTotals,
                         pendingSubscriptionCount = uiState.subscriptionBills.size,
                         monthlyBudget = uiState.monthlyBudget,
-                        highlightedBloomCategory = uiState.highlightedBloomCategory,
+                        highlightedBloomParent = uiState.highlightedBloomParent,
                         onBloomSettingsClick = onBloomSettingsClick,
                         onMonthlyBudgetChange = onMonthlyBudgetChange,
                         onPetalTapped = onPetalTapped,
@@ -397,10 +397,10 @@ private fun TotalUpcomingSummaryCard(
 
 @Composable
 private fun FinancialBloomCard(
-    categoryTotals: Map<BillCategory, Double>,
+    parentCategoryTotals: Map<String, Double>,
     pendingSubscriptionCount: Int,
     monthlyBudget: Double,
-    highlightedBloomCategory: BillCategory?,
+    highlightedBloomParent: String?,
     onBloomSettingsClick: () -> Unit,
     onMonthlyBudgetChange: (String) -> Unit,
     onPetalTapped: (String) -> Unit,
@@ -443,9 +443,9 @@ private fun FinancialBloomCard(
             }
 
             PhotorealisticBloomCanvas(
-                categoryTotals = categoryTotals,
+                parentCategoryTotals = parentCategoryTotals,
                 monthlyBudget = monthlyBudget,
-                highlightedCategory = highlightedBloomCategory,
+                highlightedParent = highlightedBloomParent,
                 pendingSubscriptionCount = pendingSubscriptionCount,
                 onPetalTapped = onPetalTapped,
                 modifier = Modifier.fillMaxWidth()
@@ -620,8 +620,22 @@ private fun SubscriptionWeedFlowerRow(
 private fun DashboardScreenPreview() {
     val today = LocalDate.of(2026, 9, 4)
     val bills = listOf(
-        Bill(4, "Netflix", 15.49, today.plusDays(12), BillCategory.SUBSCRIPTIONS),
-        Bill(5, "Spotify Premium", 11.99, today.plusDays(12), BillCategory.SUBSCRIPTIONS)
+        Bill(
+            id = 4,
+            name = "Netflix",
+            amount = 15.49,
+            dueDate = today.plusDays(12),
+            parentCategory = MeadowCategories.VINES,
+            subCategory = "Subscriptions"
+        ),
+        Bill(
+            id = 5,
+            name = "Spotify Premium",
+            amount = 11.99,
+            dueDate = today.plusDays(12),
+            parentCategory = MeadowCategories.VINES,
+            subCategory = "Subscriptions"
+        )
     )
     ChargeMeNotTheme {
         DashboardScreen(
@@ -631,9 +645,9 @@ private fun DashboardScreenPreview() {
                 totalUpcoming = 1_230.0,
                 upcomingBillCount = 12,
                 subscriptionBills = bills,
-                categoryTotals = mapOf(
-                    BillCategory.RENT to 1_450.0,
-                    BillCategory.SUBSCRIPTIONS to 27.48
+                parentCategoryTotals = mapOf(
+                    MeadowCategories.CANOPY to 1_450.0,
+                    MeadowCategories.VINES to 27.48
                 ),
                 isLoading = false
             ),

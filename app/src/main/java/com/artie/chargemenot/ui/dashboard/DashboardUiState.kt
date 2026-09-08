@@ -1,8 +1,8 @@
 package com.artie.chargemenot.ui.dashboard
 
 import com.artie.chargemenot.domain.model.Bill
-import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.domain.model.ForecastResult
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.model.UserSettings
 import java.time.LocalDate
 import java.time.YearMonth
@@ -17,9 +17,9 @@ data class DashboardUiState(
     val upcomingBills: List<Bill> = emptyList(),
     val subscriptionBills: List<Bill> = emptyList(),
     val allBills: List<Bill> = emptyList(),
-    val categoryTotals: Map<BillCategory, Double> = emptyMap(),
+    val parentCategoryTotals: Map<String, Double> = emptyMap(),
     val forecastResult: ForecastResult? = null,
-    val highlightedBloomCategory: BillCategory? = null,
+    val highlightedBloomParent: String? = null,
     val selectedCurrency: String = UserSettings.DEFAULT_CURRENCY,
     val isBillCalendarExpanded: Boolean = false,
     val calendarVisibleMonth: YearMonth = YearMonth.now(),

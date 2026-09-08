@@ -5,10 +5,12 @@ import com.artie.chargemenot.data.local.AppDatabase
 import com.artie.chargemenot.data.nagmode.WorkManagerNagModeScheduler
 import com.artie.chargemenot.data.notification.AndroidNotificationPermissionGateway
 import com.artie.chargemenot.data.repository.BillRepository
+import com.artie.chargemenot.data.repository.CategoryRepository
 import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.data.weedwhacker.WorkManagerWeedWhackerScheduler
 import com.artie.chargemenot.domain.model.Bill
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
+import com.artie.chargemenot.ui.viewmodels.CategoryViewModel
 import com.artie.chargemenot.domain.usecase.ForecastUseCase
 import com.artie.chargemenot.notification.NagModeNotificationHelper
 import com.artie.chargemenot.notification.WeedWhackerNotificationHelper
@@ -47,6 +49,17 @@ class ChargeMeNotApplication : Application() {
 
     private val forecastUseCase by lazy {
         ForecastUseCase(billDao = database.billDao())
+    }
+
+    private val categoryRepository by lazy {
+        CategoryRepository(database.categoryDao())
+    }
+
+    val categoryViewModel: CategoryViewModel by lazy {
+        CategoryViewModel(
+            categoryRepository = categoryRepository,
+            coroutineScope = applicationScope
+        )
     }
 
     val dashboardViewModel: DashboardViewModel by lazy {
@@ -124,20 +137,20 @@ class ChargeMeNotApplication : Application() {
 
             val today = LocalDate.now()
             val seedBills = listOf(
-                Bill(name = "Pacific Gas & Electric", amount = 78.40, dueDate = today.minusMonths(2).withDayOfMonth(12), category = BillCategory.UTILITIES),
-                Bill(name = "Trader Joe's", amount = 142.18, dueDate = today.minusMonths(2).withDayOfMonth(18), category = BillCategory.FOOD),
-                Bill(name = "Pacific Gas & Electric", amount = 86.25, dueDate = today.minusMonths(1).withDayOfMonth(10), category = BillCategory.UTILITIES),
-                Bill(name = "Whole Foods Groceries", amount = 168.90, dueDate = today.minusMonths(1).withDayOfMonth(20), category = BillCategory.FOOD),
-                Bill(name = "Maple Street Apartment", amount = 1_450.00, dueDate = today.plusDays(3), category = BillCategory.RENT),
-                Bill(name = "Whole Foods Groceries", amount = 186.42, dueDate = today.plusDays(5), category = BillCategory.FOOD),
-                Bill(name = "Pacific Gas & Electric", amount = 94.17, dueDate = today.plusDays(8), category = BillCategory.UTILITIES),
-                Bill(name = "Spotify Premium", amount = 11.99, dueDate = today.plusDays(12), category = BillCategory.SUBSCRIPTIONS),
-                Bill(name = "Netflix", amount = 15.49, dueDate = today.plusDays(12), category = BillCategory.SUBSCRIPTIONS),
-                Bill(name = "Adobe Creative Cloud", amount = 54.99, dueDate = today.plusDays(15), category = BillCategory.SUBSCRIPTIONS),
-                Bill(name = "LA Metro Pass", amount = 100.00, dueDate = today.plusDays(18), category = BillCategory.TRANSPORTATION),
-                Bill(name = "Kaiser Health", amount = 325.00, dueDate = today.plusDays(22), category = BillCategory.HEALTHCARE),
-                Bill(name = "Trader Joe's", amount = 72.30, dueDate = today.plusDays(6), category = BillCategory.FOOD),
-                Bill(name = "Disney+", amount = 13.99, dueDate = today.plusDays(20), category = BillCategory.SUBSCRIPTIONS)
+                Bill(name = "Pacific Gas & Electric", amount = 78.40, dueDate = today.minusMonths(2).withDayOfMonth(12), parentCategory = MeadowCategories.ROOT_SYSTEM, subCategory = "Utilities"),
+                Bill(name = "Trader Joe's", amount = 142.18, dueDate = today.minusMonths(2).withDayOfMonth(18), parentCategory = MeadowCategories.FERTILIZER, subCategory = "Groceries"),
+                Bill(name = "Pacific Gas & Electric", amount = 86.25, dueDate = today.minusMonths(1).withDayOfMonth(10), parentCategory = MeadowCategories.ROOT_SYSTEM, subCategory = "Utilities"),
+                Bill(name = "Whole Foods Groceries", amount = 168.90, dueDate = today.minusMonths(1).withDayOfMonth(20), parentCategory = MeadowCategories.FERTILIZER, subCategory = "Groceries"),
+                Bill(name = "Maple Street Apartment", amount = 1_450.00, dueDate = today.plusDays(3), parentCategory = MeadowCategories.CANOPY, subCategory = "Rent"),
+                Bill(name = "Whole Foods Groceries", amount = 186.42, dueDate = today.plusDays(5), parentCategory = MeadowCategories.FERTILIZER, subCategory = "Groceries"),
+                Bill(name = "Pacific Gas & Electric", amount = 94.17, dueDate = today.plusDays(8), parentCategory = MeadowCategories.ROOT_SYSTEM, subCategory = "Utilities"),
+                Bill(name = "Spotify Premium", amount = 11.99, dueDate = today.plusDays(12), parentCategory = MeadowCategories.VINES, subCategory = "Subscriptions"),
+                Bill(name = "Netflix", amount = 15.49, dueDate = today.plusDays(12), parentCategory = MeadowCategories.VINES, subCategory = "Subscriptions"),
+                Bill(name = "Adobe Creative Cloud", amount = 54.99, dueDate = today.plusDays(15), parentCategory = MeadowCategories.VINES, subCategory = "Subscriptions"),
+                Bill(name = "LA Metro Pass", amount = 100.00, dueDate = today.plusDays(18), parentCategory = MeadowCategories.ROOT_SYSTEM, subCategory = "Transportation"),
+                Bill(name = "Kaiser Health", amount = 325.00, dueDate = today.plusDays(22), parentCategory = MeadowCategories.POLLINATORS, subCategory = "Healthcare"),
+                Bill(name = "Trader Joe's", amount = 72.30, dueDate = today.plusDays(6), parentCategory = MeadowCategories.FERTILIZER, subCategory = "Groceries"),
+                Bill(name = "Disney+", amount = 13.99, dueDate = today.plusDays(20), parentCategory = MeadowCategories.VINES, subCategory = "Subscriptions")
             )
             seedBills.forEach { billRepository.insertBill(it) }
         }

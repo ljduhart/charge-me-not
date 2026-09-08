@@ -90,6 +90,98 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
     }
 }
 
+val MIGRATION_8_9 = object : Migration(8, 9) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                parentName TEXT NOT NULL,
+                subCategoryName TEXT NOT NULL,
+                isCustom INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS index_categories_parentName_subCategoryName
+            ON categories (parentName, subCategoryName)
+            """.trimIndent()
+        )
+
+        com.artie.chargemenot.domain.model.MeadowCategories.defaultSeedCategories.forEach { category ->
+            db.execSQL(
+                """
+                INSERT OR IGNORE INTO categories (parentName, subCategoryName, isCustom)
+                VALUES ('${category.parentName.replace("'", "''")}', '${category.subCategoryName.replace("'", "''")}', 0)
+                """.trimIndent()
+            )
+        }
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS bills_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                name TEXT NOT NULL,
+                amount REAL NOT NULL,
+                dueDate TEXT NOT NULL,
+                parentCategory TEXT NOT NULL,
+                subCategory TEXT NOT NULL,
+                isPaid INTEGER NOT NULL DEFAULT 0,
+                usageCount INTEGER NOT NULL DEFAULT 0,
+                auditPromptCount INTEGER NOT NULL DEFAULT 0,
+                parentBillId INTEGER DEFAULT NULL,
+                receiptImagePath TEXT DEFAULT NULL
+            )
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            INSERT INTO bills_new (
+                id, name, amount, dueDate, parentCategory, subCategory,
+                isPaid, usageCount, auditPromptCount, parentBillId, receiptImagePath
+            )
+            SELECT
+                id,
+                name,
+                amount,
+                dueDate,
+                CASE category
+                    WHEN 'RENT' THEN 'The Canopy'
+                    WHEN 'FOOD' THEN 'The Fertilizer'
+                    WHEN 'UTILITIES' THEN 'The Root System'
+                    WHEN 'SUBSCRIPTIONS' THEN 'The Vines'
+                    WHEN 'TRANSPORTATION' THEN 'The Root System'
+                    WHEN 'HEALTHCARE' THEN 'The Pollinators'
+                    WHEN 'ENTERTAINMENT' THEN 'The Wildflowers'
+                    ELSE 'The Wildflowers'
+                END,
+                CASE category
+                    WHEN 'RENT' THEN 'Rent'
+                    WHEN 'FOOD' THEN 'Groceries'
+                    WHEN 'UTILITIES' THEN 'Utilities'
+                    WHEN 'SUBSCRIPTIONS' THEN 'Subscriptions'
+                    WHEN 'TRANSPORTATION' THEN 'Transportation'
+                    WHEN 'HEALTHCARE' THEN 'Healthcare'
+                    WHEN 'ENTERTAINMENT' THEN 'Entertainment'
+                    ELSE 'Other'
+                END,
+                isPaid,
+                usageCount,
+                auditPromptCount,
+                parentBillId,
+                receiptImagePath
+            FROM bills
+            """.trimIndent()
+        )
+
+        db.execSQL("DROP TABLE bills")
+        db.execSQL("ALTER TABLE bills_new RENAME TO bills")
+    }
+}
+
+
 val MIGRATION_5_6 = object : Migration(5, 6) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(

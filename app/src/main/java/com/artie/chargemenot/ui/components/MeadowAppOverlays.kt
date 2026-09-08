@@ -2,11 +2,13 @@ package com.artie.chargemenot.ui.components
 
 import androidx.compose.runtime.Composable
 import com.artie.chargemenot.domain.model.Bill
+import com.artie.chargemenot.ui.viewmodels.CategoryViewModel
 import java.time.LocalDate
 
 @Composable
 fun MeadowAppOverlays(
     selectedBillForEdit: Bill?,
+    categoryViewModel: CategoryViewModel,
     selectedCategoryForEdit: String?,
     categoryBills: List<Bill>,
     isProfileEditVisible: Boolean,
@@ -26,6 +28,7 @@ fun MeadowAppOverlays(
 ) {
     EditBillBottomSheet(
         selectedBill = selectedBillForEdit,
+        categoryViewModel = categoryViewModel,
         onDismiss = onClearEditSelection,
         onSave = onSaveBillEdits
     )
@@ -53,6 +56,7 @@ fun MeadowAppOverlays(
         ManualBillBottomSheet(
             isVisible = true,
             sessionKey = manualBillEntrySession,
+            categoryViewModel = categoryViewModel,
             defaultDueDate = manualBillPrefillDate,
             onDismiss = onDismissManualBillEntry,
             onSave = onSaveManualBill

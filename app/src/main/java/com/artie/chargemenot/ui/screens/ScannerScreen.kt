@@ -66,12 +66,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.scanner.BillOcrAnalyzer
 import com.artie.chargemenot.scanner.OcrScanResult
 import com.artie.chargemenot.ui.components.FinancialBloomCanvas
-import com.artie.chargemenot.ui.components.categoryColor
 import com.artie.chargemenot.ui.components.categoryDisplayName
+import com.artie.chargemenot.ui.theme.meadowParentColor
+import com.artie.chargemenot.ui.theme.meadowParentIcon
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.MeadowGreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
@@ -103,7 +104,7 @@ fun ScannerScreen(
     uiState: ScannerUiState,
     onScanResult: (OcrScanResult, String?) -> Unit,
     onQrPayloadDetected: (CrossPollinationPayload) -> Unit,
-    onCategorySelected: (BillCategory) -> Unit,
+    onCategorySelected: (String) -> Unit,
     onAcceptPollinatedBill: () -> Unit,
     onDiscardPollen: () -> Unit,
     onSaveScannedBill: () -> Unit,
@@ -443,7 +444,7 @@ private fun AcceptPollinatedBillCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = categoryDisplayName(pollen.category),
+                        text = categoryDisplayName(pollen.parentCategory, pollen.subCategory),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -498,15 +499,19 @@ private fun AcceptPollinatedBillCard(
 @Composable
 private fun PredictiveImpactCard(
     uiState: ScannerUiState,
-    onCategorySelected: (BillCategory) -> Unit,
+    onCategorySelected: (String) -> Unit,
     onSaveScannedBill: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
-    val projectedTotals = remember(uiState.categoryTotals, uiState.selectedCategory, uiState.scannedBill.amount) {
-        buildProjectedCategoryTotals(
-            categoryTotals = uiState.categoryTotals,
-            selectedCategory = uiState.selectedCategory,
+    val projectedTotals = remember(
+        uiState.parentCategoryTotals,
+        uiState.selectedParentCategory,
+        uiState.scannedBill.amount
+    ) {
+        buildProjectedParentCategoryTotals(
+            parentCategoryTotals = uiState.parentCategoryTotals,
+            selectedParentCategory = uiState.selectedParentCategory,
             scannedAmount = uiState.scannedBill.amount
         )
     }
@@ -537,9 +542,9 @@ private fun PredictiveImpactCard(
                 contentAlignment = Alignment.Center
             ) {
                 FinancialBloomCanvas(
-                    categoryTotals = uiState.categoryTotals,
-                    projectedCategoryTotals = projectedTotals,
-                    highlightedCategory = uiState.selectedCategory,
+                    parentCategoryTotals = uiState.parentCategoryTotals,
+                    projectedParentCategoryTotals = projectedTotals,
+                    highlightedParent = uiState.selectedParentCategory,
                     monthlyBudget = uiState.monthlyBudget,
                     sizeByMonthlyBudget = true,
                     modifier = Modifier
@@ -563,7 +568,7 @@ private fun PredictiveImpactCard(
             )
 
             CategorySelectionRow(
-                selectedCategory = uiState.selectedCategory,
+                selectedParentCategory = uiState.selectedParentCategory,
                 onCategorySelected = onCategorySelected
             )
 
@@ -595,11 +600,11 @@ private fun ImpactTooltip(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = categoryColor(impact.category).copy(alpha = 0.92f)
+            containerColor = meadowParentColor(impact.parentCategory).copy(alpha = 0.92f)
         )
     ) {
         Text(
-            text = "${categoryDisplayName(impact.category)}: New Petal Size: " +
+            text = "${MeadowCategories.shortDisplayName(impact.parentCategory)}: New Petal Size: " +
                 "${"%.1f".format(Locale.US, impact.newPetalSizePercent)}% " +
                 "(+${currencyFormat.format(impact.scannedAmount)})",
             style = MaterialTheme.typography.bodySmall,
@@ -612,13 +617,13 @@ private fun ImpactTooltip(
 
 @Composable
 private fun CategorySelectionRow(
-    selectedCategory: BillCategory,
-    onCategorySelected: (BillCategory) -> Unit
+    selectedParentCategory: String,
+    onCategorySelected: (String) -> Unit
 ) {
     val categories = listOf(
-        BillCategory.RENT to Icons.Default.Home,
-        BillCategory.FOOD to Icons.Default.ShoppingCart,
-        BillCategory.UTILITIES to Icons.Default.Bolt
+        MeadowCategories.CANOPY,
+        MeadowCategories.FERTILIZER,
+        MeadowCategories.ROOT_SYSTEM
     )
 
     Row(
@@ -626,13 +631,14 @@ private fun CategorySelectionRow(
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        categories.forEach { (category, icon) ->
-            val isSelected = category == selectedCategory
+        categories.forEach { parentCategory ->
+            val isSelected = parentCategory == selectedParentCategory
+            val tint = meadowParentColor(parentCategory)
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .clickable { onCategorySelected(category) }
+                    .clickable { onCategorySelected(parentCategory) }
                     .padding(8.dp)
             ) {
                 Box(
@@ -641,28 +647,28 @@ private fun CategorySelectionRow(
                         .clip(CircleShape)
                         .background(
                             if (isSelected) {
-                                categoryColor(category).copy(alpha = 0.25f)
+                                tint.copy(alpha = 0.25f)
                             } else {
                                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                             }
                         )
                         .border(
                             width = if (isSelected) 2.dp else 0.dp,
-                            color = if (isSelected) categoryColor(category) else Color.Transparent,
+                            color = if (isSelected) tint else Color.Transparent,
                             shape = CircleShape
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = icon,
-                        contentDescription = categoryDisplayName(category),
-                        tint = if (isSelected) categoryColor(category) else MeadowGreenDark,
+                        imageVector = meadowParentIcon(parentCategory),
+                        contentDescription = MeadowCategories.shortDisplayName(parentCategory),
+                        tint = if (isSelected) tint else MeadowGreenDark,
                         modifier = Modifier.size(24.dp)
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = categoryDisplayName(category),
+                    text = MeadowCategories.shortDisplayName(parentCategory),
                     style = MaterialTheme.typography.labelMedium,
                     color = if (isSelected) MeadowGreenDark else MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -671,17 +677,17 @@ private fun CategorySelectionRow(
     }
 }
 
-private fun buildProjectedCategoryTotals(
-    categoryTotals: Map<BillCategory, Double>,
-    selectedCategory: BillCategory,
+private fun buildProjectedParentCategoryTotals(
+    parentCategoryTotals: Map<String, Double>,
+    selectedParentCategory: String,
     scannedAmount: Double?
-): Map<BillCategory, Double> {
+): Map<String, Double> {
     if (scannedAmount == null) {
-        return categoryTotals
+        return parentCategoryTotals
     }
 
-    val projected = categoryTotals.toMutableMap()
-    projected[selectedCategory] = (projected[selectedCategory] ?: 0.0) + scannedAmount
+    val projected = parentCategoryTotals.toMutableMap()
+    projected[selectedParentCategory] = (projected[selectedParentCategory] ?: 0.0) + scannedAmount
     return projected
 }
 
@@ -695,14 +701,14 @@ private fun ScannerScreenPreview() {
                     amount = 94.17,
                     dueDate = LocalDate.of(2026, 9, 12)
                 ),
-                selectedCategory = BillCategory.UTILITIES,
-                categoryTotals = mapOf(
-                    BillCategory.RENT to 1_450.0,
-                    BillCategory.FOOD to 258.72,
-                    BillCategory.UTILITIES to 94.17
+                selectedParentCategory = MeadowCategories.ROOT_SYSTEM,
+                parentCategoryTotals = mapOf(
+                    MeadowCategories.CANOPY to 1_450.0,
+                    MeadowCategories.FERTILIZER to 258.72,
+                    MeadowCategories.ROOT_SYSTEM to 94.17
                 ),
                 predictiveImpact = PredictiveImpact(
-                    category = BillCategory.UTILITIES,
+                    parentCategory = MeadowCategories.ROOT_SYSTEM,
                     newPetalSizePercent = 7.5,
                     scannedAmount = 94.17,
                     withinBudget = true,

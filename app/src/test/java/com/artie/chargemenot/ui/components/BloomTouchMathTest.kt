@@ -7,7 +7,7 @@ import org.junit.Test
 class BloomTouchMathTest {
 
     @Test
-    fun sliceIndexAtPoint_returnsRentForTopSlice() {
+    fun sliceIndexAtPoint_returnsCanopyForTopSlice() {
         val index = BloomTouchMath.sliceIndexAtPoint(
             tapX = 200f,
             tapY = 80f,
@@ -18,7 +18,7 @@ class BloomTouchMathTest {
         )
 
         assertEquals(0, index)
-        assertEquals("Rent", BloomCategoryDefinitions.displayNameAtSliceIndex(index!!))
+        assertEquals("Canopy", BloomCategoryDefinitions.displayNameAtSliceIndex(index!!))
     }
 
     @Test
@@ -36,7 +36,7 @@ class BloomTouchMathTest {
     }
 
     @Test
-    fun sliceIndexAtPoint_returnsUtilitiesForLeftSideSlice() {
+    fun sliceIndexAtPoint_returnsPollinatorsForLeftSideSlice() {
         val index = BloomTouchMath.sliceIndexAtPoint(
             tapX = 80f,
             tapY = 200f,
@@ -47,6 +47,6 @@ class BloomTouchMathTest {
         )
 
         assertEquals(4, index)
-        assertEquals("Utilities", BloomCategoryDefinitions.displayNameAtSliceIndex(index!!))
+        assertEquals("Pollinators", BloomCategoryDefinitions.displayNameAtSliceIndex(index!!))
     }
 }

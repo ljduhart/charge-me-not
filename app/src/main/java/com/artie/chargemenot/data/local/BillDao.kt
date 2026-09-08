@@ -45,7 +45,7 @@ interface BillDao {
     @Query(
         """
         SELECT * FROM bills
-        WHERE category = 'SUBSCRIPTIONS' AND isPaid = 0
+        WHERE parentCategory = 'The Vines' AND subCategory = 'Subscriptions' AND isPaid = 0
         ORDER BY name ASC
         """
     )
@@ -54,11 +54,11 @@ interface BillDao {
     @Query(
         """
         SELECT * FROM bills
-        WHERE category = :category AND isPaid = 0
+        WHERE parentCategory = :parentCategory AND isPaid = 0
         ORDER BY dueDate ASC
         """
     )
-    fun getBillsByCategory(category: String): Flow<List<BillEntity>>
+    fun getBillsByParentCategory(parentCategory: String): Flow<List<BillEntity>>
 
     @Query("SELECT * FROM bills WHERE id = :billId")
     suspend fun getBillByIdOnce(billId: Long): BillEntity?

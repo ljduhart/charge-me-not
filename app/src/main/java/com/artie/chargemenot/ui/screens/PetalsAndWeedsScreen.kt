@@ -115,7 +115,7 @@ fun PetalsAndWeedsScreen(
                             Text(
                                 text = stringResource(
                                     R.string.petals_and_weeds_bill_meta,
-                                    bill.category.name,
+                                    "${bill.parentCategory} · ${bill.subCategory}",
                                     dateFormat.format(bill.dueDate)
                                 ),
                                 style = MaterialTheme.typography.bodyMedium,
