@@ -152,6 +152,7 @@ fun PhotorealisticBloomCanvas(
             drawCategoryLabel(
                 definition = definition,
                 layout = layout,
+                sliceIndex = index,
                 sliceAngle = sliceAngle,
                 alphaMultiplier = alphaMultiplier,
                 labelPaint = labelPaint
@@ -166,14 +167,16 @@ fun PhotorealisticBloomCanvas(
 private fun DrawScope.drawCategoryLabel(
     definition: BloomCategoryDefinition,
     layout: BloomLayoutSpec,
+    sliceIndex: Int,
     sliceAngle: Float,
     alphaMultiplier: Float,
     labelPaint: Paint
 ) {
-    val labelAngleDegrees = sliceAngle - 90f + definition.labelAngleOffsetDegrees
-    val labelAngleRadians = Math.toRadians(labelAngleDegrees.toDouble())
-    val labelX = layout.centerX + cos(labelAngleRadians).toFloat() * layout.labelRadius
-    val labelY = layout.centerY + sin(labelAngleRadians).toFloat() * layout.labelRadius
+    val (labelX, labelY) = BloomTouchMath.labelPositionFor(
+        layout = layout,
+        definition = definition,
+        sliceIndex = sliceIndex
+    )
     val connectorAngleRadians = Math.toRadians((sliceAngle - 90f).toDouble())
     val petalTipRadius = layout.maxRadius * 0.82f
     val petalTipX = layout.centerX + cos(connectorAngleRadians).toFloat() * petalTipRadius
