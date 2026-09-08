@@ -21,9 +21,7 @@ import kotlin.math.min
 @Composable
 fun BloomCanvas(
     parentCategoryTotals: Map<String, Double>,
-    pendingSubscriptionCount: Int,
     modifier: Modifier = Modifier,
-    monthlyBudget: Double = 2_500.0,
     highlightedParent: String? = null
 ) {
     val activePetals = remember(parentCategoryTotals) {
@@ -41,20 +39,13 @@ fun BloomCanvas(
     ) {
         val center = Offset(size.width / 2f, size.height / 2f)
         val maxRadius = min(size.width, size.height) / 2f * 0.85f
-        val safeBudget = monthlyBudget.coerceAtLeast(1.0)
         val angleStep = 360f / activePetals.size
 
         activePetals.forEachIndexed { index, definition ->
-            val amount = parentCategoryTotals[definition.parentName] ?: 0.0
-            val proportion = if (amount <= 0.0) {
-                0.35f
-            } else {
-                (amount / safeBudget).toFloat().coerceIn(0.35f, 1f)
-            }
-            val petalLength = maxRadius * (0.55f + proportion * 0.45f)
-            val petalWidth = maxRadius * 0.38f * proportion.coerceAtLeast(0.4f)
             val isHighlighted = highlightedParent == null || highlightedParent == definition.parentName
             val alpha = if (isHighlighted) 1f else 0.5f
+            val petalLength = maxRadius * 0.72f
+            val petalWidth = maxRadius * 0.44f
 
             rotate(index * angleStep - 90f, center) {
                 drawSimplePetal(

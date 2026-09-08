@@ -97,6 +97,71 @@ object BloomCategoryDefinitions {
     }
 }
 
+data class BloomLayoutSpec(
+    val centerX: Float,
+    val centerY: Float,
+    val maxRadius: Float,
+    val petalLength: Float,
+    val petalWidth: Float,
+    val labelRadius: Float,
+    val innerTouchRadius: Float,
+    val outerTouchRadius: Float,
+    val labelTextSizePx: Float
+)
+
+object BloomLayout {
+    private val labelSamples = BloomCategoryDefinitions.categories.map { definition -> definition.bloomLabel }
+
+    fun compute(canvasWidth: Float, canvasHeight: Float, density: Float): BloomLayoutSpec {
+        val horizontalInset = 28f * density
+        val verticalInset = 24f * density
+        val drawableWidth = (canvasWidth - horizontalInset * 2f).coerceAtLeast(1f)
+        val drawableHeight = (canvasHeight - verticalInset * 2f).coerceAtLeast(1f)
+        val maxRadius = minOf(drawableWidth, drawableHeight) * 0.24f
+        val centerX = canvasWidth / 2f
+        val centerY = verticalInset + drawableHeight * 0.46f
+        val petalLength = maxRadius * 0.9f
+        val petalWidth = maxRadius * 0.56f
+        val labelRadius = maxRadius * 1.14f
+        val maxLabelWidth = drawableWidth * 0.34f
+        val labelTextSizePx = fitLabelTextSize(
+            labels = labelSamples,
+            maxWidth = maxLabelWidth,
+            baseTextSize = 11f * density
+        )
+
+        return BloomLayoutSpec(
+            centerX = centerX,
+            centerY = centerY,
+            maxRadius = maxRadius,
+            petalLength = petalLength,
+            petalWidth = petalWidth,
+            labelRadius = labelRadius,
+            innerTouchRadius = maxRadius * 0.16f,
+            outerTouchRadius = maxRadius * 0.98f,
+            labelTextSizePx = labelTextSizePx
+        )
+    }
+
+    internal fun fitLabelTextSize(
+        labels: List<String>,
+        maxWidth: Float,
+        baseTextSize: Float
+    ): Float {
+        if (labels.isEmpty() || maxWidth <= 0f) {
+            return baseTextSize
+        }
+
+        val longestLabelLength = labels.maxOf { label -> label.length }
+        val estimatedWidth = longestLabelLength * baseTextSize * 0.62f
+        return if (estimatedWidth > maxWidth) {
+            baseTextSize * (maxWidth / estimatedWidth)
+        } else {
+            baseTextSize
+        }
+    }
+}
+
 object BloomTouchMath {
     fun sliceIndexAtPoint(
         tapX: Float,

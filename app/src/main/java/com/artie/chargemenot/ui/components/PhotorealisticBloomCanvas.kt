@@ -9,6 +9,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,19 +22,19 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.ui.theme.MeadowEarth
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import kotlinx.coroutines.delay
 import kotlin.math.cos
-import kotlin.math.min
 import kotlin.math.sin
 
 @Composable
@@ -41,14 +42,14 @@ fun PhotorealisticBloomCanvas(
     parentCategoryTotals: Map<String, Double>,
     monthlyBudget: Double,
     highlightedParent: String?,
-    pendingSubscriptionCount: Int,
     onPetalTapped: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var pressedCategory by remember { mutableStateOf<String?>(null) }
+    val density = LocalDensity.current.density
 
     val categoryScales = BloomCategoryDefinitions.categories.associate { definition ->
-        val targetScale = if (pressedCategory == definition.displayName) 0.9f else 1f
+        val targetScale = if (pressedCategory == definition.displayName) 0.92f else 1f
         definition.displayName to animateFloatAsState(
             targetValue = targetScale,
             animationSpec = spring(
@@ -67,43 +68,37 @@ fun PhotorealisticBloomCanvas(
         }
     }
 
-    val labelPaint = remember {
+    val labelPaint = remember(density) {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color(0xFF1A1A1A).toArgb()
-            textSize = 24f
+            color = MeadowGreenDark.toArgb()
+            textSize = 11f * density
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             textAlign = Paint.Align.CENTER
-        }
-    }
-
-    val tooltipPaint = remember {
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color(0xFF1A1A1A).toArgb()
-            textSize = 22f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            textAlign = Paint.Align.LEFT
+            isSubpixelText = true
+            isLinearText = true
         }
     }
 
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .height(420.dp)
+            .height(500.dp)
+            .padding(horizontal = 4.dp)
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
-                    val centerX = size.width / 2f
-                    val centerY = size.height * 0.44f
-                    val maxRadius = min(size.width, size.height) * 0.36f
-                    val innerRadius = maxRadius * 0.18f
-                    val outerRadius = maxRadius * 1.05f
+                    val layout = BloomLayout.compute(
+                        canvasWidth = size.width.toFloat(),
+                        canvasHeight = size.height.toFloat(),
+                        density = density
+                    )
 
                     val sliceIndex = BloomTouchMath.sliceIndexAtPoint(
                         tapX = offset.x,
                         tapY = offset.y,
-                        centerX = centerX,
-                        centerY = centerY,
-                        innerRadius = innerRadius,
-                        outerRadius = outerRadius
+                        centerX = layout.centerX,
+                        centerY = layout.centerY,
+                        innerRadius = layout.innerTouchRadius,
+                        outerRadius = layout.outerTouchRadius
                     ) ?: return@detectTapGestures
 
                     val categoryName = BloomCategoryDefinitions.displayNameAtSliceIndex(sliceIndex)
@@ -112,94 +107,107 @@ fun PhotorealisticBloomCanvas(
                 }
             }
     ) {
-        val centerX = size.width / 2f
-        val centerY = size.height * 0.44f
-        val center = Offset(centerX, centerY)
-        val maxRadius = min(size.width, size.height) * 0.36f
-        val safeBudget = monthlyBudget.coerceAtLeast(1.0)
+        val layout = BloomLayout.compute(
+            canvasWidth = size.width,
+            canvasHeight = size.height,
+            density = density
+        )
+        val center = Offset(layout.centerX, layout.centerY)
+        labelPaint.textSize = layout.labelTextSizePx
 
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    MeadowEarth.copy(alpha = 0.18f),
+                    MeadowEarth.copy(alpha = 0.14f),
                     Color.Transparent
                 ),
                 center = center,
-                radius = maxRadius * 1.2f
+                radius = layout.maxRadius * 1.35f
             ),
-            radius = maxRadius * 1.2f,
+            radius = layout.maxRadius * 1.35f,
             center = center
         )
 
         BloomCategoryDefinitions.categories.forEachIndexed { index, definition ->
             val amount = parentCategoryTotals[definition.parentName] ?: 0.0
-            val proportion = if (amount <= 0.0) {
-                0.35f
+            val spendIntensity = if (amount <= 0.0 || monthlyBudget <= 0.0) {
+                0.72f
             } else {
-                (amount / safeBudget).toFloat().coerceIn(0.35f, 1f)
+                (amount / monthlyBudget.coerceAtLeast(1.0)).toFloat().coerceIn(0.72f, 1f)
             }
-            val petalLength = maxRadius * (0.68f + proportion * 0.32f)
-            val petalWidth = maxRadius * 0.82f * proportion.coerceAtLeast(0.42f)
             val sliceAngle = -90f + index * BloomCategoryDefinitions.SLICE_DEGREES
             val isHighlighted = highlightedParent == null || highlightedParent == definition.parentName
-            val alphaMultiplier = if (isHighlighted) 1f else 0.5f
+            val alphaMultiplier = (if (isHighlighted) 1f else 0.52f) * spendIntensity.coerceAtLeast(0.75f)
             val scale = categoryScales[definition.displayName]?.value ?: 1f
 
             rotate(sliceAngle, center) {
                 scale(scale, scale, pivot = center) {
                     drawPhotorealisticPetal(
                         center = center,
-                        length = petalLength,
-                        width = petalWidth,
+                        length = layout.petalLength,
+                        width = layout.petalWidth,
                         definition = definition,
                         alphaMultiplier = alphaMultiplier
                     )
                 }
             }
 
-            val labelAngleRadians = Math.toRadians((sliceAngle - 90f).toDouble())
-            val labelRadius = maxRadius * 1.28f
-            val labelX = centerX + cos(labelAngleRadians).toFloat() * labelRadius
-            val labelY = centerY + sin(labelAngleRadians).toFloat() * labelRadius
-            val petalTipRadius = maxRadius * 0.92f
-            val petalTipX = centerX + cos(labelAngleRadians).toFloat() * petalTipRadius
-            val petalTipY = centerY + sin(labelAngleRadians).toFloat() * petalTipRadius
-
-            drawLine(
-                color = Color(0xFF1A1A1A).copy(alpha = 0.35f * alphaMultiplier),
-                start = Offset(petalTipX, petalTipY),
-                end = Offset(labelX, labelY),
-                strokeWidth = 1.5f
-            )
-
-            labelPaint.textAlign = when {
-                labelX < centerX - maxRadius * 0.08f -> Paint.Align.RIGHT
-                labelX > centerX + maxRadius * 0.08f -> Paint.Align.LEFT
-                else -> Paint.Align.CENTER
-            }
-
-            drawContext.canvas.nativeCanvas.drawText(
-                definition.bloomLabel,
-                labelX,
-                labelY,
-                labelPaint.apply {
-                    alpha = (255 * alphaMultiplier).toInt().coerceIn(0, 255)
-                }
+            drawCategoryLabel(
+                definition = definition,
+                layout = layout,
+                sliceAngle = sliceAngle,
+                alphaMultiplier = alphaMultiplier,
+                labelPaint = labelPaint
             )
         }
 
-        drawFlowerCenter(center = center, radius = maxRadius * 0.14f)
-        drawStemAndLeaves(center = center, maxRadius = maxRadius)
-
-        if (pendingSubscriptionCount > 0) {
-            val stemTop = Offset(centerX, centerY + maxRadius * 0.12f)
-            drawPendingCullTooltip(
-                anchor = Offset(centerX + maxRadius * 0.35f, stemTop.y + 24f),
-                pendingCount = pendingSubscriptionCount,
-                textPaint = tooltipPaint
-            )
-        }
+        drawFlowerCenter(center = center, radius = layout.maxRadius * 0.15f)
+        drawStemAndLeaves(center = center, maxRadius = layout.maxRadius)
     }
+}
+
+private fun DrawScope.drawCategoryLabel(
+    definition: BloomCategoryDefinition,
+    layout: BloomLayoutSpec,
+    sliceAngle: Float,
+    alphaMultiplier: Float,
+    labelPaint: Paint
+) {
+    val labelAngleRadians = Math.toRadians((sliceAngle - 90f).toDouble())
+    val labelX = layout.centerX + cos(labelAngleRadians).toFloat() * layout.labelRadius
+    val labelY = layout.centerY + sin(labelAngleRadians).toFloat() * layout.labelRadius
+    val petalTipRadius = layout.maxRadius * 0.82f
+    val petalTipX = layout.centerX + cos(labelAngleRadians).toFloat() * petalTipRadius
+    val petalTipY = layout.centerY + sin(labelAngleRadians).toFloat() * petalTipRadius
+
+    drawLine(
+        color = MeadowGreenDark.copy(alpha = 0.28f * alphaMultiplier),
+        start = Offset(petalTipX, petalTipY),
+        end = Offset(labelX, labelY),
+        strokeWidth = 1.25f
+    )
+
+    val horizontalMargin = layout.maxRadius * 0.12f
+    labelPaint.textAlign = when {
+        labelX > layout.centerX + horizontalMargin -> Paint.Align.RIGHT
+        labelX < layout.centerX - horizontalMargin -> Paint.Align.LEFT
+        else -> Paint.Align.CENTER
+    }
+
+    val baselineOffset = when {
+        labelY < layout.centerY - layout.maxRadius * 0.2f -> layout.labelTextSizePx * 0.35f
+        labelY > layout.centerY + layout.maxRadius * 0.2f -> -layout.labelTextSizePx * 0.15f
+        else -> layout.labelTextSizePx * 0.35f
+    }
+
+    drawContext.canvas.nativeCanvas.drawText(
+        definition.bloomLabel,
+        labelX,
+        labelY + baselineOffset,
+        labelPaint.apply {
+            alpha = (255 * alphaMultiplier).toInt().coerceIn(0, 255)
+        }
+    )
 }
 
 private fun DrawScope.drawPhotorealisticPetal(
@@ -209,20 +217,20 @@ private fun DrawScope.drawPhotorealisticPetal(
     definition: BloomCategoryDefinition,
     alphaMultiplier: Float
 ) {
-    val shadowPath = createPetalPath(center = center, length = length, width = width)
+    val petalPath = createPetalPath(center = center, length = length, width = width)
+
     drawPath(
-        path = shadowPath,
+        path = petalPath,
         brush = Brush.linearGradient(
             colors = listOf(
-                definition.shadowColor.copy(alpha = 0.55f * alphaMultiplier),
-                definition.shadowColor.copy(alpha = 0.2f * alphaMultiplier)
+                definition.shadowColor.copy(alpha = 0.62f * alphaMultiplier),
+                definition.shadowColor.copy(alpha = 0.18f * alphaMultiplier)
             ),
-            start = Offset(center.x - width * 0.2f, center.y + length * 0.15f),
-            end = Offset(center.x, center.y - length)
+            start = Offset(center.x - width * 0.25f, center.y + length * 0.1f),
+            end = Offset(center.x, center.y - length * 1.05f)
         )
     )
 
-    val petalPath = createPetalPath(center = center, length = length, width = width)
     drawPath(
         path = petalPath,
         brush = Brush.radialGradient(
@@ -230,10 +238,10 @@ private fun DrawScope.drawPhotorealisticPetal(
                 definition.highlightColor.copy(alpha = alphaMultiplier),
                 definition.midColor.copy(alpha = alphaMultiplier),
                 definition.baseColor.copy(alpha = alphaMultiplier),
-                definition.shadowColor.copy(alpha = 0.85f * alphaMultiplier)
+                definition.shadowColor.copy(alpha = 0.9f * alphaMultiplier)
             ),
-            center = Offset(center.x, center.y - length * 0.72f),
-            radius = length * 0.95f
+            center = Offset(center.x, center.y - length * 0.7f),
+            radius = length * 1.05f
         )
     )
 
@@ -241,31 +249,98 @@ private fun DrawScope.drawPhotorealisticPetal(
         path = petalPath,
         brush = Brush.linearGradient(
             colors = listOf(
-                MeadowWhite.copy(alpha = 0.35f * alphaMultiplier),
+                MeadowWhite.copy(alpha = 0.42f * alphaMultiplier),
                 Color.Transparent,
-                definition.shadowColor.copy(alpha = 0.25f * alphaMultiplier)
+                definition.shadowColor.copy(alpha = 0.22f * alphaMultiplier)
             ),
-            start = Offset(center.x - width * 0.35f, center.y - length * 0.2f),
-            end = Offset(center.x + width * 0.25f, center.y - length * 0.85f)
+            start = Offset(center.x - width * 0.38f, center.y - length * 0.18f),
+            end = Offset(center.x + width * 0.22f, center.y - length * 0.88f)
         )
     )
 
-    val veinPath = Path().apply {
-        moveTo(center.x, center.y - length * 0.08f)
+    drawPetalVeins(center = center, length = length, width = width, definition = definition, alphaMultiplier = alphaMultiplier)
+    drawPetalEdgeHighlight(petalPath = petalPath, alphaMultiplier = alphaMultiplier)
+    drawPetalMicroTexture(center = center, length = length, width = width, alphaMultiplier = alphaMultiplier)
+}
+
+private fun DrawScope.drawPetalVeins(
+    center: Offset,
+    length: Float,
+    width: Float,
+    definition: BloomCategoryDefinition,
+    alphaMultiplier: Float
+) {
+    val primaryVein = Path().apply {
+        moveTo(center.x, center.y - length * 0.06f)
         cubicTo(
-            center.x - width * 0.05f,
-            center.y - length * 0.45f,
-            center.x + width * 0.04f,
-            center.y - length * 0.72f,
+            center.x - width * 0.04f,
+            center.y - length * 0.42f,
+            center.x + width * 0.03f,
+            center.y - length * 0.7f,
             center.x,
-            center.y - length * 0.95f
+            center.y - length * 0.96f
         )
     }
     drawPath(
-        path = veinPath,
-        color = definition.shadowColor.copy(alpha = 0.28f * alphaMultiplier),
-        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f)
+        path = primaryVein,
+        color = definition.shadowColor.copy(alpha = 0.34f * alphaMultiplier),
+        style = Stroke(width = 2.2f)
     )
+
+    listOf(-0.22f, 0.22f).forEach { side ->
+        val sideVein = Path().apply {
+            moveTo(center.x, center.y - length * 0.2f)
+            cubicTo(
+                center.x + width * side * 0.35f,
+                center.y - length * 0.42f,
+                center.x + width * side * 0.28f,
+                center.y - length * 0.62f,
+                center.x + width * side * 0.12f,
+                center.y - length * 0.78f
+            )
+        }
+        drawPath(
+            path = sideVein,
+            color = definition.shadowColor.copy(alpha = 0.2f * alphaMultiplier),
+            style = Stroke(width = 1.2f)
+        )
+    }
+}
+
+private fun DrawScope.drawPetalEdgeHighlight(
+    petalPath: Path,
+    alphaMultiplier: Float
+) {
+    drawPath(
+        path = petalPath,
+        color = MeadowWhite.copy(alpha = 0.18f * alphaMultiplier),
+        style = Stroke(width = 1.4f)
+    )
+}
+
+private fun DrawScope.drawPetalMicroTexture(
+    center: Offset,
+    length: Float,
+    width: Float,
+    alphaMultiplier: Float
+) {
+    val speckOffsets = listOf(
+        Offset(-0.18f, -0.35f),
+        Offset(0.12f, -0.48f),
+        Offset(-0.08f, -0.62f),
+        Offset(0.2f, -0.7f),
+        Offset(-0.14f, -0.8f)
+    )
+    speckOffsets.forEach { offset ->
+        drawCircle(
+            color = MeadowWhite.copy(alpha = 0.12f * alphaMultiplier),
+            radius = 1.6f,
+            center = Offset(
+                center.x + width * offset.x,
+                center.y - length * offset.y
+            )
+        )
+    }
 }
 
 private fun createPetalPath(
@@ -276,18 +351,18 @@ private fun createPetalPath(
     return Path().apply {
         moveTo(center.x, center.y)
         cubicTo(
-            center.x - width * 0.55f,
-            center.y - length * 0.18f,
-            center.x - width * 0.72f,
-            center.y - length * 0.62f,
+            center.x - width * 0.58f,
+            center.y - length * 0.2f,
+            center.x - width * 0.74f,
+            center.y - length * 0.64f,
             center.x,
             center.y - length
         )
         cubicTo(
-            center.x + width * 0.72f,
-            center.y - length * 0.62f,
-            center.x + width * 0.55f,
-            center.y - length * 0.18f,
+            center.x + width * 0.74f,
+            center.y - length * 0.64f,
+            center.x + width * 0.58f,
+            center.y - length * 0.2f,
             center.x,
             center.y
         )
@@ -299,6 +374,7 @@ private fun DrawScope.drawFlowerCenter(center: Offset, radius: Float) {
     drawCircle(
         brush = Brush.radialGradient(
             colors = listOf(
+                Color(0xFFFFF8DC),
                 Color(0xFFFFF4C2),
                 Color(0xFFE8C547),
                 Color(0xFFC9971A)
@@ -309,109 +385,84 @@ private fun DrawScope.drawFlowerCenter(center: Offset, radius: Float) {
         radius = radius,
         center = center
     )
+
+    val pollenSpecks = listOf(
+        Offset(-0.35f, -0.2f),
+        Offset(0.28f, -0.15f),
+        Offset(-0.1f, 0.25f),
+        Offset(0.32f, 0.18f),
+        Offset(0f, -0.32f),
+        Offset(-0.25f, 0.12f)
+    )
+    pollenSpecks.forEach { offset ->
+        drawCircle(
+            color = Color(0xFF8B6914).copy(alpha = 0.55f),
+            radius = radius * 0.09f,
+            center = Offset(center.x + radius * offset.x, center.y + radius * offset.y)
+        )
+    }
+
     drawCircle(
-        color = MeadowEarth.copy(alpha = 0.35f),
-        radius = radius * 0.55f,
+        color = MeadowEarth.copy(alpha = 0.28f),
+        radius = radius * 0.52f,
         center = center
     )
 }
 
 private fun DrawScope.drawStemAndLeaves(center: Offset, maxRadius: Float) {
-    val stemTop = Offset(center.x, center.y + maxRadius * 0.12f)
-    val stemBottom = Offset(center.x, center.y + maxRadius * 0.95f)
+    val stemTop = Offset(center.x, center.y + maxRadius * 0.14f)
+    val stemBottom = Offset(center.x, center.y + maxRadius * 0.82f)
 
     drawLine(
-        color = Color(0xFF3E6B45),
+        brush = Brush.verticalGradient(
+            colors = listOf(Color(0xFF4F8F57), Color(0xFF2F5A36)),
+            startY = stemTop.y,
+            endY = stemBottom.y
+        ),
         start = stemTop,
         end = stemBottom,
-        strokeWidth = 10f
+        strokeWidth = 9f
     )
 
     val leftLeaf = Path().apply {
-        moveTo(stemTop.x, stemTop.y + maxRadius * 0.2f)
+        moveTo(stemTop.x, stemTop.y + maxRadius * 0.18f)
         cubicTo(
-            stemTop.x - maxRadius * 0.35f,
-            stemTop.y + maxRadius * 0.28f,
-            stemTop.x - maxRadius * 0.28f,
-            stemTop.y + maxRadius * 0.48f,
-            stemTop.x - maxRadius * 0.05f,
-            stemTop.y + maxRadius * 0.42f
+            stemTop.x - maxRadius * 0.3f,
+            stemTop.y + maxRadius * 0.24f,
+            stemTop.x - maxRadius * 0.24f,
+            stemTop.y + maxRadius * 0.4f,
+            stemTop.x - maxRadius * 0.04f,
+            stemTop.y + maxRadius * 0.36f
         )
         close()
     }
     drawPath(
         path = leftLeaf,
         brush = Brush.linearGradient(
-            colors = listOf(Color(0xFF7CB87E), Color(0xFF4A7C59)),
+            colors = listOf(Color(0xFF9BCF9D), Color(0xFF4A7C59)),
             start = leftLeaf.getBounds().topLeft,
             end = leftLeaf.getBounds().bottomRight
         )
     )
 
     val rightLeaf = Path().apply {
-        moveTo(stemTop.x, stemTop.y + maxRadius * 0.32f)
+        moveTo(stemTop.x, stemTop.y + maxRadius * 0.28f)
         cubicTo(
-            stemTop.x + maxRadius * 0.32f,
-            stemTop.y + maxRadius * 0.36f,
-            stemTop.x + maxRadius * 0.26f,
-            stemTop.y + maxRadius * 0.56f,
-            stemTop.x + maxRadius * 0.04f,
-            stemTop.y + maxRadius * 0.5f
+            stemTop.x + maxRadius * 0.28f,
+            stemTop.y + maxRadius * 0.32f,
+            stemTop.x + maxRadius * 0.22f,
+            stemTop.y + maxRadius * 0.48f,
+            stemTop.x + maxRadius * 0.03f,
+            stemTop.y + maxRadius * 0.44f
         )
         close()
     }
     drawPath(
         path = rightLeaf,
         brush = Brush.linearGradient(
-            colors = listOf(Color(0xFF9CAF88), Color(0xFF5A9E4B)),
+            colors = listOf(Color(0xFFB5D4A8), Color(0xFF5A9E4B)),
             start = rightLeaf.getBounds().topLeft,
             end = rightLeaf.getBounds().bottomRight
         )
-    )
-}
-
-private fun DrawScope.drawPendingCullTooltip(
-    anchor: Offset,
-    pendingCount: Int,
-    textPaint: Paint
-) {
-    val message = "$pendingCount SUBSCRIPTIONS PENDING CULL!"
-    val bubbleWidth = 320f
-    val bubbleHeight = 56f
-    val bubbleTopLeft = Offset(anchor.x - 12f, anchor.y)
-
-    drawRoundRect(
-        color = MeadowWhite,
-        topLeft = bubbleTopLeft,
-        size = androidx.compose.ui.geometry.Size(bubbleWidth, bubbleHeight),
-        cornerRadius = androidx.compose.ui.geometry.CornerRadius(14f, 14f)
-    )
-    drawRoundRect(
-        color = MeadowGreenDark.copy(alpha = 0.2f),
-        topLeft = bubbleTopLeft,
-        size = androidx.compose.ui.geometry.Size(bubbleWidth, bubbleHeight),
-        cornerRadius = androidx.compose.ui.geometry.CornerRadius(14f, 14f),
-        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f)
-    )
-
-    drawContext.canvas.nativeCanvas.drawText(
-        message,
-        bubbleTopLeft.x + 16f,
-        bubbleTopLeft.y + 36f,
-        textPaint
-    )
-
-    val badgeCenter = Offset(bubbleTopLeft.x + bubbleWidth - 22f, bubbleTopLeft.y + bubbleHeight / 2f)
-    drawCircle(color = Color(0xFF4A7FC1), radius = 16f, center = badgeCenter)
-    drawContext.canvas.nativeCanvas.drawText(
-        pendingCount.toString(),
-        badgeCenter.x,
-        badgeCenter.y + 8f,
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = MeadowWhite.toArgb()
-            textSize = 22f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            textAlign = Paint.Align.CENTER
-        }
     )
 }

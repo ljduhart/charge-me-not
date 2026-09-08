@@ -228,7 +228,6 @@ fun DashboardScreen(
                 item(key = "financial_bloom_card") {
                     FinancialBloomCard(
                         parentCategoryTotals = uiState.parentCategoryTotals,
-                        pendingSubscriptionCount = uiState.subscriptionBills.size,
                         monthlyBudget = uiState.monthlyBudget,
                         highlightedBloomParent = uiState.highlightedBloomParent,
                         onBloomSettingsClick = onBloomSettingsClick,
@@ -398,7 +397,6 @@ private fun TotalUpcomingSummaryCard(
 @Composable
 private fun FinancialBloomCard(
     parentCategoryTotals: Map<String, Double>,
-    pendingSubscriptionCount: Int,
     monthlyBudget: Double,
     highlightedBloomParent: String?,
     onBloomSettingsClick: () -> Unit,
@@ -446,7 +444,6 @@ private fun FinancialBloomCard(
                 parentCategoryTotals = parentCategoryTotals,
                 monthlyBudget = monthlyBudget,
                 highlightedParent = highlightedBloomParent,
-                pendingSubscriptionCount = pendingSubscriptionCount,
                 onPetalTapped = onPetalTapped,
                 modifier = Modifier.fillMaxWidth()
             )
