@@ -84,7 +84,7 @@ fun PhotorealisticBloomCanvas(
             .fillMaxWidth()
             .height(350.dp)
             .padding(horizontal = 2.dp)
-            .pointerInput(Unit) {
+            .pointerInput(density) {
                 detectTapGestures { offset ->
                     val layout = BloomLayout.compute(
                         canvasWidth = size.width.toFloat(),
@@ -92,13 +92,10 @@ fun PhotorealisticBloomCanvas(
                         density = density
                     )
 
-                    val sliceIndex = BloomTouchMath.sliceIndexAtPoint(
+                    val sliceIndex = BloomTouchMath.resolveSliceIndex(
                         tapX = offset.x,
                         tapY = offset.y,
-                        centerX = layout.centerX,
-                        centerY = layout.centerY,
-                        innerRadius = layout.innerTouchRadius,
-                        outerRadius = layout.labelTouchRadius
+                        layout = layout
                     ) ?: return@detectTapGestures
 
                     val categoryName = BloomCategoryDefinitions.displayNameAtSliceIndex(sliceIndex)

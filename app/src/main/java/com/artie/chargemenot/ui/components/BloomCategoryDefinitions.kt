@@ -3,6 +3,8 @@ package com.artie.chargemenot.ui.components
 import androidx.compose.ui.graphics.Color
 import com.artie.chargemenot.domain.model.MeadowCategories
 import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 data class BloomCategoryDefinition(
@@ -174,6 +176,78 @@ object BloomLayout {
 }
 
 object BloomTouchMath {
+    fun resolveSliceIndex(
+        tapX: Float,
+        tapY: Float,
+        layout: BloomLayoutSpec
+    ): Int? {
+        val deltaX = tapX - layout.centerX
+        val deltaY = tapY - layout.centerY
+        val distance = sqrt(deltaX * deltaX + deltaY * deltaY)
+        if (distance < layout.innerTouchRadius || distance > layout.labelTouchRadius) {
+            return null
+        }
+
+        if (distance <= layout.outerTouchRadius) {
+            return sliceIndexAtPoint(
+                tapX = tapX,
+                tapY = tapY,
+                centerX = layout.centerX,
+                centerY = layout.centerY,
+                innerRadius = layout.innerTouchRadius,
+                outerRadius = layout.outerTouchRadius
+            )
+        }
+
+        val tapAngle = atan2(deltaY, deltaX)
+        var bestIndex: Int? = null
+        var bestAngularDistance = Float.MAX_VALUE
+        BloomCategoryDefinitions.categories.forEachIndexed { index, definition ->
+            val sliceAngle = -90f + index * BloomCategoryDefinitions.SLICE_DEGREES
+            val labelAngle = Math.toRadians(
+                (sliceAngle - 90f + definition.labelAngleOffsetDegrees).toDouble()
+            ).toFloat()
+            val angularDistance = angularDistanceRadians(tapAngle, labelAngle)
+            if (angularDistance < bestAngularDistance) {
+                bestAngularDistance = angularDistance
+                bestIndex = index
+            }
+        }
+
+        val labelHitThreshold = Math.toRadians(28.0).toFloat()
+        return if (bestAngularDistance <= labelHitThreshold) {
+            bestIndex
+        } else {
+            sliceIndexAtPoint(
+                tapX = tapX,
+                tapY = tapY,
+                centerX = layout.centerX,
+                centerY = layout.centerY,
+                innerRadius = layout.innerTouchRadius,
+                outerRadius = layout.labelTouchRadius
+            )
+        }
+    }
+
+    private fun angularDistanceRadians(first: Float, second: Float): Float {
+        val difference = kotlin.math.abs(first - second) % (Math.PI * 2).toFloat()
+        return kotlin.math.min(difference, (Math.PI * 2).toFloat() - difference)
+    }
+
+    fun labelPositionFor(
+        layout: BloomLayoutSpec,
+        definition: BloomCategoryDefinition,
+        sliceIndex: Int
+    ): Pair<Float, Float> {
+        val sliceAngle = -90f + sliceIndex * BloomCategoryDefinitions.SLICE_DEGREES
+        val labelAngleRadians = Math.toRadians(
+            (sliceAngle - 90f + definition.labelAngleOffsetDegrees).toDouble()
+        )
+        val labelX = layout.centerX + cos(labelAngleRadians).toFloat() * layout.labelRadius
+        val labelY = layout.centerY + sin(labelAngleRadians).toFloat() * layout.labelRadius
+        return labelX to labelY
+    }
+
     fun sliceIndexAtPoint(
         tapX: Float,
         tapY: Float,

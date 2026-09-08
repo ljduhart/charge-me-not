@@ -154,4 +154,64 @@ class BloomTouchMathTest {
 
         assertNull(index)
     }
+
+    @Test
+    fun resolveSliceIndex_mapsOffsetPollinatorsLabelTapToPollinators() {
+        val layout = BloomLayout.compute(
+            canvasWidth = 360f,
+            canvasHeight = 350f,
+            density = 2f
+        )
+        val pollinators = BloomCategoryDefinitions.fromDisplayName("Pollinators")!!
+        val (labelX, labelY) = BloomTouchMath.labelPositionFor(
+            layout = layout,
+            definition = pollinators,
+            sliceIndex = 4
+        )
+        val tapDistance = layout.labelTouchRadius - 4f
+        val deltaX = labelX - layout.centerX
+        val deltaY = labelY - layout.centerY
+        val labelDistance = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY)
+        val tapX = layout.centerX + (deltaX / labelDistance) * tapDistance
+        val tapY = layout.centerY + (deltaY / labelDistance) * tapDistance
+
+        val index = BloomTouchMath.resolveSliceIndex(
+            tapX = tapX,
+            tapY = tapY,
+            layout = layout
+        )
+
+        assertEquals(4, index)
+        assertEquals("Pollinators", BloomCategoryDefinitions.displayNameAtSliceIndex(index!!))
+    }
+
+    @Test
+    fun resolveSliceIndex_mapsOffsetWildflowersLabelTapToWildflowers() {
+        val layout = BloomLayout.compute(
+            canvasWidth = 360f,
+            canvasHeight = 350f,
+            density = 2f
+        )
+        val wildflowers = BloomCategoryDefinitions.fromDisplayName("Wildflowers")!!
+        val (labelX, labelY) = BloomTouchMath.labelPositionFor(
+            layout = layout,
+            definition = wildflowers,
+            sliceIndex = 5
+        )
+        val tapDistance = layout.labelTouchRadius - 4f
+        val deltaX = labelX - layout.centerX
+        val deltaY = labelY - layout.centerY
+        val labelDistance = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY)
+        val tapX = layout.centerX + (deltaX / labelDistance) * tapDistance
+        val tapY = layout.centerY + (deltaY / labelDistance) * tapDistance
+
+        val index = BloomTouchMath.resolveSliceIndex(
+            tapX = tapX,
+            tapY = tapY,
+            layout = layout
+        )
+
+        assertEquals(5, index)
+        assertEquals("Wildflowers", BloomCategoryDefinitions.displayNameAtSliceIndex(index!!))
+    }
 }
