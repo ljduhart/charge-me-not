@@ -278,7 +278,10 @@ class DashboardViewModel(
         dismissDashboardOverlays()
         clearBillAndCategorySelection()
         _uiState.update { current ->
-            current.copy(selectedCalendarDate = null)
+            current.copy(
+                selectedCalendarDate = null,
+                highlightedBloomParent = null
+            )
         }
     }
 

@@ -98,7 +98,7 @@ fun PhotorealisticBloomCanvas(
                         centerX = layout.centerX,
                         centerY = layout.centerY,
                         innerRadius = layout.innerTouchRadius,
-                        outerRadius = layout.outerTouchRadius
+                        outerRadius = layout.labelTouchRadius
                     ) ?: return@detectTapGestures
 
                     val categoryName = BloomCategoryDefinitions.displayNameAtSliceIndex(sliceIndex)

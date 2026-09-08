@@ -59,11 +59,9 @@ class BloomTouchMathTest {
             density = 3f
         )
 
-        assertEquals(layout.petalLength, layout.petalLength)
-        assertTrue(layout.petalLength > 0f)
-        assertTrue(layout.petalWidth > 0f)
         assertEquals(layout.petalLength, layout.maxRadius * 0.9f)
         assertEquals(layout.petalWidth, layout.maxRadius * 0.56f)
+        assertTrue(layout.labelTouchRadius >= layout.outerTouchRadius)
     }
 
     @Test
@@ -91,5 +89,49 @@ class BloomTouchMathTest {
         )
 
         assertTrue(fitted < 24f)
+    }
+
+    @Test
+    fun sliceIndexAtPoint_acceptsLabelRadiusTap() {
+        val layout = BloomLayout.compute(
+            canvasWidth = 360f,
+            canvasHeight = 500f,
+            density = 2f
+        )
+        val labelAngleRadians = Math.toRadians(-90.0)
+        val tapX = layout.centerX + kotlin.math.cos(labelAngleRadians).toFloat() * layout.labelTouchRadius
+        val tapY = layout.centerY + kotlin.math.sin(labelAngleRadians).toFloat() * layout.labelTouchRadius
+
+        val index = BloomTouchMath.sliceIndexAtPoint(
+            tapX = tapX,
+            tapY = tapY,
+            centerX = layout.centerX,
+            centerY = layout.centerY,
+            innerRadius = layout.innerTouchRadius,
+            outerRadius = layout.labelTouchRadius
+        )
+
+        assertEquals(0, index)
+        assertEquals("Canopy", BloomCategoryDefinitions.displayNameAtSliceIndex(index!!))
+    }
+
+    @Test
+    fun sliceIndexAtPoint_rejectsTapOutsideLabelRadius() {
+        val layout = BloomLayout.compute(
+            canvasWidth = 360f,
+            canvasHeight = 500f,
+            density = 2f
+        )
+
+        val index = BloomTouchMath.sliceIndexAtPoint(
+            tapX = layout.centerX,
+            tapY = layout.centerY + layout.labelTouchRadius + 40f,
+            centerX = layout.centerX,
+            centerY = layout.centerY,
+            innerRadius = layout.innerTouchRadius,
+            outerRadius = layout.labelTouchRadius
+        )
+
+        assertNull(index)
     }
 }

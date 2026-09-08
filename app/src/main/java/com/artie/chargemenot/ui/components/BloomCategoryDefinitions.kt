@@ -106,6 +106,7 @@ data class BloomLayoutSpec(
     val labelRadius: Float,
     val innerTouchRadius: Float,
     val outerTouchRadius: Float,
+    val labelTouchRadius: Float,
     val labelTextSizePx: Float
 )
 
@@ -139,6 +140,8 @@ object BloomLayout {
             labelRadius = labelRadius,
             innerTouchRadius = maxRadius * 0.16f,
             outerTouchRadius = maxRadius * 0.98f,
+            labelTouchRadius = (labelRadius + labelTextSizePx * 0.55f)
+                .coerceAtMost(minOf(canvasWidth, canvasHeight) * 0.48f),
             labelTextSizePx = labelTextSizePx
         )
     }

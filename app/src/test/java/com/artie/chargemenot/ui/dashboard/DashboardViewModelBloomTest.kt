@@ -254,6 +254,20 @@ class DashboardViewModelBloomTest {
         assertFalse(viewModel.isManualBillVisible.value)
         assertNull(viewModel.selectedBillForEdit.value)
         assertNull(viewModel.selectedCategoryForEdit.value)
+        assertNull(viewModel.uiState.value.highlightedBloomParent)
+    }
+
+    @Test
+    fun clearDashboardTransientState_clearsBloomHighlight() {
+        val viewModel = createViewModel()
+        testScope.advanceUntilIdle()
+
+        viewModel.onPetalTapped("Roots")
+        assertEquals(MeadowCategories.ROOT_SYSTEM, viewModel.uiState.value.highlightedBloomParent)
+
+        viewModel.clearDashboardTransientState()
+
+        assertNull(viewModel.uiState.value.highlightedBloomParent)
     }
 
     @Test
