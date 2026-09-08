@@ -1,7 +1,7 @@
 package com.artie.chargemenot.data.model
 
 import com.artie.chargemenot.data.local.BillEntity
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -18,7 +18,8 @@ class CrossPollinationPayloadTest {
             name = "Netflix",
             amount = 15.49,
             dueDate = LocalDate.of(2026, 9, 12),
-            category = BillCategory.SUBSCRIPTIONS
+            parentCategory = MeadowCategories.VINES,
+            subCategory = "Subscriptions"
         )
 
         val json = CrossPollinationPayload.fromBillEntity(entity).toJson()
@@ -30,7 +31,8 @@ class CrossPollinationPayloadTest {
         assertEquals(entity.name, restored!!.name)
         assertEquals(entity.amount, restored.amount, 0.001)
         assertEquals(entity.dueDate, restored.dueDate)
-        assertEquals(entity.category, restored.category)
+        assertEquals(entity.parentCategory, restored.parentCategory)
+        assertEquals(entity.subCategory, restored.subCategory)
     }
 
     @Test
@@ -39,7 +41,8 @@ class CrossPollinationPayloadTest {
             name = "Test Bill",
             amount = -5.0,
             dueDate = "2026-09-12",
-            category = "FOOD"
+            parentCategory = MeadowCategories.FERTILIZER,
+            subCategory = "Groceries"
         ).toJson()
 
         assertNull(CrossPollinationPayload.fromJson(json))
@@ -69,7 +72,8 @@ class CrossPollinationPayloadTest {
             name = "   ",
             amount = 12.0,
             dueDate = "2026-09-12",
-            category = "FOOD"
+            parentCategory = MeadowCategories.FERTILIZER,
+            subCategory = "Groceries"
         )
 
         assertNull(payload.toBillEntity())
@@ -81,10 +85,13 @@ class CrossPollinationPayloadTest {
             name = "PG&E",
             amount = 94.17,
             dueDate = "2026-09-08",
-            category = "UTILITIES"
+            parentCategory = MeadowCategories.ROOT_SYSTEM,
+            subCategory = "Utilities"
         ).toJson()
 
         assertTrue(json.contains("\"app\":\"charge-me-not\""))
-        assertTrue(json.contains("\"v\":1"))
+        assertTrue(json.contains("\"v\":2"))
+        assertTrue(json.contains("\"parentCategory\":\"The Root System\""))
+        assertTrue(json.contains("\"subCategory\":\"Utilities\""))
     }
 }

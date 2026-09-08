@@ -9,7 +9,7 @@ import com.artie.chargemenot.data.local.UserSettingsEntity
 import com.artie.chargemenot.data.repository.BillRepository
 import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.Bill
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.usecase.ForecastUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -54,15 +54,15 @@ class DashboardViewModelBloomTest {
         val viewModel = createViewModel()
         testScope.advanceUntilIdle()
 
-        viewModel.onPetalTapped("Utilities")
+        viewModel.onPetalTapped("Roots")
 
-        assertEquals("Utilities", viewModel.selectedCategoryForEdit.value)
+        assertEquals("Roots", viewModel.selectedCategoryForEdit.value)
     }
 
     @Test
     fun clearCategorySelection_resetsSelectedCategory() {
         val viewModel = createViewModel()
-        viewModel.onPetalTapped("Food")
+        viewModel.onPetalTapped("Fertilizer")
         viewModel.clearCategorySelection()
 
         assertNull(viewModel.selectedCategoryForEdit.value)
@@ -71,7 +71,7 @@ class DashboardViewModelBloomTest {
     @Test
     fun selectBillForEdit_clearsSelectedCategory() {
         val viewModel = createViewModel()
-        viewModel.onPetalTapped("Rent")
+        viewModel.onPetalTapped("Canopy")
 
         viewModel.selectBillForEdit(
             Bill(
@@ -79,7 +79,8 @@ class DashboardViewModelBloomTest {
                 name = "Maple Street Apartment",
                 amount = 1_450.0,
                 dueDate = LocalDate.of(2026, 9, 12),
-                category = BillCategory.RENT
+                parentCategory = MeadowCategories.CANOPY,
+                subCategory = "Rent"
             )
         )
 
@@ -94,13 +95,14 @@ class DashboardViewModelBloomTest {
             name = "Maple Street Apartment",
             amount = 1_450.0,
             dueDate = LocalDate.of(2026, 9, 12),
-            category = BillCategory.RENT
+            parentCategory = MeadowCategories.CANOPY,
+            subCategory = "Rent"
         )
         viewModel.selectBillForEdit(bill)
-        viewModel.onPetalTapped("Utilities")
+        viewModel.onPetalTapped("Roots")
 
         assertNull(viewModel.selectedBillForEdit.value)
-        assertEquals("Utilities", viewModel.selectedCategoryForEdit.value)
+        assertEquals("Roots", viewModel.selectedCategoryForEdit.value)
     }
 
     @Test
@@ -108,9 +110,9 @@ class DashboardViewModelBloomTest {
         val viewModel = createViewModel()
         testScope.advanceUntilIdle()
 
-        viewModel.onPetalTapped("Utilities")
+        viewModel.onPetalTapped("Roots")
 
-        assertEquals(BillCategory.UTILITIES, viewModel.uiState.value.highlightedBloomCategory)
+        assertEquals(MeadowCategories.ROOT_SYSTEM, viewModel.uiState.value.highlightedBloomParent)
     }
 
     @Test
@@ -141,19 +143,19 @@ class DashboardViewModelBloomTest {
         val viewModel = createViewModel()
         testScope.advanceUntilIdle()
 
-        viewModel.onPetalTapped("Rent")
+        viewModel.onPetalTapped("Canopy")
         testScope.advanceUntilIdle()
 
         val bills = viewModel.categoryBills.value
         assertEquals(1, bills.size)
         assertEquals("Maple Street Apartment", bills.first().name)
-        assertEquals(BillCategory.RENT, bills.first().category)
+        assertEquals(MeadowCategories.CANOPY, bills.first().parentCategory)
     }
 
     @Test
     fun showManualBillEntry_clearsCategorySelection() {
         val viewModel = createViewModel()
-        viewModel.onPetalTapped("Food")
+        viewModel.onPetalTapped("Fertilizer")
 
         viewModel.showManualBillEntry()
 
@@ -164,7 +166,7 @@ class DashboardViewModelBloomTest {
     @Test
     fun showProfileEdit_clearsCategorySelection() {
         val viewModel = createViewModel()
-        viewModel.onPetalTapped("Rent")
+        viewModel.onPetalTapped("Canopy")
 
         viewModel.showProfileEdit()
 
@@ -184,7 +186,8 @@ class DashboardViewModelBloomTest {
                 name = "Netflix",
                 amount = 15.49,
                 dueDate = LocalDate.of(2026, 9, 12),
-                category = BillCategory.SUBSCRIPTIONS
+                parentCategory = MeadowCategories.VINES,
+                subCategory = "Subscriptions"
             )
         )
 
@@ -233,14 +236,15 @@ class DashboardViewModelBloomTest {
     fun clearDashboardTransientState_resetsAllOverlaySelections() {
         val viewModel = createViewModel()
         viewModel.showProfileEdit()
-        viewModel.onPetalTapped("Rent")
+        viewModel.onPetalTapped("Canopy")
         viewModel.selectBillForEdit(
             Bill(
                 id = 1L,
                 name = "Netflix",
                 amount = 15.49,
                 dueDate = LocalDate.of(2026, 9, 12),
-                category = BillCategory.SUBSCRIPTIONS
+                parentCategory = MeadowCategories.VINES,
+                subCategory = "Subscriptions"
             )
         )
 
@@ -294,14 +298,16 @@ class DashboardViewModelBloomTest {
                     name = "Maple Street Apartment",
                     amount = 1_450.0,
                     dueDate = LocalDate.of(2026, 9, 12),
-                    category = BillCategory.RENT
+                    parentCategory = MeadowCategories.CANOPY,
+                    subCategory = "Rent"
                 ),
                 BillEntity(
                     id = 2L,
                     name = "Pacific Gas & Electric",
                     amount = 94.17,
                     dueDate = LocalDate.of(2026, 9, 15),
-                    category = BillCategory.UTILITIES
+                    parentCategory = MeadowCategories.ROOT_SYSTEM,
+                    subCategory = "Utilities"
                 )
             )
         )
@@ -325,13 +331,16 @@ class DashboardViewModelBloomTest {
 
         override fun getActiveSubscriptions(): Flow<List<BillEntity>> =
             bills.map { entities ->
-                entities.filter { bill -> bill.category == BillCategory.SUBSCRIPTIONS }
+                entities.filter { bill ->
+                    bill.parentCategory == MeadowCategories.VINES &&
+                        bill.subCategory == "Subscriptions"
+                }
             }
 
-        override fun getBillsByCategory(category: String): Flow<List<BillEntity>> =
+        override fun getBillsByParentCategory(parentCategory: String): Flow<List<BillEntity>> =
             bills.map { entities ->
                 entities.filter { bill ->
-                    bill.category.name == category && !bill.isPaid
+                    bill.parentCategory == parentCategory && !bill.isPaid
                 }
             }
 

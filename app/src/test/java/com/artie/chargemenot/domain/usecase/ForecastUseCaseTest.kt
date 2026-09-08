@@ -1,7 +1,7 @@
 package com.artie.chargemenot.domain.usecase
 
 import com.artie.chargemenot.data.local.BillEntity
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.model.WeatherStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -20,7 +20,8 @@ class ForecastUseCaseTest {
             bill(
                 amount = 90.0,
                 dueDate = today.minusMonths(1).withDayOfMonth(10),
-                category = BillCategory.UTILITIES
+                parentCategory = MeadowCategories.ROOT_SYSTEM,
+                subCategory = "Utilities"
             )
         )
 
@@ -36,12 +37,14 @@ class ForecastUseCaseTest {
             bill(
                 amount = 230.0,
                 dueDate = today.minusMonths(2).withDayOfMonth(10),
-                category = BillCategory.UTILITIES
+                parentCategory = MeadowCategories.ROOT_SYSTEM,
+                subCategory = "Utilities"
             ),
             bill(
                 amount = 250.0,
                 dueDate = today.minusMonths(1).withDayOfMonth(10),
-                category = BillCategory.UTILITIES
+                parentCategory = MeadowCategories.ROOT_SYSTEM,
+                subCategory = "Utilities"
             )
         )
 
@@ -62,12 +65,14 @@ class ForecastUseCaseTest {
             bill(
                 amount = 100.0,
                 dueDate = today.minusMonths(2).withDayOfMonth(8),
-                category = BillCategory.FOOD
+                parentCategory = MeadowCategories.FERTILIZER,
+                subCategory = "Groceries"
             ),
             bill(
                 amount = 120.0,
                 dueDate = today.minusMonths(1).withDayOfMonth(8),
-                category = BillCategory.FOOD
+                parentCategory = MeadowCategories.FERTILIZER,
+                subCategory = "Groceries"
             )
         )
 
@@ -84,12 +89,14 @@ class ForecastUseCaseTest {
             bill(
                 amount = 1_450.0,
                 dueDate = today.minusMonths(2).withDayOfMonth(1),
-                category = BillCategory.RENT
+                parentCategory = MeadowCategories.CANOPY,
+                subCategory = "Rent"
             ),
             bill(
                 amount = 1_450.0,
                 dueDate = today.minusMonths(1).withDayOfMonth(1),
-                category = BillCategory.RENT
+                parentCategory = MeadowCategories.CANOPY,
+                subCategory = "Rent"
             )
         )
 
@@ -105,17 +112,20 @@ class ForecastUseCaseTest {
             bill(
                 amount = 200.0,
                 dueDate = today.minusMonths(2).withDayOfMonth(10),
-                category = BillCategory.UTILITIES
+                parentCategory = MeadowCategories.ROOT_SYSTEM,
+                subCategory = "Utilities"
             ),
             bill(
                 amount = 220.0,
                 dueDate = today.minusMonths(1).withDayOfMonth(10),
-                category = BillCategory.UTILITIES
+                parentCategory = MeadowCategories.ROOT_SYSTEM,
+                subCategory = "Utilities"
             ),
             bill(
                 amount = 500.0,
                 dueDate = today.withDayOfMonth(15),
-                category = BillCategory.UTILITIES
+                parentCategory = MeadowCategories.ROOT_SYSTEM,
+                subCategory = "Utilities"
             )
         )
 
@@ -134,12 +144,14 @@ class ForecastUseCaseTest {
             bill(
                 amount = 180.0,
                 dueDate = today.withDayOfMonth(12),
-                category = BillCategory.FOOD
+                parentCategory = MeadowCategories.FERTILIZER,
+                subCategory = "Groceries"
             ),
             bill(
                 amount = 95.0,
                 dueDate = today.withDayOfMonth(20),
-                category = BillCategory.UTILITIES
+                parentCategory = MeadowCategories.ROOT_SYSTEM,
+                subCategory = "Utilities"
             )
         )
 
@@ -164,14 +176,16 @@ class ForecastUseCaseTest {
     private fun bill(
         amount: Double,
         dueDate: LocalDate,
-        category: BillCategory
+        parentCategory: String,
+        subCategory: String
     ): BillEntity {
         return BillEntity(
             id = dueDate.toEpochDay(),
             name = "Test Bill",
             amount = amount,
             dueDate = dueDate,
-            category = category
+            parentCategory = parentCategory,
+            subCategory = subCategory
         )
     }
 
@@ -186,7 +200,7 @@ class ForecastUseCaseTest {
         override suspend fun deleteBillById(billId: Long) = Unit
         override suspend fun getBillCount(): Int = 0
         override fun getActiveSubscriptions() = kotlinx.coroutines.flow.flowOf(emptyList<BillEntity>())
-        override fun getBillsByCategory(category: String) =
+        override fun getBillsByParentCategory(parentCategory: String) =
             kotlinx.coroutines.flow.flowOf(emptyList<BillEntity>())
         override suspend fun getBillByIdOnce(billId: Long): BillEntity? = null
         override suspend fun getOverdueOrDueTodayUnpaidBillCount(today: LocalDate): Int = 0
