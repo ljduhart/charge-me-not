@@ -216,8 +216,7 @@ class PruningViewModelTest {
     override fun getActiveSubscriptions(): Flow<List<BillEntity>> =
       bills.map { items ->
         items.filter { bill ->
-          bill.parentCategory == MeadowCategories.VINES &&
-            bill.subCategory == "Subscriptions" && !bill.isPaid
+          bill.parentCategory == MeadowCategories.VINES && !bill.isPaid
         }
       }
 

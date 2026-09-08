@@ -45,7 +45,7 @@ interface BillDao {
     @Query(
         """
         SELECT * FROM bills
-        WHERE parentCategory = 'The Vines' AND subCategory = 'Subscriptions' AND isPaid = 0
+        WHERE parentCategory = 'The Vines' AND isPaid = 0
         ORDER BY name ASC
         """
     )

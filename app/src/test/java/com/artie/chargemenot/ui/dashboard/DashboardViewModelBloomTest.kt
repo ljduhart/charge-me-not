@@ -277,6 +277,19 @@ class DashboardViewModelBloomTest {
         assertEquals("Morgan", settingsDao.lastSaved?.displayName)
     }
 
+    @Test
+    fun subscriptionBills_includesAllUnpaidVinesParentBills() {
+        val viewModel = createViewModel()
+        testScope.advanceUntilIdle()
+
+        val subscriptions = viewModel.uiState.value.subscriptionBills
+        assertTrue(
+            subscriptions.any { bill ->
+                bill.parentCategory == MeadowCategories.VINES && bill.subCategory == "Streaming"
+            }
+        )
+    }
+
     private fun createViewModel(): DashboardViewModel {
         return DashboardViewModel(
             billRepository = BillRepository(
@@ -308,6 +321,14 @@ class DashboardViewModelBloomTest {
                     dueDate = LocalDate.of(2026, 9, 15),
                     parentCategory = MeadowCategories.ROOT_SYSTEM,
                     subCategory = "Utilities"
+                ),
+                BillEntity(
+                    id = 3L,
+                    name = "Hulu",
+                    amount = 7.99,
+                    dueDate = LocalDate.of(2026, 9, 20),
+                    parentCategory = MeadowCategories.VINES,
+                    subCategory = "Streaming"
                 )
             )
         )
@@ -331,10 +352,7 @@ class DashboardViewModelBloomTest {
 
         override fun getActiveSubscriptions(): Flow<List<BillEntity>> =
             bills.map { entities ->
-                entities.filter { bill ->
-                    bill.parentCategory == MeadowCategories.VINES &&
-                        bill.subCategory == "Subscriptions"
-                }
+                entities.filter { bill -> bill.parentCategory == MeadowCategories.VINES && !bill.isPaid }
             }
 
         override fun getBillsByParentCategory(parentCategory: String): Flow<List<BillEntity>> =

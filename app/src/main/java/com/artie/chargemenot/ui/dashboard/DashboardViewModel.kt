@@ -97,9 +97,7 @@ class DashboardViewModel(
                 userSettingsRepository.observeUserSettings()
             ) { upcoming, all, settings ->
                 val subscriptions = all.filter {
-                    it.parentCategory == MeadowCategories.VINES &&
-                        it.subCategory == "Subscriptions" &&
-                        !it.isPaid
+                    it.parentCategory == MeadowCategories.VINES && !it.isPaid
                 }
                 val parentCategoryTotals = upcoming
                     .groupBy { it.parentCategory }
