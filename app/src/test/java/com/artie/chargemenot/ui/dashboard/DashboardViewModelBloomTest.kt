@@ -104,14 +104,36 @@ class DashboardViewModelBloomTest {
     }
 
     @Test
-    fun selectBottomNavItem_clearsSelectedCategory() {
+    fun onPetalTapped_highlightsBloomCategory() {
         val viewModel = createViewModel()
-        viewModel.onPetalTapped("Food")
+        testScope.advanceUntilIdle()
 
-        viewModel.selectBottomNavItem(DashboardBottomNavItem.RENT)
+        viewModel.onPetalTapped("Utilities")
 
-        assertNull(viewModel.selectedCategoryForEdit.value)
-        assertEquals(DashboardBottomNavItem.RENT, viewModel.uiState.value.selectedBottomNavItem)
+        assertEquals(BillCategory.UTILITIES, viewModel.uiState.value.highlightedBloomCategory)
+    }
+
+    @Test
+    fun onCalendarDayTapped_opensManualBillWithPrefillDate() {
+        val viewModel = createViewModel()
+        val dueDate = LocalDate.of(2026, 9, 18)
+
+        viewModel.onCalendarDayTapped(dueDate)
+
+        assertEquals(dueDate, viewModel.manualBillPrefillDate.value)
+        assertTrue(viewModel.isManualBillVisible.value)
+        assertEquals(dueDate, viewModel.uiState.value.selectedCalendarDate)
+    }
+
+    @Test
+    fun toggleBillCalendarExpanded_flipsExpandedState() {
+        val viewModel = createViewModel()
+
+        viewModel.toggleBillCalendarExpanded()
+        assertTrue(viewModel.uiState.value.isBillCalendarExpanded)
+
+        viewModel.toggleBillCalendarExpanded()
+        assertFalse(viewModel.uiState.value.isBillCalendarExpanded)
     }
 
     @Test

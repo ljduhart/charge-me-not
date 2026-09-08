@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.artie.chargemenot.ui.dashboard.DashboardBottomNavItem
 import com.artie.chargemenot.ui.dashboard.DashboardUiState
 import com.artie.chargemenot.ui.screens.CompostBinScreen
 import com.artie.chargemenot.ui.screens.DashboardScreen
@@ -112,7 +111,11 @@ fun ChargeMeNotNavHost(
     onSelectBillForEdit: (Bill) -> Unit,
     onPetalTapped: (String) -> Unit,
     onShowProfileEdit: () -> Unit,
-    onSelectBottomNavItem: (DashboardBottomNavItem) -> Unit,
+    onToggleBillCalendarExpanded: () -> Unit,
+    onPreviousCalendarMonth: () -> Unit,
+    onNextCalendarMonth: () -> Unit,
+    onCalendarDayTapped: (java.time.LocalDate) -> Unit,
+    onCalendarBillTapped: (Bill) -> Unit,
     onBloomSettingsClick: () -> Unit,
     onOpenDrawer: () -> Unit,
     onMeadowHubNavigateBack: () -> Unit,
@@ -161,7 +164,11 @@ fun ChargeMeNotNavHost(
                 onSelectBillForEdit = onSelectBillForEdit,
                 onPetalTapped = onPetalTapped,
                 onShowProfileEdit = onShowProfileEdit,
-                onSelectBottomNavItem = onSelectBottomNavItem,
+                onToggleBillCalendarExpanded = onToggleBillCalendarExpanded,
+                onPreviousCalendarMonth = onPreviousCalendarMonth,
+                onNextCalendarMonth = onNextCalendarMonth,
+                onCalendarDayTapped = onCalendarDayTapped,
+                onCalendarBillTapped = onCalendarBillTapped,
                 onBloomSettingsClick = onBloomSettingsClick
             )
         }

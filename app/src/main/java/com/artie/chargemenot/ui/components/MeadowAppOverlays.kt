@@ -2,6 +2,7 @@ package com.artie.chargemenot.ui.components
 
 import androidx.compose.runtime.Composable
 import com.artie.chargemenot.domain.model.Bill
+import java.time.LocalDate
 
 @Composable
 fun MeadowAppOverlays(
@@ -11,6 +12,7 @@ fun MeadowAppOverlays(
     isProfileEditVisible: Boolean,
     isManualBillVisible: Boolean,
     manualBillEntrySession: Int,
+    manualBillPrefillDate: LocalDate?,
     userDisplayName: String,
     onClearEditSelection: () -> Unit,
     onSaveBillEdits: (Bill) -> Unit,
@@ -51,6 +53,7 @@ fun MeadowAppOverlays(
         ManualBillBottomSheet(
             isVisible = true,
             sessionKey = manualBillEntrySession,
+            defaultDueDate = manualBillPrefillDate,
             onDismiss = onDismissManualBillEntry,
             onSave = onSaveManualBill
         )

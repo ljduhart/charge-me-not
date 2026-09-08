@@ -54,6 +54,7 @@ fun ManualBillBottomSheet(
     isVisible: Boolean,
     sessionKey: Int,
     defaultCategory: BillCategory = BillCategory.SUBSCRIPTIONS,
+    defaultDueDate: LocalDate? = null,
     onDismiss: () -> Unit,
     onSave: (Bill) -> Unit
 ) {
@@ -65,7 +66,9 @@ fun ManualBillBottomSheet(
     val dateFormat = remember { DateTimeFormatter.ofPattern("MMM d, yyyy") }
     var nameInput by remember(sessionKey) { mutableStateOf("") }
     var amountInput by remember(sessionKey) { mutableStateOf("") }
-    var selectedDueDate by remember(sessionKey) { mutableStateOf(LocalDate.now().plusDays(14)) }
+    var selectedDueDate by remember(sessionKey, defaultDueDate) {
+        mutableStateOf(defaultDueDate ?: LocalDate.now().plusDays(14))
+    }
     var categoryInput by remember(sessionKey) { mutableStateOf(defaultCategory.name) }
     var validationError by remember(sessionKey) { mutableStateOf<String?>(null) }
     var showDatePicker by remember(sessionKey) { mutableStateOf(false) }

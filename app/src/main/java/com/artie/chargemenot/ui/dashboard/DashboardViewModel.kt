@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
@@ -53,6 +54,9 @@ class DashboardViewModel(
 
     private val _manualBillEntrySession = MutableStateFlow(0)
     val manualBillEntrySession: StateFlow<Int> = _manualBillEntrySession.asStateFlow()
+
+    private val _manualBillPrefillDate = MutableStateFlow<LocalDate?>(null)
+    val manualBillPrefillDate: StateFlow<LocalDate?> = _manualBillPrefillDate.asStateFlow()
 
     val categoryBills: StateFlow<List<Bill>> = _selectedCategoryForEdit
         .flatMapLatest { categoryName ->
@@ -101,6 +105,10 @@ class DashboardViewModel(
                     today = LocalDate.now()
                 )
 
+                val billsByDueDate = all
+                    .filter { bill -> !bill.isPaid }
+                    .groupBy { bill -> bill.dueDate }
+
                 DashboardUiState(
                     userDisplayName = settings.displayName,
                     formattedDate = formatDisplayDate(LocalDate.now()),
@@ -113,8 +121,12 @@ class DashboardViewModel(
                     allBills = all,
                     categoryTotals = categoryTotals,
                     forecastResult = forecast,
-                    selectedBottomNavItem = _uiState.value.selectedBottomNavItem,
+                    highlightedBloomCategory = _uiState.value.highlightedBloomCategory,
                     selectedCurrency = settings.selectedCurrency,
+                    isBillCalendarExpanded = _uiState.value.isBillCalendarExpanded,
+                    calendarVisibleMonth = _uiState.value.calendarVisibleMonth,
+                    billsByDueDate = billsByDueDate,
+                    selectedCalendarDate = _uiState.value.selectedCalendarDate,
                     isLoading = false
                 )
             }.collect { state ->
@@ -164,6 +176,7 @@ class DashboardViewModel(
         coroutineScope.launch(ioDispatcher) {
             billRepository.insertBill(bill)
             _isManualBillVisible.value = false
+            _manualBillPrefillDate.value = null
         }
     }
 
@@ -177,15 +190,17 @@ class DashboardViewModel(
         _isProfileEditVisible.value = false
     }
 
-    fun showManualBillEntry() {
+    fun showManualBillEntry(prefillDate: LocalDate? = null) {
         dismissDashboardOverlays()
         clearBillAndCategorySelection()
+        _manualBillPrefillDate.value = prefillDate
         _manualBillEntrySession.update { session -> session + 1 }
         _isManualBillVisible.value = true
     }
 
     fun dismissManualBillEntry() {
         _isManualBillVisible.value = false
+        _manualBillPrefillDate.value = null
     }
 
     fun selectBillForEdit(bill: Bill) {
@@ -201,11 +216,16 @@ class DashboardViewModel(
     fun onPetalTapped(category: String) {
         dismissDashboardOverlays()
         clearBillAndCategorySelection()
+        val highlightCategory = BloomCategoryDefinitions.fromDisplayName(category)?.billCategory
+        _uiState.update { current ->
+            current.copy(highlightedBloomCategory = highlightCategory)
+        }
         _selectedCategoryForEdit.value = category
     }
 
     fun clearCategorySelection() {
         _selectedCategoryForEdit.value = null
+        _uiState.update { current -> current.copy(highlightedBloomCategory = null) }
     }
 
     fun saveBillEdits(updatedBill: Bill) {
@@ -215,15 +235,44 @@ class DashboardViewModel(
         }
     }
 
-    fun selectBottomNavItem(item: DashboardBottomNavItem) {
-        dismissDashboardOverlays()
-        clearBillAndCategorySelection()
-        _uiState.update { current -> current.copy(selectedBottomNavItem = item) }
+    fun toggleBillCalendarExpanded() {
+        _uiState.update { current ->
+            current.copy(isBillCalendarExpanded = !current.isBillCalendarExpanded)
+        }
+    }
+
+    fun showPreviousCalendarMonth() {
+        _uiState.update { current ->
+            current.copy(calendarVisibleMonth = current.calendarVisibleMonth.minusMonths(1))
+        }
+    }
+
+    fun showNextCalendarMonth() {
+        _uiState.update { current ->
+            current.copy(calendarVisibleMonth = current.calendarVisibleMonth.plusMonths(1))
+        }
+    }
+
+    fun onCalendarDayTapped(date: LocalDate) {
+        _uiState.update { current ->
+            current.copy(
+                selectedCalendarDate = date,
+                calendarVisibleMonth = YearMonth.from(date)
+            )
+        }
+        showManualBillEntry(prefillDate = date)
+    }
+
+    fun onCalendarBillTapped(bill: Bill) {
+        selectBillForEdit(bill)
     }
 
     fun clearDashboardTransientState() {
         dismissDashboardOverlays()
         clearBillAndCategorySelection()
+        _uiState.update { current ->
+            current.copy(selectedCalendarDate = null)
+        }
     }
 
     private fun dismissDashboardOverlays() {
