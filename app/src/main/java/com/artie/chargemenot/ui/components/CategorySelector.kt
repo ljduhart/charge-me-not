@@ -62,9 +62,17 @@ fun CategorySelector(
         initialValue = MeadowCategories.parentNames
     )
     val resolvedParent = selectedParent ?: parentCategories.firstOrNull()
-    val subcategories by categoryViewModel
-        .getSubcategoriesForParent(resolvedParent ?: MeadowCategories.CANOPY)
-        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val subcategoriesFlow = remember(resolvedParent) {
+        categoryViewModel.getSubcategoriesForParent(resolvedParent ?: MeadowCategories.CANOPY)
+    }
+    val subcategoriesFromDb by subcategoriesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val subcategories = remember(subcategoriesFromDb, selectedSubcategory) {
+        if (selectedSubcategory != null && selectedSubcategory !in subcategoriesFromDb) {
+            subcategoriesFromDb + selectedSubcategory
+        } else {
+            subcategoriesFromDb
+        }
+    }
 
     var showCustomInput by remember { mutableStateOf(false) }
     var customSubcategoryInput by remember { mutableStateOf("") }

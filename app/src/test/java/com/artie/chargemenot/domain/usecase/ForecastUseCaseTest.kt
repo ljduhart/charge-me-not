@@ -161,6 +161,29 @@ class ForecastUseCaseTest {
     }
 
     @Test
+    fun calculateForecast_ignoresTransportationUnderRootSystem() {
+        val today = LocalDate.of(2026, 9, 5)
+        val bills = listOf(
+            bill(
+                amount = 450.0,
+                dueDate = today.minusMonths(2).withDayOfMonth(5),
+                parentCategory = MeadowCategories.ROOT_SYSTEM,
+                subCategory = "Transportation"
+            ),
+            bill(
+                amount = 450.0,
+                dueDate = today.minusMonths(1).withDayOfMonth(5),
+                parentCategory = MeadowCategories.ROOT_SYSTEM,
+                subCategory = "Transportation"
+            )
+        )
+
+        val result = useCase.calculateForecast(bills, today)
+
+        assertNull(result)
+    }
+
+    @Test
     fun predictNextMonthLinearRegression_returnsAverageWhenDenominatorIsZero() {
         val predicted = useCase.predictNextMonthLinearRegression(listOf(100.0, 100.0, 100.0))
         assertEquals(100.0, predicted, 0.001)

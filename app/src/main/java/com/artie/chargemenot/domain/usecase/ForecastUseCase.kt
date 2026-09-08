@@ -44,7 +44,7 @@ class ForecastUseCase(
 
         val monthlyTotals = bills
             .asSequence()
-            .filter { bill -> bill.parentCategory in VARIABLE_PARENT_CATEGORIES }
+            .filter { bill -> isVariableSpendBill(bill) }
             .groupBy { bill -> YearMonth.from(bill.dueDate) }
             .mapValues { (_, monthBills) -> monthBills.sumOf { bill -> bill.amount } }
             .filterValues { total -> total > 0.0 }
@@ -171,6 +171,14 @@ class ForecastUseCase(
         return month.month.getDisplayName(TextStyle.SHORT, Locale.US)
     }
 
+    private fun isVariableSpendBill(bill: BillEntity): Boolean {
+        return when (bill.parentCategory) {
+            MeadowCategories.FERTILIZER -> true
+            MeadowCategories.ROOT_SYSTEM -> bill.subCategory in VARIABLE_ROOT_SUBCATEGORIES
+            else -> false
+        }
+    }
+
     private fun Bill.toBillEntity(): BillEntity {
         return BillEntity(
             id = id,
@@ -188,10 +196,7 @@ class ForecastUseCase(
     }
 
     companion object {
-        private val VARIABLE_PARENT_CATEGORIES = setOf(
-            MeadowCategories.ROOT_SYSTEM,
-            MeadowCategories.FERTILIZER
-        )
+        private val VARIABLE_ROOT_SUBCATEGORIES = setOf("Utilities")
 
         const val MIN_HISTORICAL_MONTHS = 2
         private const val TIMELINE_HISTORICAL_MONTHS = 3
