@@ -294,6 +294,7 @@ class MainActivity : ComponentActivity() {
                                     navController.popBackStack()
                                 },
                                 onShowManualBillEntry = dashboardViewModel::showManualBillEntry,
+                                onDeleteBill = dashboardViewModel::deleteBill,
                                 modifier = Modifier.padding(innerPadding)
                             )
                         }

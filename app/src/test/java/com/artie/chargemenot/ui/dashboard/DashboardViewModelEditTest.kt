@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -84,6 +85,52 @@ class DashboardViewModelEditTest {
         assertNull(viewModel.selectedBillForEdit.value)
     }
 
+    @Test
+    fun deleteBill_persistsThroughRepository() {
+        val viewModel = createViewModel()
+        val bill = sampleBill(id = 4L, name = "Netflix")
+
+        viewModel.deleteBill(bill)
+        testScope.advanceUntilIdle()
+
+        assertEquals(1, trackingBillDao.deletedBills.size)
+        assertEquals("Netflix", trackingBillDao.deletedBills.first().name)
+    }
+
+    @Test
+    fun pullSubscription_delegatesToDeleteBill() {
+        val viewModel = createViewModel()
+        val bill = sampleBill(id = 5L, name = "Spotify Premium")
+
+        viewModel.pullSubscription(bill)
+        testScope.advanceUntilIdle()
+
+        assertEquals(1, trackingBillDao.deletedBills.size)
+        assertEquals(5L, trackingBillDao.deletedBills.first().id)
+    }
+
+    @Test
+    fun updateMonthlyBudget_persistsThroughRepository() {
+        val settingsDao = FakeSettingsDao()
+        val viewModel = DashboardViewModel(
+            billRepository = BillRepository(
+                billDao = trackingBillDao,
+                compostDao = FakeCompostDao()
+            ),
+            userSettingsRepository = UserSettingsRepository(settingsDao),
+            forecastUseCase = ForecastUseCase(trackingBillDao),
+            coroutineScope = testScope,
+            ioDispatcher = testDispatcher
+        )
+        testScope.advanceUntilIdle()
+
+        viewModel.updateMonthlyBudget("2052")
+        testScope.advanceUntilIdle()
+
+        assertNotNull(settingsDao.lastSaved)
+        assertEquals(2_052.0, settingsDao.lastSaved!!.monthlyBudget, 0.001)
+    }
+
     private fun createViewModel(): DashboardViewModel {
         return DashboardViewModel(
             billRepository = BillRepository(
@@ -114,6 +161,7 @@ class DashboardViewModelEditTest {
 
     private class TrackingBillDao : BillDao {
         val updatedBills = mutableListOf<BillEntity>()
+        val deletedBills = mutableListOf<BillEntity>()
 
         override fun getAllBills(): Flow<List<BillEntity>> = flowOf(emptyList())
         override fun getUpcomingBills(today: LocalDate): Flow<List<BillEntity>> = flowOf(emptyList())
@@ -122,7 +170,9 @@ class DashboardViewModelEditTest {
         override suspend fun updateBill(bill: BillEntity) {
             updatedBills.add(bill)
         }
-        override suspend fun deleteBill(bill: BillEntity) = Unit
+        override suspend fun deleteBill(bill: BillEntity) {
+            deletedBills.add(bill)
+        }
         override suspend fun deleteBillById(billId: Long) = Unit
         override suspend fun getBillCount(): Int = 0
         override fun getActiveSubscriptions(): Flow<List<BillEntity>> = flowOf(emptyList())
@@ -139,9 +189,13 @@ class DashboardViewModelEditTest {
     }
 
     private class FakeSettingsDao : UserSettingsDao {
+        var lastSaved: UserSettingsEntity? = null
+
         override fun observeSettings(settingsId: Int): Flow<UserSettingsEntity?> =
             flowOf(UserSettingsEntity(monthlyBudget = 2_500.0))
-        override suspend fun upsertSettings(settings: UserSettingsEntity) = Unit
+        override suspend fun upsertSettings(settings: UserSettingsEntity) {
+            lastSaved = settings
+        }
         override suspend fun getSettings(settingsId: Int): UserSettingsEntity? =
             UserSettingsEntity(monthlyBudget = 2_500.0)
         override suspend fun getSettingsCount(settingsId: Int): Int = 1

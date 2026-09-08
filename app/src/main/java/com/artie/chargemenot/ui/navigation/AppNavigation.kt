@@ -119,6 +119,7 @@ fun ChargeMeNotNavHost(
     onOpenDrawer: () -> Unit,
     onMeadowHubNavigateBack: () -> Unit,
     onShowManualBillEntry: () -> Unit,
+    onDeleteBill: (Bill) -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -184,7 +185,8 @@ fun ChargeMeNotNavHost(
                 onOpenDrawer = onOpenDrawer,
                 onNavigateBack = onMeadowHubNavigateBack,
                 onSelectBillForEdit = onSelectBillForEdit,
-                onShowManualBillEntry = onShowManualBillEntry
+                onShowManualBillEntry = onShowManualBillEntry,
+                onDeleteBill = onDeleteBill
             )
         }
 
@@ -199,7 +201,8 @@ fun ChargeMeNotNavHost(
                 monthlyBudget = dashboardUiState.monthlyBudget,
                 totalUpcoming = dashboardUiState.totalUpcoming,
                 onOpenDrawer = onOpenDrawer,
-                onNavigateBack = onMeadowHubNavigateBack
+                onNavigateBack = onMeadowHubNavigateBack,
+                onMonthlyBudgetChange = onMonthlyBudgetChange
             )
         }
 

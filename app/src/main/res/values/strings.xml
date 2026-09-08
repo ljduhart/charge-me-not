@@ -176,9 +176,16 @@
 
     <string name="petals_and_weeds_empty">No unpaid petals or weeds are sprouting in your garden right now.</string>
     <string name="petals_and_weeds_bill_meta">%1$s · Due %2$s</string>
+    <string name="petals_and_weeds_delete_title">Remove from garden?</string>
+    <string name="petals_and_weeds_delete_message">Are you sure you want to remove %1$s from your petals and weeds?</string>
+    <string name="petals_and_weeds_delete_confirm">Remove</string>
+    <string name="petals_and_weeds_delete_cancel">Keep</string>
+    <string name="petals_and_weeds_swipe_delete">Remove bill</string>
 
     <string name="rich_soil_subtitle">Track how much fertile soil remains in your monthly garden bed.</string>
     <string name="rich_soil_monthly_budget">Monthly soil capacity</string>
+    <string name="rich_soil_monthly_budget_edit">Edit monthly soil capacity</string>
+    <string name="rich_soil_monthly_budget_save">Save monthly soil capacity</string>
     <string name="rich_soil_upcoming_outflow">Upcoming bill outflow</string>
     <string name="rich_soil_nutrients_remaining">Nutrients remaining</string>
     <string name="rich_soil_fertility_label">Soil fertility</string>

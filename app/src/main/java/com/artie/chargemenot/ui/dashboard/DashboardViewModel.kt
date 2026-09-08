@@ -144,6 +144,10 @@ class DashboardViewModel(
     }
 
     fun pullSubscription(bill: Bill) {
+        deleteBill(bill)
+    }
+
+    fun deleteBill(bill: Bill) {
         coroutineScope.launch(ioDispatcher) {
             billRepository.deleteBill(bill)
         }
