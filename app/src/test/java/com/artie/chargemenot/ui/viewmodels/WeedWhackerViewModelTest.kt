@@ -2,7 +2,7 @@ package com.artie.chargemenot.ui.viewmodels
 
 import com.artie.chargemenot.data.local.BillDao
 import com.artie.chargemenot.data.local.BillEntity
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.data.local.BillWithCompost
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -211,7 +211,8 @@ class WeedWhackerViewModelTest {
             name = name,
             amount = amount,
             dueDate = LocalDate.of(2026, 9, 20),
-            category = BillCategory.SUBSCRIPTIONS,
+            parentCategory = MeadowCategories.VINES,
+            subCategory = "Subscriptions",
             isPaid = false,
             usageCount = usageCount,
             auditPromptCount = auditPromptCount
@@ -266,13 +267,13 @@ class WeedWhackerViewModelTest {
         override fun getActiveSubscriptions(): Flow<List<BillEntity>> =
             bills.map { items ->
                 items.filter { bill ->
-                    bill.category == BillCategory.SUBSCRIPTIONS && !bill.isPaid
+                    bill.parentCategory == MeadowCategories.VINES && !bill.isPaid
                 }
             }
 
-        override fun getBillsByCategory(category: String): Flow<List<BillEntity>> =
+        override fun getBillsByParentCategory(parentCategory: String): Flow<List<BillEntity>> =
             bills.map { items ->
-                items.filter { bill -> bill.category.name == category && !bill.isPaid }
+                items.filter { bill -> bill.parentCategory == parentCategory && !bill.isPaid }
             }
 
         override suspend fun getBillByIdOnce(billId: Long): BillEntity? =

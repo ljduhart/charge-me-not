@@ -6,7 +6,7 @@ import com.artie.chargemenot.data.local.BillWithCompost
 import com.artie.chargemenot.data.local.CompostDao
 import com.artie.chargemenot.data.local.CompostEntity
 import com.artie.chargemenot.domain.model.Bill
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -32,7 +32,8 @@ class BillRepositoryTest {
                 name = "Scanned Utility Bill",
                 amount = 84.50,
                 dueDate = LocalDate.of(2026, 9, 12),
-                category = BillCategory.UTILITIES,
+                parentCategory = MeadowCategories.ROOT_SYSTEM,
+                subCategory = "Utilities",
                 receiptImagePath = "/data/receipt.jpg"
             ),
             rawText = "PACIFIC GAS electric total due 84.50"
@@ -91,7 +92,8 @@ class BillRepositoryTest {
                 name = "Car Payment",
                 amount = 450.0,
                 dueDate = LocalDate.of(2026, 9, 10),
-                category = BillCategory.TRANSPORTATION
+                parentCategory = MeadowCategories.ROOT_SYSTEM,
+                subCategory = "Transportation"
             )
         )
 
@@ -111,7 +113,8 @@ class BillRepositoryTest {
             name = name,
             amount = 100.0,
             dueDate = LocalDate.of(2026, 9, 10),
-            category = BillCategory.SUBSCRIPTIONS,
+            parentCategory = MeadowCategories.VINES,
+            subCategory = "Subscriptions",
             parentBillId = parentBillId
         )
     }
@@ -159,9 +162,9 @@ class BillRepositoryTest {
 
         override fun getActiveSubscriptions(): Flow<List<BillEntity>> = bills
 
-        override fun getBillsByCategory(category: String): Flow<List<BillEntity>> =
+        override fun getBillsByParentCategory(parentCategory: String): Flow<List<BillEntity>> =
             bills.map { entities ->
-                entities.filter { bill -> bill.category.name == category && !bill.isPaid }
+                entities.filter { bill -> bill.parentCategory == parentCategory && !bill.isPaid }
             }
 
         override suspend fun getBillByIdOnce(billId: Long): BillEntity? =

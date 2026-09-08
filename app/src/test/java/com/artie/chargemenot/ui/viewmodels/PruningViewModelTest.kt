@@ -5,7 +5,7 @@ import com.artie.chargemenot.data.local.BillEntity
 import com.artie.chargemenot.data.local.UserSettingsDao
 import com.artie.chargemenot.data.local.UserSettingsEntity
 import com.artie.chargemenot.data.repository.UserSettingsRepository
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.model.UserSettings
 import com.artie.chargemenot.data.local.BillWithCompost
 import kotlinx.coroutines.flow.Flow
@@ -38,8 +38,8 @@ class PruningViewModelTest {
 
     val state = viewModel.uiState.value
     assertTrue(state.prunedBillIds.contains(spotifyId))
-    assertFalse(state.projectedCategoryTotals.containsKey(BillCategory.SUBSCRIPTIONS) &&
-      state.projectedCategoryTotals[BillCategory.SUBSCRIPTIONS] == state.originalCategoryTotals[BillCategory.SUBSCRIPTIONS])
+    assertFalse(state.projectedParentCategoryTotals.containsKey(MeadowCategories.VINES) &&
+      state.projectedParentCategoryTotals[MeadowCategories.VINES] == state.originalParentCategoryTotals[MeadowCategories.VINES])
     assertTrue(state.newMonthlyTotal < state.bills.sumOf { it.amount })
   }
 
@@ -82,13 +82,14 @@ class PruningViewModelTest {
   fun toggleBillStatus_recursivelyPrunesChildBills() {
     val today = LocalDate.of(2026, 9, 5)
     val bills = listOf(
-      BillEntity(1, "Car Payment", 450.0, today.plusDays(5), BillCategory.TRANSPORTATION),
+      BillEntity(1, "Car Payment", 450.0, today.plusDays(5), MeadowCategories.ROOT_SYSTEM, "Transportation"),
       BillEntity(
         id = 2,
         name = "Car Insurance",
         amount = 120.0,
         dueDate = today.plusDays(6),
-        category = BillCategory.HEALTHCARE,
+        parentCategory = MeadowCategories.POLLINATORS,
+        subCategory = "Healthcare",
         parentBillId = 1L
       ),
       BillEntity(
@@ -96,7 +97,8 @@ class PruningViewModelTest {
         name = "Roadside Assistance",
         amount = 8.0,
         dueDate = today.plusDays(7),
-        category = BillCategory.SUBSCRIPTIONS,
+        parentCategory = MeadowCategories.VINES,
+        subCategory = "Subscriptions",
         parentBillId = 2L
       )
     )
@@ -117,13 +119,14 @@ class PruningViewModelTest {
   fun childRelationships_mapsParentToChildren() {
     val today = LocalDate.of(2026, 9, 5)
     val bills = listOf(
-      BillEntity(1, "Car Payment", 450.0, today.plusDays(5), BillCategory.TRANSPORTATION),
+      BillEntity(1, "Car Payment", 450.0, today.plusDays(5), MeadowCategories.ROOT_SYSTEM, "Transportation"),
       BillEntity(
         id = 2,
         name = "Car Insurance",
         amount = 120.0,
         dueDate = today.plusDays(6),
-        category = BillCategory.HEALTHCARE,
+        parentCategory = MeadowCategories.POLLINATORS,
+        subCategory = "Healthcare",
         parentBillId = 1L
       )
     )
@@ -139,13 +142,14 @@ class PruningViewModelTest {
   fun unpruneParent_preservesManuallyPrunedChild() {
     val today = LocalDate.of(2026, 9, 5)
     val bills = listOf(
-      BillEntity(1, "Car Payment", 450.0, today.plusDays(5), BillCategory.TRANSPORTATION),
+      BillEntity(1, "Car Payment", 450.0, today.plusDays(5), MeadowCategories.ROOT_SYSTEM, "Transportation"),
       BillEntity(
         id = 2,
         name = "Car Insurance",
         amount = 120.0,
         dueDate = today.plusDays(6),
-        category = BillCategory.HEALTHCARE,
+        parentCategory = MeadowCategories.POLLINATORS,
+        subCategory = "Healthcare",
         parentBillId = 1L
       )
     )
@@ -179,11 +183,11 @@ class PruningViewModelTest {
   private fun seedBills(): List<BillEntity> {
     val today = LocalDate.of(2026, 9, 5)
     return listOf(
-      BillEntity(1, "Maple Street Apartment", 1_450.00, today.plusDays(3), BillCategory.RENT),
-      BillEntity(2, "Whole Foods Groceries", 186.42, today.plusDays(5), BillCategory.FOOD),
-      BillEntity(3, "Pacific Gas & Electric", 94.17, today.plusDays(8), BillCategory.UTILITIES),
-      BillEntity(4, "Spotify Premium", 11.99, today.plusDays(12), BillCategory.SUBSCRIPTIONS),
-      BillEntity(5, "Netflix", 15.49, today.plusDays(12), BillCategory.SUBSCRIPTIONS)
+      BillEntity(1, "Maple Street Apartment", 1_450.00, today.plusDays(3), MeadowCategories.CANOPY, "Rent"),
+      BillEntity(2, "Whole Foods Groceries", 186.42, today.plusDays(5), MeadowCategories.FERTILIZER, "Groceries"),
+      BillEntity(3, "Pacific Gas & Electric", 94.17, today.plusDays(8), MeadowCategories.ROOT_SYSTEM, "Utilities"),
+      BillEntity(4, "Spotify Premium", 11.99, today.plusDays(12), MeadowCategories.VINES, "Subscriptions"),
+      BillEntity(5, "Netflix", 15.49, today.plusDays(12), MeadowCategories.VINES, "Subscriptions")
     )
   }
 
@@ -212,13 +216,13 @@ class PruningViewModelTest {
     override fun getActiveSubscriptions(): Flow<List<BillEntity>> =
       bills.map { items ->
         items.filter { bill ->
-          bill.category == BillCategory.SUBSCRIPTIONS && !bill.isPaid
+          bill.parentCategory == MeadowCategories.VINES && !bill.isPaid
         }
       }
 
-    override fun getBillsByCategory(category: String): Flow<List<BillEntity>> =
+    override fun getBillsByParentCategory(parentCategory: String): Flow<List<BillEntity>> =
       bills.map { items ->
-        items.filter { bill -> bill.category.name == category && !bill.isPaid }
+        items.filter { bill -> bill.parentCategory == parentCategory && !bill.isPaid }
       }
 
     override suspend fun getBillByIdOnce(billId: Long): BillEntity? =

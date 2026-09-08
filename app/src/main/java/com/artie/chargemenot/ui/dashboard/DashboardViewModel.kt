@@ -3,8 +3,8 @@ package com.artie.chargemenot.ui.dashboard
 import com.artie.chargemenot.data.repository.BillRepository
 import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.Bill
-import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.domain.model.ForecastResult
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.model.UserSettings
 import com.artie.chargemenot.ui.components.BloomCategoryDefinitions
 import com.artie.chargemenot.domain.usecase.ForecastUseCase
@@ -63,11 +63,11 @@ class DashboardViewModel(
             if (categoryName == null) {
                 flowOf(emptyList())
             } else {
-                val categoryKey = BloomCategoryDefinitions.billCategoryNameFor(categoryName)
+                val categoryKey = BloomCategoryDefinitions.parentNameFor(categoryName)
                 if (categoryKey == null) {
                     flowOf(emptyList())
                 } else {
-                    billRepository.getBillsByCategory(categoryKey)
+                    billRepository.getBillsByParentCategory(categoryKey)
                 }
             }
         }
@@ -96,9 +96,11 @@ class DashboardViewModel(
                 billRepository.getAllBills(),
                 userSettingsRepository.observeUserSettings()
             ) { upcoming, all, settings ->
-                val subscriptions = all.filter { it.category == BillCategory.SUBSCRIPTIONS && !it.isPaid }
-                val categoryTotals = upcoming
-                    .groupBy { it.category }
+                val subscriptions = all.filter {
+                    it.parentCategory == MeadowCategories.VINES && !it.isPaid
+                }
+                val parentCategoryTotals = upcoming
+                    .groupBy { it.parentCategory }
                     .mapValues { (_, bills) -> bills.sumOf { bill -> bill.amount } }
                 val forecast = forecastUseCase.calculateForecastFromDomainBills(
                     bills = all,
@@ -119,9 +121,9 @@ class DashboardViewModel(
                     upcomingBills = upcoming,
                     subscriptionBills = subscriptions,
                     allBills = all,
-                    categoryTotals = categoryTotals,
+                    parentCategoryTotals = parentCategoryTotals,
                     forecastResult = forecast,
-                    highlightedBloomCategory = _uiState.value.highlightedBloomCategory,
+                    highlightedBloomParent = _uiState.value.highlightedBloomParent,
                     selectedCurrency = settings.selectedCurrency,
                     isBillCalendarExpanded = _uiState.value.isBillCalendarExpanded,
                     calendarVisibleMonth = _uiState.value.calendarVisibleMonth,
@@ -218,16 +220,16 @@ class DashboardViewModel(
     fun onPetalTapped(category: String) {
         dismissDashboardOverlays()
         clearBillAndCategorySelection()
-        val highlightCategory = BloomCategoryDefinitions.fromDisplayName(category)?.billCategory
+        val highlightParent = BloomCategoryDefinitions.fromDisplayName(category)?.parentName
         _uiState.update { current ->
-            current.copy(highlightedBloomCategory = highlightCategory)
+            current.copy(highlightedBloomParent = highlightParent)
         }
         _selectedCategoryForEdit.value = category
     }
 
     fun clearCategorySelection() {
         _selectedCategoryForEdit.value = null
-        _uiState.update { current -> current.copy(highlightedBloomCategory = null) }
+        _uiState.update { current -> current.copy(highlightedBloomParent = null) }
     }
 
     fun saveBillEdits(updatedBill: Bill) {

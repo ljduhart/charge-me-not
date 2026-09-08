@@ -54,13 +54,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.R
 import com.artie.chargemenot.data.local.BillEntity
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.ui.components.FinancialBloomCanvas
 import com.artie.chargemenot.ui.components.MeadowTickerCurrencyLine
 import com.artie.chargemenot.ui.components.RootSystemCanvas
 import com.artie.chargemenot.ui.components.billInitial
-import com.artie.chargemenot.ui.components.categoryColor
 import com.artie.chargemenot.ui.components.categoryDisplayName
+import com.artie.chargemenot.ui.theme.meadowParentColor
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.LeafGreen
 import com.artie.chargemenot.ui.theme.MeadowGreen
@@ -193,9 +193,9 @@ private fun PruningBloomSection(
             contentAlignment = Alignment.Center
         ) {
             FinancialBloomCanvas(
-                categoryTotals = uiState.originalCategoryTotals,
-                projectedCategoryTotals = uiState.projectedCategoryTotals,
-                categoryAlphas = uiState.categoryAlphas,
+                parentCategoryTotals = uiState.originalParentCategoryTotals,
+                projectedParentCategoryTotals = uiState.projectedParentCategoryTotals,
+                parentCategoryAlphas = uiState.parentCategoryAlphas,
                 monthlyBudget = uiState.monthlyBudget,
                 sizeByMonthlyBudget = true,
                 modifier = Modifier
@@ -354,7 +354,7 @@ private fun PruningBillRow(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(categoryColor(bill.category).copy(alpha = 0.25f)),
+                    .background(meadowParentColor(bill.parentCategory).copy(alpha = 0.25f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -384,7 +384,7 @@ private fun PruningBillRow(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "${categoryDisplayName(bill.category)} · Due ${bill.dueDate.format(dateFormat)}",
+                    text = "${categoryDisplayName(bill.parentCategory, bill.subCategory)} · Due ${bill.dueDate.format(dateFormat)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -472,11 +472,11 @@ private fun PruningActionRow(
 private fun PruningSimulatorScreenPreview() {
     val today = LocalDate.of(2026, 9, 5)
     val bills = listOf(
-        BillEntity(1, "Spotify Premium", 11.99, today.plusDays(12), BillCategory.SUBSCRIPTIONS),
-        BillEntity(2, "Netflix", 15.49, today.plusDays(12), BillCategory.SUBSCRIPTIONS),
-        BillEntity(3, "Pacific Gas & Electric", 94.17, today.plusDays(8), BillCategory.UTILITIES)
+        BillEntity(1, "Spotify Premium", 11.99, today.plusDays(12), MeadowCategories.VINES, "Subscriptions"),
+        BillEntity(2, "Netflix", 15.49, today.plusDays(12), MeadowCategories.VINES, "Subscriptions"),
+        BillEntity(3, "Pacific Gas & Electric", 94.17, today.plusDays(8), MeadowCategories.ROOT_SYSTEM, "Utilities")
     )
-    val categoryTotals = bills.groupBy { it.category }
+    val parentCategoryTotals = bills.groupBy { it.parentCategory }
         .mapValues { (_, items) -> items.sumOf { bill -> bill.amount } }
 
     ChargeMeNotTheme {
@@ -484,14 +484,14 @@ private fun PruningSimulatorScreenPreview() {
             uiState = PruningUiState(
                 bills = bills,
                 prunedBillIds = setOf(1L),
-                originalCategoryTotals = categoryTotals,
-                projectedCategoryTotals = mapOf(
-                    BillCategory.SUBSCRIPTIONS to 15.49,
-                    BillCategory.UTILITIES to 94.17
+                originalParentCategoryTotals = parentCategoryTotals,
+                projectedParentCategoryTotals = mapOf(
+                    MeadowCategories.VINES to 15.49,
+                    MeadowCategories.ROOT_SYSTEM to 94.17
                 ),
-                categoryAlphas = mapOf(
-                    BillCategory.SUBSCRIPTIONS to 0.56f,
-                    BillCategory.UTILITIES to 1f
+                parentCategoryAlphas = mapOf(
+                    MeadowCategories.VINES to 0.56f,
+                    MeadowCategories.ROOT_SYSTEM to 1f
                 ),
                 newMonthlyTotal = 109.66,
                 isLoading = false

@@ -9,7 +9,7 @@ import com.artie.chargemenot.data.local.UserSettingsDao
 import com.artie.chargemenot.data.local.UserSettingsEntity
 import com.artie.chargemenot.data.repository.BillRepository
 import com.artie.chargemenot.data.repository.UserSettingsRepository
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.model.UserSettings
 import com.artie.chargemenot.data.model.CrossPollinationPayload
 import kotlinx.coroutines.Dispatchers
@@ -54,9 +54,9 @@ class ScannerViewModelTest {
     val viewModel = createViewModel()
 
     val impact = viewModel.calculatePredictiveImpact(
-      category = BillCategory.UTILITIES,
+      parentCategory = MeadowCategories.ROOT_SYSTEM,
       scannedAmount = 100.0,
-      categoryTotals = mapOf(BillCategory.UTILITIES to 200.0),
+      parentCategoryTotals = mapOf(MeadowCategories.ROOT_SYSTEM to 200.0),
       monthlyBudget = 1_000.0
     )
 
@@ -70,11 +70,11 @@ class ScannerViewModelTest {
     val viewModel = createViewModel()
 
     val impact = viewModel.calculatePredictiveImpact(
-      category = BillCategory.RENT,
+      parentCategory = MeadowCategories.CANOPY,
       scannedAmount = 250.0,
-      categoryTotals = mapOf(
-        BillCategory.RENT to 1_450.0,
-        BillCategory.FOOD to 400.0
+      parentCategoryTotals = mapOf(
+        MeadowCategories.CANOPY to 1_450.0,
+        MeadowCategories.FERTILIZER to 400.0
       ),
       monthlyBudget = 1_500.0
     )
@@ -88,9 +88,9 @@ class ScannerViewModelTest {
     val viewModel = createViewModel()
 
     val impact = viewModel.calculatePredictiveImpact(
-      category = BillCategory.FOOD,
+      parentCategory = MeadowCategories.FERTILIZER,
       scannedAmount = 50.0,
-      categoryTotals = mapOf(BillCategory.FOOD to 25.0),
+      parentCategoryTotals = mapOf(MeadowCategories.FERTILIZER to 25.0),
       monthlyBudget = 0.0
     )
 
@@ -104,7 +104,8 @@ class ScannerViewModelTest {
       name = "Shared Electric",
       amount = 84.50,
       dueDate = "2026-10-01",
-      category = "UTILITIES"
+      parentCategory = MeadowCategories.ROOT_SYSTEM,
+      subCategory = "Utilities"
     )
 
     viewModel.onQrPayloadDetected(payload)
@@ -113,7 +114,8 @@ class ScannerViewModelTest {
     assertNotNull(pollen)
     assertEquals("Shared Electric", pollen!!.name)
     assertEquals(84.50, pollen.amount, 0.001)
-    assertEquals(BillCategory.UTILITIES, pollen.category)
+    assertEquals(MeadowCategories.ROOT_SYSTEM, pollen.parentCategory)
+    assertEquals("Utilities", pollen.subCategory)
   }
 
   @Test
@@ -132,7 +134,8 @@ class ScannerViewModelTest {
         name = "Roommate Rent Split",
         amount = 725.0,
         dueDate = "2026-09-15",
-        category = "RENT"
+        parentCategory = MeadowCategories.CANOPY,
+        subCategory = "Rent"
       )
     )
 
@@ -153,7 +156,8 @@ class ScannerViewModelTest {
       name = "Spotify Premium",
       amount = 11.99,
       dueDate = "2026-09-12",
-      category = "SUBSCRIPTIONS"
+      parentCategory = MeadowCategories.VINES,
+      subCategory = "Subscriptions"
     )
 
     viewModel.onQrPayloadDetected(payload)
@@ -179,7 +183,8 @@ class ScannerViewModelTest {
         name = "Roommate Rent Split",
         amount = 725.0,
         dueDate = "2026-09-15",
-        category = "RENT"
+        parentCategory = MeadowCategories.CANOPY,
+        subCategory = "Rent"
       )
     )
 
@@ -200,7 +205,8 @@ class ScannerViewModelTest {
         name = "Spotify Premium",
         amount = 11.99,
         dueDate = "2026-09-12",
-        category = "SUBSCRIPTIONS"
+        parentCategory = MeadowCategories.VINES,
+        subCategory = "Subscriptions"
       )
     )
     viewModel.discardPollen()
@@ -243,7 +249,7 @@ class ScannerViewModelTest {
     override fun getActiveSubscriptions(): Flow<List<BillEntity>> =
       MutableStateFlow(emptyList())
 
-    override fun getBillsByCategory(category: String): Flow<List<BillEntity>> =
+    override fun getBillsByParentCategory(parentCategory: String): Flow<List<BillEntity>> =
       MutableStateFlow(emptyList())
 
     override suspend fun getBillByIdOnce(billId: Long): BillEntity? = null
@@ -284,7 +290,7 @@ class ScannerViewModelTest {
     override fun getActiveSubscriptions(): Flow<List<BillEntity>> =
       MutableStateFlow(emptyList())
 
-    override fun getBillsByCategory(category: String): Flow<List<BillEntity>> =
+    override fun getBillsByParentCategory(parentCategory: String): Flow<List<BillEntity>> =
       MutableStateFlow(emptyList())
 
     override suspend fun getBillByIdOnce(billId: Long): BillEntity? = null

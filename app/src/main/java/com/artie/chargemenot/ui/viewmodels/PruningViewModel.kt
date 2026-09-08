@@ -3,7 +3,7 @@ package com.artie.chargemenot.ui.viewmodels
 import com.artie.chargemenot.data.local.BillDao
 import com.artie.chargemenot.data.local.BillEntity
 import com.artie.chargemenot.data.repository.UserSettingsRepository
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.model.UserSettings
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -152,18 +152,18 @@ class PruningViewModel(
         monthlyBudget: Double,
         isLoading: Boolean
     ): PruningUiState {
-        val originalCategoryTotals = bills
-            .groupBy { bill -> bill.category }
+        val originalParentCategoryTotals = bills
+            .groupBy { bill -> bill.parentCategory }
             .mapValues { (_, categoryBills) -> categoryBills.sumOf { bill -> bill.amount } }
 
         val activeBills = bills.filter { bill -> bill.id !in prunedIds }
-        val projectedCategoryTotals = activeBills
-            .groupBy { bill -> bill.category }
+        val projectedParentCategoryTotals = activeBills
+            .groupBy { bill -> bill.parentCategory }
             .mapValues { (_, categoryBills) -> categoryBills.sumOf { bill -> bill.amount } }
 
-        val categoryAlphas = BillCategory.entries.associateWith { category ->
-            val originalAmount = originalCategoryTotals[category] ?: 0.0
-            val projectedAmount = projectedCategoryTotals[category] ?: 0.0
+        val parentCategoryAlphas = MeadowCategories.parentNames.associateWith { parent ->
+            val originalAmount = originalParentCategoryTotals[parent] ?: 0.0
+            val projectedAmount = projectedParentCategoryTotals[parent] ?: 0.0
             if (originalAmount <= 0.0) {
                 1f
             } else {
@@ -180,9 +180,9 @@ class PruningViewModel(
             prunedBillIds = prunedIds,
             childRelationships = childRelationships,
             expandedRootBillId = expandedRootBillId,
-            originalCategoryTotals = originalCategoryTotals,
-            projectedCategoryTotals = projectedCategoryTotals,
-            categoryAlphas = categoryAlphas,
+            originalParentCategoryTotals = originalParentCategoryTotals,
+            projectedParentCategoryTotals = projectedParentCategoryTotals,
+            parentCategoryAlphas = parentCategoryAlphas,
             newMonthlyTotal = activeBills.sumOf { bill -> bill.amount },
             monthlyBudget = monthlyBudget,
             isLoading = isLoading

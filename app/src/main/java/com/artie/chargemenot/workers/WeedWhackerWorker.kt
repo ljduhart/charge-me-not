@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.artie.chargemenot.data.local.AppDatabase
-import com.artie.chargemenot.domain.model.BillCategory
 import com.artie.chargemenot.notification.WeedWhackerNotificationHelper
 import kotlinx.coroutines.flow.first
 
@@ -18,7 +17,6 @@ class WeedWhackerWorker(
         val billDao = database.billDao()
 
         val activeSubscriptions = billDao.getActiveSubscriptions().first()
-            .filter { bill -> bill.category == BillCategory.SUBSCRIPTIONS && !bill.isPaid }
 
         if (activeSubscriptions.isEmpty()) {
             return Result.success()

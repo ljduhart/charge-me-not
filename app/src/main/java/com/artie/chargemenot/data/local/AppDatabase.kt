@@ -5,10 +5,12 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.sqlite.db.SupportSQLiteDatabase
+import com.artie.chargemenot.domain.model.MeadowCategories
 
 @Database(
-    entities = [BillEntity::class, UserSettingsEntity::class, CompostEntity::class],
-    version = 8,
+    entities = [BillEntity::class, UserSettingsEntity::class, CompostEntity::class, CategoryEntity::class],
+    version = 9,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -19,6 +21,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userSettingsDao(): UserSettingsDao
 
     abstract fun compostDao(): CompostDao
+
+    abstract fun categoryDao(): CategoryDao
 
     companion object {
         private const val DATABASE_NAME = "charge_me_not.db"
@@ -40,9 +44,25 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_4_5,
                         MIGRATION_5_6,
                         MIGRATION_6_7,
-                        MIGRATION_7_8
+                        MIGRATION_7_8,
+                        MIGRATION_8_9
                     )
+                    .addCallback(CategorySeedCallback())
                     .build().also { INSTANCE = it }
+            }
+        }
+    }
+
+    private class CategorySeedCallback : Callback() {
+        override fun onCreate(db: SupportSQLiteDatabase) {
+            super.onCreate(db)
+            MeadowCategories.defaultSeedCategories.forEach { category ->
+                db.execSQL(
+                    """
+                    INSERT OR IGNORE INTO categories (parentName, subCategoryName, isCustom)
+                    VALUES ('${category.parentName.replace("'", "''")}', '${category.subCategoryName.replace("'", "''")}', 0)
+                    """.trimIndent()
+                )
             }
         }
     }

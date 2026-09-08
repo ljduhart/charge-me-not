@@ -57,6 +57,7 @@ class MainActivity : ComponentActivity() {
         val pruningViewModel = app.pruningViewModel
         val weedWhackerViewModel = app.weedWhackerViewModel
         val compostBinViewModel = app.compostBinViewModel
+        val categoryViewModel = app.categoryViewModel
         val onboardingViewModel = app.onboardingViewModel
 
         setContent {
@@ -158,6 +159,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         MeadowAppOverlays(
                             selectedBillForEdit = selectedBillForEdit,
+                            categoryViewModel = categoryViewModel,
                             selectedCategoryForEdit = selectedCategoryForEdit,
                             categoryBills = categoryBills,
                             isProfileEditVisible = isProfileEditVisible,
@@ -169,8 +171,8 @@ class MainActivity : ComponentActivity() {
                             onSaveBillEdits = dashboardViewModel::saveBillEdits,
                             onClearCategorySelection = dashboardViewModel::clearCategorySelection,
                             onAddBillToCategory = { categoryName ->
-                                BloomCategoryDefinitions.fromDisplayName(categoryName)?.billCategory?.let { category ->
-                                    scannerViewModel.selectCategory(category)
+                                BloomCategoryDefinitions.parentNameFor(categoryName)?.let { parentName ->
+                                    scannerViewModel.selectParentCategory(parentName)
                                     dashboardViewModel.clearCategorySelection()
                                     navController.navigate(AppRoutes.SCANNER) {
                                         launchSingleTop = true
@@ -246,7 +248,7 @@ class MainActivity : ComponentActivity() {
                                     scannerViewModel.onScanResult(result, receiptImagePath)
                                 },
                                 onQrPayloadDetected = scannerViewModel::onQrPayloadDetected,
-                                onCategorySelected = scannerViewModel::selectCategory,
+                                onCategorySelected = scannerViewModel::selectParentCategory,
                                 onAcceptPollinatedBill = {
                                     scannerViewModel.acceptPollinatedBill {
                                         navController.popBackStack()

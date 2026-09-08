@@ -1,14 +1,14 @@
 package com.artie.chargemenot.ui.components
 
 import androidx.compose.ui.graphics.Color
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import kotlin.math.atan2
 import kotlin.math.sqrt
 
 data class BloomCategoryDefinition(
     val displayName: String,
     val bloomLabel: String,
-    val billCategory: BillCategory,
+    val parentName: String,
     val baseColor: Color,
     val midColor: Color,
     val highlightColor: Color,
@@ -21,58 +21,58 @@ object BloomCategoryDefinitions {
 
     val categories: List<BloomCategoryDefinition> = listOf(
         BloomCategoryDefinition(
-            displayName = "Rent",
-            bloomLabel = "RENT/MORTGAGE",
-            billCategory = BillCategory.RENT,
+            displayName = "Canopy",
+            bloomLabel = "CANOPY",
+            parentName = MeadowCategories.CANOPY,
             baseColor = Color(0xFF8B3A2E),
             midColor = Color(0xFFE07A5F),
             highlightColor = Color(0xFFF4A261),
             shadowColor = Color(0xFF4A1F18)
         ),
         BloomCategoryDefinition(
-            displayName = "Health",
-            bloomLabel = "HEALTH",
-            billCategory = BillCategory.HEALTHCARE,
-            baseColor = Color(0xFF9E4F57),
-            midColor = Color(0xFFE8B4B8),
-            highlightColor = Color(0xFFF5D0D3),
-            shadowColor = Color(0xFF5A2A30)
+            displayName = "Roots",
+            bloomLabel = "ROOTS",
+            parentName = MeadowCategories.ROOT_SYSTEM,
+            baseColor = Color(0xFF2F4F7A),
+            midColor = Color(0xFF6D9DC5),
+            highlightColor = Color(0xFFA8C8E8),
+            shadowColor = Color(0xFF1A2D45)
         ),
         BloomCategoryDefinition(
-            displayName = "Food",
-            bloomLabel = "FOOD",
-            billCategory = BillCategory.FOOD,
-            baseColor = Color(0xFFB8860B),
-            midColor = Color(0xFFF2CC8F),
-            highlightColor = Color(0xFFFFF1C9),
-            shadowColor = Color(0xFF6B4A08)
-        ),
-        BloomCategoryDefinition(
-            displayName = "Subscriptions",
-            bloomLabel = "SUBSCRIPTIONS",
-            billCategory = BillCategory.SUBSCRIPTIONS,
+            displayName = "Vines",
+            bloomLabel = "VINES",
+            parentName = MeadowCategories.VINES,
             baseColor = Color(0xFF6B5B8A),
             midColor = Color(0xFFB8A9C9),
             highlightColor = Color(0xFFD8CCE8),
             shadowColor = Color(0xFF3A3048)
         ),
         BloomCategoryDefinition(
-            displayName = "Utilities",
-            bloomLabel = "UTILITIES",
-            billCategory = BillCategory.UTILITIES,
+            displayName = "Fertilizer",
+            bloomLabel = "FERTILIZER",
+            parentName = MeadowCategories.FERTILIZER,
+            baseColor = Color(0xFFB8860B),
+            midColor = Color(0xFFF2CC8F),
+            highlightColor = Color(0xFFFFF1C9),
+            shadowColor = Color(0xFF6B4A08)
+        ),
+        BloomCategoryDefinition(
+            displayName = "Pollinators",
+            bloomLabel = "POLLINATORS",
+            parentName = MeadowCategories.POLLINATORS,
+            baseColor = Color(0xFF9E4F57),
+            midColor = Color(0xFFE8B4B8),
+            highlightColor = Color(0xFFF5D0D3),
+            shadowColor = Color(0xFF5A2A30)
+        ),
+        BloomCategoryDefinition(
+            displayName = "Wildflowers",
+            bloomLabel = "WILDFLOWERS",
+            parentName = MeadowCategories.WILDFLOWERS,
             baseColor = Color(0xFF2F6B55),
             midColor = Color(0xFF81B29A),
             highlightColor = Color(0xFFB8E0CC),
             shadowColor = Color(0xFF1A3D30)
-        ),
-        BloomCategoryDefinition(
-            displayName = "Loans",
-            bloomLabel = "LOANS",
-            billCategory = BillCategory.TRANSPORTATION,
-            baseColor = Color(0xFF2F4F7A),
-            midColor = Color(0xFF6D9DC5),
-            highlightColor = Color(0xFFA8C8E8),
-            shadowColor = Color(0xFF1A2D45)
         )
     )
 
@@ -80,8 +80,12 @@ object BloomCategoryDefinitions {
         return categories.firstOrNull { definition -> definition.displayName == name }
     }
 
-    fun billCategoryNameFor(displayName: String): String? {
-        return fromDisplayName(displayName)?.billCategory?.name
+    fun fromParentName(parentName: String): BloomCategoryDefinition? {
+        return categories.firstOrNull { definition -> definition.parentName == parentName }
+    }
+
+    fun parentNameFor(displayName: String): String? {
+        return fromDisplayName(displayName)?.parentName
     }
 
     fun indexForDisplayName(displayName: String): Int {

@@ -10,7 +10,7 @@ import com.artie.chargemenot.data.local.UserSettingsEntity
 import com.artie.chargemenot.data.repository.BillRepository
 import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.Bill
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.usecase.ForecastUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -107,7 +107,8 @@ class DashboardViewModelEditTest {
             name = name,
             amount = amount,
             dueDate = LocalDate.of(2026, 9, 12),
-            category = BillCategory.SUBSCRIPTIONS
+            parentCategory = MeadowCategories.VINES,
+            subCategory = "Subscriptions"
         )
     }
 
@@ -125,7 +126,7 @@ class DashboardViewModelEditTest {
         override suspend fun deleteBillById(billId: Long) = Unit
         override suspend fun getBillCount(): Int = 0
         override fun getActiveSubscriptions(): Flow<List<BillEntity>> = flowOf(emptyList())
-        override fun getBillsByCategory(category: String): Flow<List<BillEntity>> = flowOf(emptyList())
+        override fun getBillsByParentCategory(parentCategory: String): Flow<List<BillEntity>> = flowOf(emptyList())
         override suspend fun getBillByIdOnce(billId: Long): BillEntity? = null
         override suspend fun getOverdueOrDueTodayUnpaidBillCount(today: LocalDate): Int = 0
         override fun getChildrenForParent(parentId: Long): Flow<List<BillEntity>> = flowOf(emptyList())

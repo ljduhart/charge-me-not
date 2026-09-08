@@ -3,7 +3,7 @@ package com.artie.chargemenot.domain.usecase
 import com.artie.chargemenot.data.local.BillDao
 import com.artie.chargemenot.data.local.BillEntity
 import com.artie.chargemenot.domain.model.Bill
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.model.ForecastResult
 import com.artie.chargemenot.domain.model.ForecastTimelinePoint
 import com.artie.chargemenot.domain.model.WeatherStatus
@@ -44,7 +44,7 @@ class ForecastUseCase(
 
         val monthlyTotals = bills
             .asSequence()
-            .filter { bill -> bill.category in VARIABLE_CATEGORIES }
+            .filter { bill -> isVariableSpendBill(bill) }
             .groupBy { bill -> YearMonth.from(bill.dueDate) }
             .mapValues { (_, monthBills) -> monthBills.sumOf { bill -> bill.amount } }
             .filterValues { total -> total > 0.0 }
@@ -171,13 +171,22 @@ class ForecastUseCase(
         return month.month.getDisplayName(TextStyle.SHORT, Locale.US)
     }
 
+    private fun isVariableSpendBill(bill: BillEntity): Boolean {
+        return when (bill.parentCategory) {
+            MeadowCategories.FERTILIZER -> true
+            MeadowCategories.ROOT_SYSTEM -> bill.subCategory in VARIABLE_ROOT_SUBCATEGORIES
+            else -> false
+        }
+    }
+
     private fun Bill.toBillEntity(): BillEntity {
         return BillEntity(
             id = id,
             name = name,
             amount = amount,
             dueDate = dueDate,
-            category = category,
+            parentCategory = parentCategory,
+            subCategory = subCategory,
             isPaid = isPaid,
             usageCount = usageCount,
             auditPromptCount = auditPromptCount,
@@ -187,10 +196,7 @@ class ForecastUseCase(
     }
 
     companion object {
-        private val VARIABLE_CATEGORIES = setOf(
-            BillCategory.UTILITIES,
-            BillCategory.FOOD
-        )
+        private val VARIABLE_ROOT_SUBCATEGORIES = setOf("Utilities")
 
         const val MIN_HISTORICAL_MONTHS = 2
         private const val TIMELINE_HISTORICAL_MONTHS = 3

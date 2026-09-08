@@ -1,6 +1,5 @@
 package com.artie.chargemenot.ui.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,16 +32,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.ui.theme.MeadowGreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowWhite
+import com.artie.chargemenot.ui.viewmodels.CategoryViewModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -52,6 +53,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun EditBillBottomSheet(
     selectedBill: Bill?,
+    categoryViewModel: CategoryViewModel,
     onDismiss: () -> Unit,
     onSave: (Bill) -> Unit
 ) {
@@ -67,9 +69,8 @@ fun EditBillBottomSheet(
         mutableStateOf(String.format("%.2f", selectedBill.amount))
     }
     var selectedDueDate by remember(selectedBill.id) { mutableStateOf(selectedBill.dueDate) }
-    var categoryInput by remember(selectedBill.id) {
-        mutableStateOf(selectedBill.category.name)
-    }
+    var selectedParent by remember(selectedBill.id) { mutableStateOf(selectedBill.parentCategory) }
+    var selectedSubcategory by remember(selectedBill.id) { mutableStateOf(selectedBill.subCategory) }
     var validationError by remember(selectedBill.id) { mutableStateOf<String?>(null) }
     var showDatePicker by remember(selectedBill.id) { mutableStateOf(false) }
 
@@ -166,13 +167,18 @@ fun EditBillBottomSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            OutlinedTextField(
-                value = categoryInput,
-                onValueChange = { categoryInput = it.uppercase() },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text(stringResource(R.string.edit_bill_category_label)) },
-                placeholder = { Text("UTILITIES") },
-                singleLine = true
+            CategorySelector(
+                categoryViewModel = categoryViewModel,
+                selectedParent = selectedParent,
+                selectedSubcategory = selectedSubcategory,
+                onParentSelected = { parent ->
+                    selectedParent = parent
+                    selectedSubcategory = MeadowCategories.defaultSubcategoryByParent[parent]
+                        ?: selectedSubcategory
+                },
+                onSubcategorySelected = { subcategory ->
+                    selectedSubcategory = subcategory
+                }
             )
 
             validationError?.let { error ->
@@ -204,9 +210,6 @@ fun EditBillBottomSheet(
                             .replace("$", "")
                             .trim()
                             .toDoubleOrNull()
-                        val parsedCategory = runCatching {
-                            BillCategory.valueOf(categoryInput.trim().uppercase())
-                        }.getOrNull()
 
                         when {
                             nameInput.isBlank() -> {
@@ -215,8 +218,8 @@ fun EditBillBottomSheet(
                             parsedAmount == null || parsedAmount <= 0.0 -> {
                                 validationError = "Enter a valid amount."
                             }
-                            parsedCategory == null -> {
-                                validationError = "Enter a valid category (e.g. UTILITIES)."
+                            selectedParent.isNullOrBlank() || selectedSubcategory.isNullOrBlank() -> {
+                                validationError = "Select a parent category and subcategory."
                             }
                             else -> {
                                 validationError = null
@@ -225,7 +228,8 @@ fun EditBillBottomSheet(
                                         name = nameInput.trim(),
                                         amount = parsedAmount,
                                         dueDate = selectedDueDate,
-                                        category = parsedCategory
+                                        parentCategory = selectedParent!!,
+                                        subCategory = selectedSubcategory!!
                                     )
                                 )
                             }

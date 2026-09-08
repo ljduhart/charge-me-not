@@ -51,7 +51,7 @@ import coil.size.Scale
 import com.artie.chargemenot.R
 import com.artie.chargemenot.data.local.BillEntity
 import com.artie.chargemenot.data.local.BillWithCompost
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.MeadowCream
 import com.artie.chargemenot.ui.theme.MeadowEarth
@@ -312,7 +312,8 @@ private fun CompostBinScreenPreview() {
         name = "Pacific Gas & Electric",
         amount = 94.17,
         dueDate = LocalDate.of(2026, 9, 12),
-        category = BillCategory.UTILITIES,
+        parentCategory = MeadowCategories.ROOT_SYSTEM,
+        subCategory = "Utilities",
         receiptImagePath = null
     )
 

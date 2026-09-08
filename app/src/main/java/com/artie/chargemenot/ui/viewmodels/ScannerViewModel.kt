@@ -2,9 +2,9 @@ package com.artie.chargemenot.ui.viewmodels
 
 import com.artie.chargemenot.data.model.CrossPollinationPayload
 import com.artie.chargemenot.data.repository.BillRepository
-import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.data.repository.UserSettingsRepository
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.Bill
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.model.UserSettings
 import com.artie.chargemenot.scanner.OcrScanResult
 import kotlinx.coroutines.CoroutineDispatcher
@@ -49,24 +49,24 @@ class ScannerViewModel(
                 billRepository.getUpcomingBills(),
                 userSettingsRepository.observeMonthlyBudget()
             ) { upcomingBills, monthlyBudget ->
-                val categoryTotals = upcomingBills
-                    .groupBy { bill -> bill.category }
+                val parentCategoryTotals = upcomingBills
+                    .groupBy { bill -> bill.parentCategory }
                     .mapValues { (_, bills) -> bills.sumOf { bill -> bill.amount } }
 
-                categoryTotals to monthlyBudget
-            }.collect { (categoryTotals, monthlyBudget) ->
+                parentCategoryTotals to monthlyBudget
+            }.collect { (parentCategoryTotals, monthlyBudget) ->
                 _uiState.update { current ->
                     val recalculatedImpact = current.scannedBill.amount?.let { amount ->
                         calculatePredictiveImpact(
-                            category = current.selectedCategory,
+                            parentCategory = current.selectedParentCategory,
                             scannedAmount = amount,
-                            categoryTotals = categoryTotals,
+                            parentCategoryTotals = parentCategoryTotals,
                             monthlyBudget = monthlyBudget
                         )
                     }
 
                     current.copy(
-                        categoryTotals = categoryTotals,
+                        parentCategoryTotals = parentCategoryTotals,
                         monthlyBudget = monthlyBudget,
                         predictiveImpact = recalculatedImpact,
                         budgetSummary = buildBudgetSummary(recalculatedImpact, monthlyBudget),
@@ -98,9 +98,9 @@ class ScannerViewModel(
         val monthlyBudget = _uiState.value.monthlyBudget
         val impact = mergedScan.amount?.let { amount ->
             calculatePredictiveImpact(
-                category = _uiState.value.selectedCategory,
+                parentCategory = _uiState.value.selectedParentCategory,
                 scannedAmount = amount,
-                categoryTotals = _uiState.value.categoryTotals,
+                parentCategoryTotals = _uiState.value.parentCategoryTotals,
                 monthlyBudget = monthlyBudget
             )
         }
@@ -118,19 +118,24 @@ class ScannerViewModel(
         }
     }
 
-    fun selectCategory(category: BillCategory) {
-        val scannedAmount = _uiState.value.scannedBill.amount ?: return
+    fun selectParentCategory(parentCategory: String) {
+        val scannedAmount = _uiState.value.scannedBill.amount
+        val defaultSubcategory = MeadowCategories.defaultSubcategoryByParent[parentCategory]
+            ?: _uiState.value.selectedSubCategory
         val monthlyBudget = _uiState.value.monthlyBudget
-        val impact = calculatePredictiveImpact(
-            category = category,
-            scannedAmount = scannedAmount,
-            categoryTotals = _uiState.value.categoryTotals,
-            monthlyBudget = monthlyBudget
-        )
+        val impact = scannedAmount?.let { amount ->
+            calculatePredictiveImpact(
+                parentCategory = parentCategory,
+                scannedAmount = amount,
+                parentCategoryTotals = _uiState.value.parentCategoryTotals,
+                monthlyBudget = monthlyBudget
+            )
+        }
 
         _uiState.update { current ->
             current.copy(
-                selectedCategory = category,
+                selectedParentCategory = parentCategory,
+                selectedSubCategory = defaultSubcategory,
                 predictiveImpact = impact,
                 budgetSummary = buildBudgetSummary(impact, monthlyBudget)
             )
@@ -154,7 +159,8 @@ class ScannerViewModel(
                     name = billEntity.name,
                     amount = billEntity.amount,
                     dueDate = billEntity.dueDate,
-                    category = billEntity.category
+                    parentCategory = billEntity.parentCategory,
+                    subCategory = billEntity.subCategory
                 ),
                 scanStatusMessage = "Partner QR detected: ${billEntity.name}",
                 detectionBannerMessage = "Cross-pollination pollen received — review before planting",
@@ -189,7 +195,8 @@ class ScannerViewModel(
                         name = pollen.name,
                         amount = pollen.amount,
                         dueDate = pollen.dueDate,
-                        category = pollen.category
+                        parentCategory = pollen.parentCategory,
+                        subCategory = pollen.subCategory
                     )
                 )
                 resetScanSession()
@@ -206,7 +213,8 @@ class ScannerViewModel(
         val scanned = _uiState.value.scannedBill
         val amount = scanned.amount ?: return
         val dueDate = scanned.dueDate ?: return
-        val selectedCategory = _uiState.value.selectedCategory
+        val selectedParent = _uiState.value.selectedParentCategory
+        val selectedSub = _uiState.value.selectedSubCategory
         if (!isSavingScannedBill.compareAndSet(false, true)) {
             return
         }
@@ -217,12 +225,13 @@ class ScannerViewModel(
                 billRepository.insertScannedBill(
                     bill = Bill(
                         name = deriveBillName(
-                            category = selectedCategory,
+                            parentCategory = selectedParent,
                             rawText = scanned.rawText
                         ),
                         amount = amount,
                         dueDate = dueDate,
-                        category = selectedCategory,
+                        parentCategory = selectedParent,
+                        subCategory = selectedSub,
                         receiptImagePath = scanned.receiptImagePath
                     ),
                     rawText = scanned.rawText
@@ -243,7 +252,8 @@ class ScannerViewModel(
         _uiState.update { current ->
             current.copy(
                 scannedBill = ScannedBillData(),
-                selectedCategory = BillCategory.UTILITIES,
+                selectedParentCategory = MeadowCategories.ROOT_SYSTEM,
+                selectedSubCategory = MeadowCategories.defaultSubcategoryByParent[MeadowCategories.ROOT_SYSTEM]!!,
                 predictiveImpact = null,
                 pollenReceived = null,
                 scanStatusMessage = "Point camera at your bill to scan",
@@ -261,19 +271,19 @@ class ScannerViewModel(
     }
 
     fun calculatePredictiveImpact(
-        category: BillCategory,
+        parentCategory: String,
         scannedAmount: Double,
-        categoryTotals: Map<BillCategory, Double>,
+        parentCategoryTotals: Map<String, Double>,
         monthlyBudget: Double
     ): PredictiveImpact {
         val safeBudget = monthlyBudget.coerceAtLeast(UserSettings.MIN_MONTHLY_BUDGET)
-        val currentCategorySpend = categoryTotals[category] ?: 0.0
+        val currentCategorySpend = parentCategoryTotals[parentCategory] ?: 0.0
         val newCategorySpend = currentCategorySpend + scannedAmount
         val newPetalSizePercent = (newCategorySpend / safeBudget) * PERCENT_SCALE
-        val totalProjectedSpend = categoryTotals.values.sum() + scannedAmount
+        val totalProjectedSpend = parentCategoryTotals.values.sum() + scannedAmount
 
         return PredictiveImpact(
-            category = category,
+            parentCategory = parentCategory,
             newPetalSizePercent = newPetalSizePercent,
             scannedAmount = scannedAmount,
             withinBudget = totalProjectedSpend <= safeBudget,
@@ -293,7 +303,7 @@ class ScannerViewModel(
         )
     }
 
-    private fun deriveBillName(category: BillCategory, rawText: String): String {
+    private fun deriveBillName(parentCategory: String, rawText: String): String {
         val firstLine = rawText.lineSequence()
             .map { line -> line.trim() }
             .firstOrNull { line -> line.isNotBlank() && line.length <= 60 }
@@ -302,15 +312,13 @@ class ScannerViewModel(
             return firstLine
         }
 
-        return when (category) {
-            BillCategory.RENT -> "Scanned Rent Bill"
-            BillCategory.FOOD -> "Scanned Grocery Bill"
-            BillCategory.UTILITIES -> "Scanned Utility Bill"
-            BillCategory.SUBSCRIPTIONS -> "Scanned Subscription Bill"
-            BillCategory.TRANSPORTATION -> "Scanned Transportation Bill"
-            BillCategory.HEALTHCARE -> "Scanned Healthcare Bill"
-            BillCategory.ENTERTAINMENT -> "Scanned Entertainment Bill"
-            BillCategory.OTHER -> "Scanned Bill"
+        return when (parentCategory) {
+            MeadowCategories.CANOPY -> "Scanned Rent Bill"
+            MeadowCategories.FERTILIZER -> "Scanned Grocery Bill"
+            MeadowCategories.VINES -> "Scanned Subscription Bill"
+            MeadowCategories.POLLINATORS -> "Scanned Healthcare Bill"
+            MeadowCategories.WILDFLOWERS -> "Scanned Entertainment Bill"
+            else -> "Scanned Utility Bill"
         }
     }
 

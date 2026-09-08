@@ -39,10 +39,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
-import com.artie.chargemenot.domain.model.BillCategory
+import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.ui.theme.MeadowGreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowWhite
+import com.artie.chargemenot.ui.viewmodels.CategoryViewModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -53,7 +54,9 @@ import java.time.format.DateTimeFormatter
 fun ManualBillBottomSheet(
     isVisible: Boolean,
     sessionKey: Int,
-    defaultCategory: BillCategory = BillCategory.SUBSCRIPTIONS,
+    categoryViewModel: CategoryViewModel,
+    defaultParentCategory: String = MeadowCategories.VINES,
+    defaultSubCategory: String = "Subscriptions",
     defaultDueDate: LocalDate? = null,
     onDismiss: () -> Unit,
     onSave: (Bill) -> Unit
@@ -69,7 +72,8 @@ fun ManualBillBottomSheet(
     var selectedDueDate by remember(sessionKey, defaultDueDate) {
         mutableStateOf(defaultDueDate ?: LocalDate.now().plusDays(14))
     }
-    var categoryInput by remember(sessionKey) { mutableStateOf(defaultCategory.name) }
+    var selectedParent by remember(sessionKey) { mutableStateOf(defaultParentCategory) }
+    var selectedSubcategory by remember(sessionKey) { mutableStateOf(defaultSubCategory) }
     var validationError by remember(sessionKey) { mutableStateOf<String?>(null) }
     var showDatePicker by remember(sessionKey) { mutableStateOf(false) }
 
@@ -173,13 +177,18 @@ fun ManualBillBottomSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            OutlinedTextField(
-                value = categoryInput,
-                onValueChange = { categoryInput = it.uppercase() },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text(stringResource(R.string.edit_bill_category_label)) },
-                placeholder = { Text("SUBSCRIPTIONS") },
-                singleLine = true
+            CategorySelector(
+                categoryViewModel = categoryViewModel,
+                selectedParent = selectedParent,
+                selectedSubcategory = selectedSubcategory,
+                onParentSelected = { parent ->
+                    selectedParent = parent
+                    selectedSubcategory = MeadowCategories.defaultSubcategoryByParent[parent]
+                        ?: selectedSubcategory
+                },
+                onSubcategorySelected = { subcategory ->
+                    selectedSubcategory = subcategory
+                }
             )
 
             validationError?.let { error ->
@@ -211,9 +220,6 @@ fun ManualBillBottomSheet(
                             .replace("$", "")
                             .trim()
                             .toDoubleOrNull()
-                        val parsedCategory = runCatching {
-                            BillCategory.valueOf(categoryInput.trim().uppercase())
-                        }.getOrNull()
 
                         when {
                             nameInput.isBlank() -> {
@@ -222,8 +228,8 @@ fun ManualBillBottomSheet(
                             parsedAmount == null || parsedAmount <= 0.0 -> {
                                 validationError = "Enter a valid amount."
                             }
-                            parsedCategory == null -> {
-                                validationError = "Enter a valid category (e.g. SUBSCRIPTIONS)."
+                            selectedParent.isBlank() || selectedSubcategory.isBlank() -> {
+                                validationError = "Select a parent category and subcategory."
                             }
                             else -> {
                                 validationError = null
@@ -232,7 +238,8 @@ fun ManualBillBottomSheet(
                                         name = nameInput.trim(),
                                         amount = parsedAmount,
                                         dueDate = selectedDueDate,
-                                        category = parsedCategory
+                                        parentCategory = selectedParent,
+                                        subCategory = selectedSubcategory
                                     )
                                 )
                             }
