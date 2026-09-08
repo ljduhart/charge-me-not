@@ -23,8 +23,10 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
@@ -110,6 +112,38 @@ class DashboardViewModelEditTest {
     }
 
     @Test
+    fun deleteBill_clearsSelectedBillForEditWhenDeletingSameBill() {
+        val viewModel = createViewModel()
+        val bill = sampleBill(id = 4L, name = "Netflix")
+
+        viewModel.selectBillForEdit(bill)
+        viewModel.deleteBill(bill)
+        testScope.advanceUntilIdle()
+
+        assertNull(viewModel.selectedBillForEdit.value)
+        assertEquals(1, trackingBillDao.deletedBills.size)
+    }
+
+    @Test
+    fun updateMonthlyBudget_returnsFalseForInvalidInput() {
+        val settingsDao = FakeSettingsDao()
+        val viewModel = DashboardViewModel(
+            billRepository = BillRepository(
+                billDao = trackingBillDao,
+                compostDao = FakeCompostDao()
+            ),
+            userSettingsRepository = UserSettingsRepository(settingsDao),
+            forecastUseCase = ForecastUseCase(trackingBillDao),
+            coroutineScope = testScope,
+            ioDispatcher = testDispatcher
+        )
+
+        assertFalse(viewModel.updateMonthlyBudget(""))
+        assertFalse(viewModel.updateMonthlyBudget("not-a-number"))
+        assertNull(settingsDao.lastSaved)
+    }
+
+    @Test
     fun updateMonthlyBudget_persistsThroughRepository() {
         val settingsDao = FakeSettingsDao()
         val viewModel = DashboardViewModel(
@@ -124,7 +158,7 @@ class DashboardViewModelEditTest {
         )
         testScope.advanceUntilIdle()
 
-        viewModel.updateMonthlyBudget("2052")
+        assertTrue(viewModel.updateMonthlyBudget("2052"))
         testScope.advanceUntilIdle()
 
         assertNotNull(settingsDao.lastSaved)

@@ -148,6 +148,9 @@ class DashboardViewModel(
     }
 
     fun deleteBill(bill: Bill) {
+        if (_selectedBillForEdit.value?.id == bill.id) {
+            _selectedBillForEdit.value = null
+        }
         coroutineScope.launch(ioDispatcher) {
             billRepository.deleteBill(bill)
         }
@@ -159,16 +162,17 @@ class DashboardViewModel(
         }
     }
 
-    fun updateMonthlyBudget(rawBudgetInput: String) {
+    fun updateMonthlyBudget(rawBudgetInput: String): Boolean {
         val parsedBudget = rawBudgetInput
             .replace(",", "")
             .replace("$", "")
             .trim()
-            .toDoubleOrNull() ?: return
+            .toDoubleOrNull() ?: return false
 
         coroutineScope.launch(ioDispatcher) {
             userSettingsRepository.updateMonthlyBudget(parsedBudget)
         }
+        return true
     }
 
     fun updateDisplayName(displayName: String) {

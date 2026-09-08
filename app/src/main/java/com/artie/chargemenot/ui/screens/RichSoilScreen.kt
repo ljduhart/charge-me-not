@@ -55,7 +55,7 @@ fun RichSoilScreen(
     totalUpcoming: Double,
     onOpenDrawer: () -> Unit,
     onNavigateBack: () -> Unit,
-    onMonthlyBudgetChange: (String) -> Unit,
+    onMonthlyBudgetChange: (String) -> Boolean,
     modifier: Modifier = Modifier
 ) {
     val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
@@ -109,8 +109,9 @@ fun RichSoilScreen(
                     onBudgetInputChange = { budgetInput = it },
                     onToggleEditing = {
                         if (isEditingBudget) {
-                            onMonthlyBudgetChange(budgetInput)
-                            isEditingBudget = false
+                            if (onMonthlyBudgetChange(budgetInput)) {
+                                isEditingBudget = false
+                            }
                         } else {
                             budgetInput = monthlyBudget.toInt().toString()
                             isEditingBudget = true
