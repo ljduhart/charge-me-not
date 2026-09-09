@@ -116,7 +116,8 @@ data class BloomLayoutSpec(
 )
 
 object BloomLayout {
-    private const val FLOWER_RADIUS_FACTOR = 0.48f
+    private const val FLOWER_RADIUS_FACTOR = 0.60f
+    private const val FLOWER_LAYOUT_SCALE = 1.25f
     private const val UNIFORM_INSET_DP = 12f
     private val labelSamples = BloomCategoryDefinitions.categories.map { definition -> definition.bloomLabel }
 
@@ -128,8 +129,9 @@ object BloomLayout {
         val centerY = canvasHeight / 2f
         val drawableMin = minOf(drawableWidth, drawableHeight)
         val labelBand = drawableMin * 0.18f
-        val maxRadius = ((drawableMin / 2f) - labelBand)
+        val availableRadius = ((drawableMin / 2f) - labelBand)
             .coerceAtLeast(drawableMin * 0.2f)
+        val maxRadius = (availableRadius * FLOWER_LAYOUT_SCALE)
             .coerceAtMost(drawableMin * FLOWER_RADIUS_FACTOR)
         val petalLength = maxRadius * 0.9f
         val petalWidth = maxRadius * 0.56f

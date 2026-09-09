@@ -120,6 +120,9 @@ fun ChargeMeNotNavHost(
     onMeadowHubNavigateBack: () -> Unit,
     onShowManualBillEntry: () -> Unit,
     onDeleteBill: (Bill) -> Unit,
+    parallaxOffset: Pair<Float, Float>,
+    onStartParallaxSensor: () -> Unit,
+    onStopParallaxSensor: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -156,6 +159,9 @@ fun ChargeMeNotNavHost(
         ) {
             DashboardScreen(
                 uiState = dashboardUiState,
+                parallaxOffset = parallaxOffset,
+                onStartParallaxSensor = onStartParallaxSensor,
+                onStopParallaxSensor = onStopParallaxSensor,
                 onOpenDrawer = onOpenDrawer,
                 onKeepSubscription = onKeepSubscription,
                 onPullSubscription = onPullSubscription,

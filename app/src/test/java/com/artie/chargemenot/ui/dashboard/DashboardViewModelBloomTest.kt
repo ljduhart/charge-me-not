@@ -8,6 +8,8 @@ import com.artie.chargemenot.data.local.UserSettingsDao
 import com.artie.chargemenot.data.local.UserSettingsEntity
 import com.artie.chargemenot.data.repository.BillRepository
 import com.artie.chargemenot.data.repository.UserSettingsRepository
+import com.artie.chargemenot.data.sensors.DeviceTiltSensor
+import com.artie.chargemenot.data.sensors.StationaryDeviceTiltSensor
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.usecase.ForecastUseCase
@@ -18,7 +20,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -304,7 +309,38 @@ class DashboardViewModelBloomTest {
         )
     }
 
-    private fun createViewModel(): DashboardViewModel {
+    @Test
+    fun stopParallaxSensor_resetsParallaxOffset() = runTest(testDispatcher) {
+        val tiltSensor = FakeDeviceTiltSensor()
+        val viewModel = createViewModel(deviceTiltSensor = tiltSensor)
+        testScope.advanceUntilIdle()
+
+        viewModel.startParallaxSensor()
+        tiltSensor.emit(0.4f, -0.2f)
+        testScope.advanceUntilIdle()
+        assertEquals(0.4f to -0.2f, viewModel.parallaxOffset.value)
+
+        viewModel.stopParallaxSensor()
+        assertEquals(0f to 0f, viewModel.parallaxOffset.value)
+    }
+
+    @Test
+    fun onCleared_stopsParallaxSensor() = runTest(testDispatcher) {
+        val tiltSensor = FakeDeviceTiltSensor()
+        val viewModel = createViewModel(deviceTiltSensor = tiltSensor)
+        testScope.advanceUntilIdle()
+
+        viewModel.startParallaxSensor()
+        tiltSensor.emit(0.2f, 0.1f)
+        testScope.advanceUntilIdle()
+
+        viewModel.onCleared()
+        assertEquals(0f to 0f, viewModel.parallaxOffset.value)
+    }
+
+    private fun createViewModel(
+        deviceTiltSensor: DeviceTiltSensor = StationaryDeviceTiltSensor()
+    ): DashboardViewModel {
         return DashboardViewModel(
             billRepository = BillRepository(
                 billDao = billDao,
@@ -312,6 +348,7 @@ class DashboardViewModelBloomTest {
             ),
             userSettingsRepository = UserSettingsRepository(FakeSettingsDao()),
             forecastUseCase = ForecastUseCase(billDao),
+            deviceTiltSensor = deviceTiltSensor,
             coroutineScope = testScope,
             ioDispatcher = testDispatcher
         )
@@ -407,5 +444,18 @@ class DashboardViewModelBloomTest {
             UserSettingsEntity(monthlyBudget = 2_500.0, isOnboardingComplete = true)
 
         override suspend fun getSettingsCount(settingsId: Int): Int = 1
+    }
+
+    private class FakeDeviceTiltSensor : DeviceTiltSensor {
+        private val emissions = MutableSharedFlow<Pair<Float, Float>>(
+            replay = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
+
+        override fun tiltOffsets(): Flow<Pair<Float, Float>> = emissions
+
+        suspend fun emit(x: Float, y: Float) {
+            emissions.emit(x to y)
+        }
     }
 }

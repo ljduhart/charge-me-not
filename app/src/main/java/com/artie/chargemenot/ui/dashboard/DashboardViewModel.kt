@@ -1,6 +1,8 @@
 package com.artie.chargemenot.ui.dashboard
 
 import com.artie.chargemenot.data.repository.BillRepository
+import com.artie.chargemenot.data.sensors.DeviceTiltSensor
+import com.artie.chargemenot.data.sensors.StationaryDeviceTiltSensor
 import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.ForecastResult
@@ -11,6 +13,7 @@ import com.artie.chargemenot.domain.usecase.ForecastUseCase
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,9 +36,15 @@ class DashboardViewModel(
     private val billRepository: BillRepository,
     private val userSettingsRepository: UserSettingsRepository,
     private val forecastUseCase: ForecastUseCase,
+    private val deviceTiltSensor: DeviceTiltSensor = StationaryDeviceTiltSensor(),
     private val coroutineScope: CoroutineScope,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
+
+    private val _parallaxOffset = MutableStateFlow(0f to 0f)
+    val parallaxOffset: StateFlow<Pair<Float, Float>> = _parallaxOffset.asStateFlow()
+
+    private var parallaxSensorJob: Job? = null
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -309,6 +318,27 @@ class DashboardViewModel(
         if (subscription != null) {
             selectBillForEdit(subscription)
         }
+    }
+
+    fun startParallaxSensor() {
+        if (parallaxSensorJob?.isActive == true) {
+            return
+        }
+        parallaxSensorJob = coroutineScope.launch {
+            deviceTiltSensor.tiltOffsets().collect { offset ->
+                _parallaxOffset.value = offset
+            }
+        }
+    }
+
+    fun stopParallaxSensor() {
+        parallaxSensorJob?.cancel()
+        parallaxSensorJob = null
+        _parallaxOffset.value = 0f to 0f
+    }
+
+    fun onCleared() {
+        stopParallaxSensor()
     }
 
     private fun formatDisplayDate(date: LocalDate): String {

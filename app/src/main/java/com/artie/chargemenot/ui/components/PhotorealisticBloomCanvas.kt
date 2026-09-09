@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.ui.theme.MeadowEarth
@@ -37,16 +38,23 @@ import kotlinx.coroutines.delay
 import kotlin.math.cos
 import kotlin.math.sin
 
+private const val FOREGROUND_PARALLAX_FACTOR = 1.5f
+
 @Composable
 fun PhotorealisticBloomCanvas(
     parentCategoryTotals: Map<String, Double>,
     monthlyBudget: Double,
     highlightedParent: String?,
     onPetalTapped: (String) -> Unit,
+    parallaxOffset: Pair<Float, Float> = 0f to 0f,
     modifier: Modifier = Modifier
 ) {
     var pressedCategory by remember { mutableStateOf<String?>(null) }
     val density = LocalDensity.current.density
+    val (tiltX, tiltY) = parallaxOffset
+    val foregroundParallaxPx = with(LocalDensity.current) { 12.dp.toPx() }
+    val foregroundTranslationX = tiltX * FOREGROUND_PARALLAX_FACTOR * foregroundParallaxPx
+    val foregroundTranslationY = tiltY * FOREGROUND_PARALLAX_FACTOR * foregroundParallaxPx
 
     val categoryScales = BloomCategoryDefinitions.categories.associate { definition ->
         val targetScale = if (pressedCategory == definition.displayName) 0.92f else 1f
@@ -84,6 +92,10 @@ fun PhotorealisticBloomCanvas(
             .fillMaxWidth()
             .height(350.dp)
             .padding(horizontal = 2.dp)
+            .graphicsLayer {
+                translationX = foregroundTranslationX
+                translationY = foregroundTranslationY
+            }
             .pointerInput(density) {
                 detectTapGestures { offset ->
                     val layout = BloomLayout.compute(
@@ -111,6 +123,12 @@ fun PhotorealisticBloomCanvas(
         )
         val center = Offset(layout.centerX, layout.centerY)
         labelPaint.textSize = layout.labelTextSizePx
+
+        drawSoilMound(
+            centerX = layout.centerX,
+            canvasHeight = size.height,
+            maxRadius = layout.maxRadius
+        )
 
         drawCircle(
             brush = Brush.radialGradient(
@@ -162,6 +180,41 @@ fun PhotorealisticBloomCanvas(
         drawFlowerCenter(center = center, radius = layout.maxRadius * 0.15f)
         drawStemAndLeaves(center = center, maxRadius = layout.maxRadius)
     }
+}
+
+private fun DrawScope.drawSoilMound(
+    centerX: Float,
+    canvasHeight: Float,
+    maxRadius: Float
+) {
+    val moundWidth = maxRadius * 1.2f
+    val moundHeight = maxRadius * 0.24f
+    val baseY = canvasHeight - moundHeight * 0.45f
+    val soilPath = Path().apply {
+        moveTo(centerX - moundWidth * 0.5f, baseY)
+        quadraticTo(
+            centerX,
+            baseY - moundHeight,
+            centerX + moundWidth * 0.5f,
+            baseY
+        )
+        lineTo(centerX + moundWidth * 0.55f, canvasHeight)
+        lineTo(centerX - moundWidth * 0.55f, canvasHeight)
+        close()
+    }
+
+    drawPath(
+        path = soilPath,
+        brush = Brush.verticalGradient(
+            colors = listOf(
+                Color(0xFF7A4E28),
+                Color(0xFF5C3A1E),
+                Color(0xFF2E1A0E)
+            ),
+            startY = baseY - moundHeight,
+            endY = canvasHeight
+        )
+    )
 }
 
 private fun DrawScope.drawCategoryLabel(

@@ -2,6 +2,7 @@ package com.artie.chargemenot
 
 import android.app.Application
 import com.artie.chargemenot.data.local.AppDatabase
+import com.artie.chargemenot.data.sensors.AndroidDeviceTiltSensor
 import com.artie.chargemenot.data.nagmode.WorkManagerNagModeScheduler
 import com.artie.chargemenot.data.notification.AndroidNotificationPermissionGateway
 import com.artie.chargemenot.data.repository.BillRepository
@@ -62,11 +63,16 @@ class ChargeMeNotApplication : Application() {
         )
     }
 
+    private val deviceTiltSensor by lazy {
+        AndroidDeviceTiltSensor(applicationContext)
+    }
+
     val dashboardViewModel: DashboardViewModel by lazy {
         DashboardViewModel(
             billRepository = billRepository,
             userSettingsRepository = userSettingsRepository,
             forecastUseCase = forecastUseCase,
+            deviceTiltSensor = deviceTiltSensor,
             coroutineScope = applicationScope
         )
     }

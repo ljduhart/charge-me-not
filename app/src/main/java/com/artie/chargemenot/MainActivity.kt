@@ -82,6 +82,7 @@ class MainActivity : ComponentActivity() {
                 val manualBillEntrySession by dashboardViewModel.manualBillEntrySession.collectAsStateWithLifecycle()
                 val manualBillPrefillDate by dashboardViewModel.manualBillPrefillDate.collectAsStateWithLifecycle()
                 val onboardingUiState by onboardingViewModel.uiState.collectAsStateWithLifecycle()
+                val parallaxOffset by dashboardViewModel.parallaxOffset.collectAsStateWithLifecycle()
 
                 var graphStartDestination by remember { mutableStateOf<String?>(null) }
                 LaunchedEffect(onboardingUiState.isLoading) {
@@ -295,6 +296,9 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onShowManualBillEntry = dashboardViewModel::showManualBillEntry,
                                 onDeleteBill = dashboardViewModel::deleteBill,
+                                parallaxOffset = parallaxOffset,
+                                onStartParallaxSensor = dashboardViewModel::startParallaxSensor,
+                                onStopParallaxSensor = dashboardViewModel::stopParallaxSensor,
                                 modifier = Modifier.padding(innerPadding)
                             )
                         }

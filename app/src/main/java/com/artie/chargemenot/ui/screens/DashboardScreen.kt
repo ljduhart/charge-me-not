@@ -40,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,8 +57,12 @@ import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.MeadowCategories
-import com.artie.chargemenot.ui.components.PhotorealisticBloomCanvas
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.artie.chargemenot.ui.components.GlasshouseCard
 import com.artie.chargemenot.ui.components.CrossPollinateShareDialog
+import com.artie.chargemenot.ui.components.PhotorealisticBloomCanvas
 import com.artie.chargemenot.ui.components.LinkRootBottomSheet
 import com.artie.chargemenot.ui.components.MeadowBillCalendarCard
 import com.artie.chargemenot.ui.components.MeadowTickerAmount
@@ -85,6 +90,9 @@ import java.util.Locale
 @Composable
 fun DashboardScreen(
     uiState: DashboardUiState,
+    parallaxOffset: Pair<Float, Float>,
+    onStartParallaxSensor: () -> Unit,
+    onStopParallaxSensor: () -> Unit,
     onOpenDrawer: () -> Unit,
     onKeepSubscription: (Bill) -> Unit,
     onPullSubscription: (Bill) -> Unit,
@@ -101,6 +109,22 @@ fun DashboardScreen(
     onBloomSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, onStartParallaxSensor, onStopParallaxSensor) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> onStartParallaxSensor()
+                Lifecycle.Event.ON_STOP -> onStopParallaxSensor()
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            onStopParallaxSensor()
+        }
+    }
+
     val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
     var isSearchVisible by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
@@ -230,6 +254,7 @@ fun DashboardScreen(
                         parentCategoryTotals = uiState.parentCategoryTotals,
                         monthlyBudget = uiState.monthlyBudget,
                         highlightedBloomParent = uiState.highlightedBloomParent,
+                        parallaxOffset = parallaxOffset,
                         onBloomSettingsClick = onBloomSettingsClick,
                         onMonthlyBudgetChange = onMonthlyBudgetChange,
                         onPetalTapped = onPetalTapped,
@@ -399,6 +424,7 @@ private fun FinancialBloomCard(
     parentCategoryTotals: Map<String, Double>,
     monthlyBudget: Double,
     highlightedBloomParent: String?,
+    parallaxOffset: Pair<Float, Float>,
     onBloomSettingsClick: () -> Unit,
     onMonthlyBudgetChange: (String) -> Unit,
     onPetalTapped: (String) -> Unit,
@@ -409,18 +435,11 @@ private fun FinancialBloomCard(
     var budgetInput by remember(monthlyBudget) {
         mutableStateOf(monthlyBudget.toInt().toString())
     }
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MeadowWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    GlasshouseCard(
+        parallaxOffset = parallaxOffset,
+        modifier = modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp)
-        ) {
-            Row(
+        Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -445,6 +464,7 @@ private fun FinancialBloomCard(
                 monthlyBudget = monthlyBudget,
                 highlightedParent = highlightedBloomParent,
                 onPetalTapped = onPetalTapped,
+                parallaxOffset = parallaxOffset,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -515,7 +535,6 @@ private fun FinancialBloomCard(
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
-        }
     }
 }
 
@@ -648,6 +667,9 @@ private fun DashboardScreenPreview() {
                 ),
                 isLoading = false
             ),
+            parallaxOffset = 0f to 0f,
+            onStartParallaxSensor = {},
+            onStopParallaxSensor = {},
             onOpenDrawer = {},
             onKeepSubscription = {},
             onPullSubscription = {},

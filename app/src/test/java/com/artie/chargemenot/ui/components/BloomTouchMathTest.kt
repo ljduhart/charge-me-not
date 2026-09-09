@@ -65,7 +65,7 @@ class BloomTouchMathTest {
         assertEquals(layout.petalLength, layout.maxRadius * 0.9f)
         assertEquals(layout.petalWidth, layout.maxRadius * 0.56f)
         assertTrue(layout.labelTouchRadius >= layout.outerTouchRadius)
-        assertTrue(layout.maxRadius > 1080f * 0.24f)
+        assertTrue(layout.maxRadius > 1080f * 0.34f)
     }
 
     @Test
