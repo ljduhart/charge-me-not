@@ -1,5 +1,6 @@
 package com.artie.chargemenot.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -50,6 +51,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -61,6 +66,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.artie.chargemenot.ui.components.GlasshouseCard
+import com.artie.chargemenot.ui.components.GlasshouseForestGreen
 import com.artie.chargemenot.ui.components.CrossPollinateShareDialog
 import com.artie.chargemenot.ui.components.PhotorealisticBloomCanvas
 import com.artie.chargemenot.ui.components.LinkRootBottomSheet
@@ -165,25 +171,45 @@ fun DashboardScreen(
         }
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = MeadowCream,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.dashboard_title),
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onOpenDrawer) {
-                        Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = stringResource(R.string.dashboard_menu)
+    val (tiltX, tiltY) = parallaxOffset
+    val parallaxDistancePx = with(LocalDensity.current) { 12.dp.toPx() }
+    val backgroundTranslationX = tiltX * 0.5f * parallaxDistancePx
+    val backgroundTranslationY = tiltY * 0.5f * parallaxDistancePx
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(id = R.drawable.bg_greenhouse),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    translationX = backgroundTranslationX
+                    translationY = backgroundTranslationY
+                    scaleX = 1.10f
+                    scaleY = 1.10f
+                }
+        )
+
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = stringResource(R.string.dashboard_title),
+                            fontWeight = FontWeight.Bold
                         )
-                    }
-                },
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onOpenDrawer) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = stringResource(R.string.dashboard_menu)
+                            )
+                        }
+                    },
                     actions = {
                         IconButton(
                             onClick = {
@@ -200,7 +226,7 @@ fun DashboardScreen(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MeadowCream,
+                        containerColor = Color.Transparent,
                         titleContentColor = MeadowGreenDark,
                         navigationIconContentColor = MeadowGreenDark,
                         actionIconContentColor = MeadowGreenDark
@@ -211,8 +237,7 @@ fun DashboardScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
-                    .background(MeadowCream),
+                    .padding(innerPadding),
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
             ) {
                 item(key = "greeting_row") {
@@ -324,6 +349,7 @@ fun DashboardScreen(
                 }
             }
         }
+    }
 }
 
 @Composable
@@ -438,10 +464,7 @@ private fun FinancialBloomCard(
     var budgetInput by remember(monthlyBudget) {
         mutableStateOf(monthlyBudget.toInt().toString())
     }
-    GlasshouseCard(
-        parallaxOffset = parallaxOffset,
-        modifier = modifier.fillMaxWidth()
-    ) {
+    GlasshouseCard(modifier = modifier.fillMaxWidth()) {
         Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -450,14 +473,14 @@ private fun FinancialBloomCard(
                 Text(
                     text = stringResource(R.string.dashboard_financial_bloom_title),
                     style = MaterialTheme.typography.titleMedium,
-                    color = MeadowWhite,
+                    color = GlasshouseForestGreen,
                     fontWeight = FontWeight.Bold
                 )
                 IconButton(onClick = onBloomSettingsClick) {
                     Icon(
                         imageVector = Icons.Default.Settings,
                         contentDescription = stringResource(R.string.dashboard_bloom_settings),
-                        tint = MeadowWhite
+                        tint = GlasshouseForestGreen
                     )
                 }
             }
@@ -481,14 +504,14 @@ private fun FinancialBloomCard(
                     Text(
                         text = stringResource(R.string.dashboard_monthly_budget_label),
                         style = MaterialTheme.typography.labelLarge,
-                        color = MeadowWhite.copy(alpha = 0.92f),
+                        color = GlasshouseForestGreen,
                         fontWeight = FontWeight.Bold
                     )
                     if (!isEditingBudget) {
                         Text(
                             text = currencyFormat.format(monthlyBudget),
                             style = MaterialTheme.typography.titleMedium,
-                            color = Color(0xFF7DCE82),
+                            color = GlasshouseForestGreen,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -514,7 +537,7 @@ private fun FinancialBloomCard(
                                 R.string.dashboard_monthly_budget_edit
                             }
                         ),
-                        tint = MeadowWhite
+                        tint = GlasshouseForestGreen
                     )
                 }
             }

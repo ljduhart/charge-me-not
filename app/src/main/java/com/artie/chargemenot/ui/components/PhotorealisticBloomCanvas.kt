@@ -18,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -204,9 +203,9 @@ private fun computeSoilMoundLayout(
     canvasHeight: Float,
     maxRadius: Float
 ): SoilMoundLayout {
-    val moundRadius = maxRadius * 0.62f
-    val moundCenterY = canvasHeight - moundRadius * 0.42f
-    val stemBottomY = moundCenterY + moundRadius * 0.14f
+    val moundRadius = maxRadius * 0.64f
+    val moundCenterY = canvasHeight - moundRadius * 0.38f
+    val stemBottomY = moundCenterY + moundRadius * 0.18f
     return SoilMoundLayout(
         centerX = centerX,
         moundCenterY = moundCenterY,
@@ -219,36 +218,100 @@ private fun DrawScope.drawSoilMound(
     soilLayout: SoilMoundLayout,
     canvasHeight: Float
 ) {
-    val oval = Rect(
-        left = soilLayout.centerX - soilLayout.moundRadius,
-        top = soilLayout.moundCenterY - soilLayout.moundRadius,
-        right = soilLayout.centerX + soilLayout.moundRadius,
-        bottom = soilLayout.moundCenterY + soilLayout.moundRadius
-    )
-    val soilPath = Path().apply {
-        arcTo(
-            rect = oval,
-            startAngleDegrees = 180f,
-            sweepAngleDegrees = 180f,
-            forceMoveTo = false
+    val centerX = soilLayout.centerX
+    val halfWidth = soilLayout.moundRadius * 1.05f
+    val peakY = soilLayout.moundCenterY - soilLayout.moundRadius * 0.62f
+    val baseY = soilLayout.moundCenterY + soilLayout.moundRadius * 0.32f
+
+    val basePath = Path().apply {
+        moveTo(centerX - halfWidth, baseY)
+        cubicTo(
+            centerX - halfWidth * 0.48f,
+            baseY - soilLayout.moundRadius * 0.42f,
+            centerX - halfWidth * 0.18f,
+            peakY + soilLayout.moundRadius * 0.08f,
+            centerX,
+            peakY
         )
-        lineTo(oval.right, canvasHeight)
-        lineTo(oval.left, canvasHeight)
+        cubicTo(
+            centerX + halfWidth * 0.18f,
+            peakY + soilLayout.moundRadius * 0.08f,
+            centerX + halfWidth * 0.48f,
+            baseY - soilLayout.moundRadius * 0.42f,
+            centerX + halfWidth,
+            baseY
+        )
+        lineTo(centerX + halfWidth * 1.04f, canvasHeight)
+        lineTo(centerX - halfWidth * 1.04f, canvasHeight)
         close()
     }
 
     drawPath(
-        path = soilPath,
+        path = basePath,
         brush = Brush.radialGradient(
             colors = listOf(
-                Color(0xFF2D1B10),
-                Color(0xFF1A0F09)
+                Color(0xFF3E2723),
+                Color(0xFF1B100B)
             ),
-            center = Offset(soilLayout.centerX, soilLayout.moundCenterY - soilLayout.moundRadius * 0.2f),
-            radius = soilLayout.moundRadius * 1.2f
+            center = Offset(centerX, peakY + soilLayout.moundRadius * 0.18f),
+            radius = halfWidth * 1.15f
         )
     )
+
+    val soilClumps = listOf(
+        SoilClumpSpec(offsetXFactor = -0.30f, offsetYFactor = 0.22f, radiusFactor = 0.36f),
+        SoilClumpSpec(offsetXFactor = 0.24f, offsetYFactor = 0.18f, radiusFactor = 0.32f),
+        SoilClumpSpec(offsetXFactor = -0.06f, offsetYFactor = 0.30f, radiusFactor = 0.40f),
+        SoilClumpSpec(offsetXFactor = 0.38f, offsetYFactor = 0.26f, radiusFactor = 0.28f),
+        SoilClumpSpec(offsetXFactor = -0.44f, offsetYFactor = 0.14f, radiusFactor = 0.26f),
+        SoilClumpSpec(offsetXFactor = 0.10f, offsetYFactor = 0.10f, radiusFactor = 0.24f)
+    )
+
+    soilClumps.forEach { clump ->
+        val clumpCenterX = centerX + halfWidth * clump.offsetXFactor
+        val clumpCenterY = baseY - soilLayout.moundRadius * clump.offsetYFactor
+        val clumpRadius = soilLayout.moundRadius * clump.radiusFactor
+        val clumpPath = Path().apply {
+            moveTo(clumpCenterX - clumpRadius, clumpCenterY)
+            cubicTo(
+                clumpCenterX - clumpRadius * 0.55f,
+                clumpCenterY - clumpRadius * 0.72f,
+                clumpCenterX + clumpRadius * 0.45f,
+                clumpCenterY - clumpRadius * 0.68f,
+                clumpCenterX + clumpRadius,
+                clumpCenterY
+            )
+            cubicTo(
+                clumpCenterX + clumpRadius * 0.42f,
+                clumpCenterY + clumpRadius * 0.48f,
+                clumpCenterX - clumpRadius * 0.38f,
+                clumpCenterY + clumpRadius * 0.44f,
+                clumpCenterX - clumpRadius,
+                clumpCenterY
+            )
+            close()
+        }
+
+        drawPath(
+            path = clumpPath,
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    Color(0xFF4E342E),
+                    Color(0xFF3E2723).copy(alpha = 0.72f),
+                    Color(0xFF1B100B).copy(alpha = 0.45f)
+                ),
+                center = Offset(clumpCenterX, clumpCenterY - clumpRadius * 0.18f),
+                radius = clumpRadius * 1.25f
+            )
+        )
+    }
 }
+
+private data class SoilClumpSpec(
+    val offsetXFactor: Float,
+    val offsetYFactor: Float,
+    val radiusFactor: Float
+)
 
 private fun DrawScope.drawCategoryLabel(
     definition: BloomCategoryDefinition,
