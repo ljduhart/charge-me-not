@@ -1,6 +1,6 @@
 package com.artie.chargemenot.ui.components
 
-import androidx.compose.foundation.Image
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -10,14 +10,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.R
 
@@ -35,6 +37,21 @@ fun GlasshouseCard(
     val backgroundTranslationX = tiltX * BACKGROUND_PARALLAX_FACTOR * parallaxDistancePx
     val backgroundTranslationY = tiltY * BACKGROUND_PARALLAX_FACTOR * parallaxDistancePx
     val cardShape = RoundedCornerShape(24.dp)
+    val forestGreen = colorResource(R.color.greenhouse_forest)
+    val midGreen = colorResource(R.color.greenhouse_mid)
+    val lightGreen = colorResource(R.color.greenhouse_light)
+    val greenhouseBrush = remember(forestGreen, midGreen, lightGreen) {
+        Brush.linearGradient(
+            colorStops = arrayOf(
+                0f to forestGreen,
+                0.5f to midGreen,
+                1f to lightGreen
+            ),
+            start = Offset.Zero,
+            end = Offset(400f, 400f)
+        )
+    }
+    val supportsNativeBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     Box(
         modifier = modifier
@@ -46,23 +63,31 @@ fun GlasshouseCard(
                 shape = cardShape
             )
     ) {
-        Image(
-            painter = painterResource(R.drawable.bg_greenhouse),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
+        Box(
             modifier = Modifier
                 .matchParentSize()
                 .graphicsLayer {
                     translationX = backgroundTranslationX
                     translationY = backgroundTranslationY
                 }
+                .background(greenhouseBrush)
         )
 
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .blur(radius = 16.dp)
-                .background(GlasshouseCream.copy(alpha = 0.6f))
+                .then(
+                    if (supportsNativeBlur) {
+                        Modifier.blur(radius = 16.dp)
+                    } else {
+                        Modifier
+                    }
+                )
+                .background(
+                    GlasshouseCream.copy(
+                        alpha = if (supportsNativeBlur) 0.6f else 0.72f
+                    )
+                )
         )
 
         Column(
