@@ -18,16 +18,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -90,8 +91,12 @@ fun PhotorealisticBloomCanvas(
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .height(350.dp)
+            .height(360.dp)
             .padding(horizontal = 2.dp)
+            .graphicsLayer {
+                translationX = foregroundTranslationX
+                translationY = foregroundTranslationY
+            }
             .pointerInput(density, foregroundTranslationX, foregroundTranslationY) {
                 detectTapGestures { offset ->
                     val layout = BloomLayout.compute(
@@ -112,35 +117,44 @@ fun PhotorealisticBloomCanvas(
                 }
             }
     ) {
-        translate(left = foregroundTranslationX, top = foregroundTranslationY) {
-            val layout = BloomLayout.compute(
-                canvasWidth = size.width,
-                canvasHeight = size.height,
-                density = density
-            )
-            val center = Offset(layout.centerX, layout.centerY)
-            labelPaint.textSize = layout.labelTextSizePx
+        val layout = BloomLayout.compute(
+            canvasWidth = size.width,
+            canvasHeight = size.height,
+            density = density
+        )
+        val center = Offset(layout.centerX, layout.centerY)
+        labelPaint.textSize = layout.labelTextSizePx
+        val soilLayout = computeSoilMoundLayout(
+            centerX = layout.centerX,
+            canvasHeight = size.height,
+            maxRadius = layout.maxRadius
+        )
 
-            drawSoilMound(
-                centerX = layout.centerX,
-                canvasHeight = size.height,
-                maxRadius = layout.maxRadius
-            )
+        drawSoilMound(
+            soilLayout = soilLayout,
+            canvasHeight = size.height
+        )
 
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        MeadowEarth.copy(alpha = 0.14f),
-                        Color.Transparent
-                    ),
-                    center = center,
-                    radius = layout.maxRadius * 1.35f
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    MeadowEarth.copy(alpha = 0.14f),
+                    Color.Transparent
                 ),
-                radius = layout.maxRadius * 1.35f,
-                center = center
-            )
+                center = center,
+                radius = layout.maxRadius * 1.35f
+            ),
+            radius = layout.maxRadius * 1.35f,
+            center = center
+        )
 
-            BloomCategoryDefinitions.categories.forEachIndexed { index, definition ->
+        drawStemAndLeaves(
+            center = center,
+            maxRadius = layout.maxRadius,
+            stemBottomY = soilLayout.stemBottomY
+        )
+
+        BloomCategoryDefinitions.categories.forEachIndexed { index, definition ->
                 val amount = parentCategoryTotals[definition.parentName] ?: 0.0
                 val spendIntensity = if (amount <= 0.0 || monthlyBudget <= 0.0) {
                     0.72f
@@ -174,43 +188,64 @@ fun PhotorealisticBloomCanvas(
                 )
             }
 
-            drawFlowerCenter(center = center, radius = layout.maxRadius * 0.15f)
-            drawStemAndLeaves(center = center, maxRadius = layout.maxRadius)
-        }
+        drawFlowerCenter(center = center, radius = layout.maxRadius * 0.15f)
     }
 }
 
-private fun DrawScope.drawSoilMound(
+private data class SoilMoundLayout(
+    val centerX: Float,
+    val moundCenterY: Float,
+    val moundRadius: Float,
+    val stemBottomY: Float
+)
+
+private fun computeSoilMoundLayout(
     centerX: Float,
     canvasHeight: Float,
     maxRadius: Float
+): SoilMoundLayout {
+    val moundRadius = maxRadius * 0.62f
+    val moundCenterY = canvasHeight - moundRadius * 0.42f
+    val stemBottomY = moundCenterY + moundRadius * 0.14f
+    return SoilMoundLayout(
+        centerX = centerX,
+        moundCenterY = moundCenterY,
+        moundRadius = moundRadius,
+        stemBottomY = stemBottomY
+    )
+}
+
+private fun DrawScope.drawSoilMound(
+    soilLayout: SoilMoundLayout,
+    canvasHeight: Float
 ) {
-    val moundWidth = maxRadius * 1.2f
-    val moundHeight = maxRadius * 0.24f
-    val baseY = canvasHeight - moundHeight * 0.45f
+    val oval = Rect(
+        left = soilLayout.centerX - soilLayout.moundRadius,
+        top = soilLayout.moundCenterY - soilLayout.moundRadius,
+        right = soilLayout.centerX + soilLayout.moundRadius,
+        bottom = soilLayout.moundCenterY + soilLayout.moundRadius
+    )
     val soilPath = Path().apply {
-        moveTo(centerX - moundWidth * 0.5f, baseY)
-        quadraticTo(
-            centerX,
-            baseY - moundHeight,
-            centerX + moundWidth * 0.5f,
-            baseY
+        arcTo(
+            rect = oval,
+            startAngleDegrees = 180f,
+            sweepAngleDegrees = 180f,
+            forceMoveTo = false
         )
-        lineTo(centerX + moundWidth * 0.55f, canvasHeight)
-        lineTo(centerX - moundWidth * 0.55f, canvasHeight)
+        lineTo(oval.right, canvasHeight)
+        lineTo(oval.left, canvasHeight)
         close()
     }
 
     drawPath(
         path = soilPath,
-        brush = Brush.verticalGradient(
+        brush = Brush.radialGradient(
             colors = listOf(
-                Color(0xFF7A4E28),
-                Color(0xFF5C3A1E),
-                Color(0xFF2E1A0E)
+                Color(0xFF2D1B10),
+                Color(0xFF1A0F09)
             ),
-            startY = baseY - moundHeight,
-            endY = canvasHeight
+            center = Offset(soilLayout.centerX, soilLayout.moundCenterY - soilLayout.moundRadius * 0.2f),
+            radius = soilLayout.moundRadius * 1.2f
         )
     )
 }
@@ -470,30 +505,40 @@ private fun DrawScope.drawFlowerCenter(center: Offset, radius: Float) {
     )
 }
 
-private fun DrawScope.drawStemAndLeaves(center: Offset, maxRadius: Float) {
-    val stemTop = Offset(center.x, center.y + maxRadius * 0.12f)
-    val stemBottom = Offset(center.x, center.y + maxRadius * 0.48f)
+private fun DrawScope.drawStemAndLeaves(
+    center: Offset,
+    maxRadius: Float,
+    stemBottomY: Float
+) {
+    val stemTop = Offset(center.x, center.y + maxRadius * 0.10f)
+    val stemBottom = Offset(center.x, stemBottomY.coerceAtLeast(stemTop.y + 4f))
+    val stemLength = (stemBottom.y - stemTop.y).coerceAtLeast(1f)
 
     drawLine(
         brush = Brush.verticalGradient(
-            colors = listOf(Color(0xFF4F8F57), Color(0xFF2F5A36)),
+            colors = listOf(
+                Color(0xFF6FAF72),
+                Color(0xFF4F8F57),
+                Color(0xFF2F5A36),
+                Color(0xFF234A2A)
+            ),
             startY = stemTop.y,
             endY = stemBottom.y
         ),
         start = stemTop,
         end = stemBottom,
-        strokeWidth = 9f
+        strokeWidth = 10f
     )
 
     val leftLeaf = Path().apply {
-        moveTo(stemTop.x, stemTop.y + maxRadius * 0.18f)
+        moveTo(stemTop.x, stemTop.y + stemLength * 0.22f)
         cubicTo(
-            stemTop.x - maxRadius * 0.3f,
-            stemTop.y + maxRadius * 0.24f,
+            stemTop.x - maxRadius * 0.30f,
+            stemTop.y + stemLength * 0.28f,
             stemTop.x - maxRadius * 0.24f,
-            stemTop.y + maxRadius * 0.4f,
+            stemTop.y + stemLength * 0.48f,
             stemTop.x - maxRadius * 0.04f,
-            stemTop.y + maxRadius * 0.36f
+            stemTop.y + stemLength * 0.44f
         )
         close()
     }
@@ -507,14 +552,14 @@ private fun DrawScope.drawStemAndLeaves(center: Offset, maxRadius: Float) {
     )
 
     val rightLeaf = Path().apply {
-        moveTo(stemTop.x, stemTop.y + maxRadius * 0.28f)
+        moveTo(stemTop.x, stemTop.y + stemLength * 0.36f)
         cubicTo(
             stemTop.x + maxRadius * 0.28f,
-            stemTop.y + maxRadius * 0.32f,
+            stemTop.y + stemLength * 0.40f,
             stemTop.x + maxRadius * 0.22f,
-            stemTop.y + maxRadius * 0.48f,
+            stemTop.y + stemLength * 0.58f,
             stemTop.x + maxRadius * 0.03f,
-            stemTop.y + maxRadius * 0.44f
+            stemTop.y + stemLength * 0.54f
         )
         close()
     }
