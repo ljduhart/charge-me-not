@@ -113,69 +113,69 @@ fun PhotorealisticBloomCanvas(
             }
     ) {
         translate(left = foregroundTranslationX, top = foregroundTranslationY) {
-        val layout = BloomLayout.compute(
-            canvasWidth = size.width,
-            canvasHeight = size.height,
-            density = density
-        )
-        val center = Offset(layout.centerX, layout.centerY)
-        labelPaint.textSize = layout.labelTextSizePx
-
-        drawSoilMound(
-            centerX = layout.centerX,
-            canvasHeight = size.height,
-            maxRadius = layout.maxRadius
-        )
-
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    MeadowEarth.copy(alpha = 0.14f),
-                    Color.Transparent
-                ),
-                center = center,
-                radius = layout.maxRadius * 1.35f
-            ),
-            radius = layout.maxRadius * 1.35f,
-            center = center
-        )
-
-        BloomCategoryDefinitions.categories.forEachIndexed { index, definition ->
-            val amount = parentCategoryTotals[definition.parentName] ?: 0.0
-            val spendIntensity = if (amount <= 0.0 || monthlyBudget <= 0.0) {
-                0.72f
-            } else {
-                (amount / monthlyBudget.coerceAtLeast(1.0)).toFloat().coerceIn(0.72f, 1f)
-            }
-            val sliceAngle = -90f + index * BloomCategoryDefinitions.SLICE_DEGREES
-            val isHighlighted = highlightedParent == null || highlightedParent == definition.parentName
-            val alphaMultiplier = (if (isHighlighted) 1f else 0.52f) * spendIntensity.coerceAtLeast(0.75f)
-            val scale = categoryScales[definition.displayName]?.value ?: 1f
-
-            rotate(sliceAngle, center) {
-                scale(scale, scale, pivot = center) {
-                    drawPhotorealisticPetal(
-                        center = center,
-                        length = layout.petalLength,
-                        width = layout.petalWidth,
-                        definition = definition,
-                        alphaMultiplier = alphaMultiplier
-                    )
-                }
-            }
-
-            drawCategoryLabel(
-                definition = definition,
-                layout = layout,
-                sliceIndex = index,
-                sliceAngle = sliceAngle,
-                alphaMultiplier = alphaMultiplier,
-                labelPaint = labelPaint
+            val layout = BloomLayout.compute(
+                canvasWidth = size.width,
+                canvasHeight = size.height,
+                density = density
             )
-        }
+            val center = Offset(layout.centerX, layout.centerY)
+            labelPaint.textSize = layout.labelTextSizePx
 
-        drawFlowerCenter(center = center, radius = layout.maxRadius * 0.15f)
-        drawStemAndLeaves(center = center, maxRadius = layout.maxRadius)
+            drawSoilMound(
+                centerX = layout.centerX,
+                canvasHeight = size.height,
+                maxRadius = layout.maxRadius
+            )
+
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        MeadowEarth.copy(alpha = 0.14f),
+                        Color.Transparent
+                    ),
+                    center = center,
+                    radius = layout.maxRadius * 1.35f
+                ),
+                radius = layout.maxRadius * 1.35f,
+                center = center
+            )
+
+            BloomCategoryDefinitions.categories.forEachIndexed { index, definition ->
+                val amount = parentCategoryTotals[definition.parentName] ?: 0.0
+                val spendIntensity = if (amount <= 0.0 || monthlyBudget <= 0.0) {
+                    0.72f
+                } else {
+                    (amount / monthlyBudget.coerceAtLeast(1.0)).toFloat().coerceIn(0.72f, 1f)
+                }
+                val sliceAngle = -90f + index * BloomCategoryDefinitions.SLICE_DEGREES
+                val isHighlighted = highlightedParent == null || highlightedParent == definition.parentName
+                val alphaMultiplier = (if (isHighlighted) 1f else 0.52f) * spendIntensity.coerceAtLeast(0.75f)
+                val scale = categoryScales[definition.displayName]?.value ?: 1f
+
+                rotate(sliceAngle, center) {
+                    scale(scale, scale, pivot = center) {
+                        drawPhotorealisticPetal(
+                            center = center,
+                            length = layout.petalLength,
+                            width = layout.petalWidth,
+                            definition = definition,
+                            alphaMultiplier = alphaMultiplier
+                        )
+                    }
+                }
+
+                drawCategoryLabel(
+                    definition = definition,
+                    layout = layout,
+                    sliceIndex = index,
+                    sliceAngle = sliceAngle,
+                    alphaMultiplier = alphaMultiplier,
+                    labelPaint = labelPaint
+                )
+            }
+
+            drawFlowerCenter(center = center, radius = layout.maxRadius * 0.15f)
+            drawStemAndLeaves(center = center, maxRadius = layout.maxRadius)
         }
     }
 }

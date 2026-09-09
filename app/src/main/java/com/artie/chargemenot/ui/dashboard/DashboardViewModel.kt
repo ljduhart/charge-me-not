@@ -324,7 +324,7 @@ class DashboardViewModel(
         if (parallaxSensorJob?.isActive == true) {
             return
         }
-        parallaxSensorJob = coroutineScope.launch {
+        parallaxSensorJob = coroutineScope.launch(Dispatchers.Main.immediate) {
             deviceTiltSensor.tiltOffsets().collect { offset ->
                 _parallaxOffset.value = offset
             }
