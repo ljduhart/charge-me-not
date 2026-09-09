@@ -450,14 +450,14 @@ private fun FinancialBloomCard(
                 Text(
                     text = stringResource(R.string.dashboard_financial_bloom_title),
                     style = MaterialTheme.typography.titleMedium,
-                    color = MeadowGreenDark,
+                    color = MeadowWhite,
                     fontWeight = FontWeight.Bold
                 )
                 IconButton(onClick = onBloomSettingsClick) {
                     Icon(
                         imageVector = Icons.Default.Settings,
                         contentDescription = stringResource(R.string.dashboard_bloom_settings),
-                        tint = MeadowGreenDark
+                        tint = MeadowWhite
                     )
                 }
             }
@@ -481,14 +481,14 @@ private fun FinancialBloomCard(
                     Text(
                         text = stringResource(R.string.dashboard_monthly_budget_label),
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = MeadowWhite.copy(alpha = 0.92f),
                         fontWeight = FontWeight.Bold
                     )
                     if (!isEditingBudget) {
                         Text(
                             text = currencyFormat.format(monthlyBudget),
                             style = MaterialTheme.typography.titleMedium,
-                            color = MeadowGreenDark,
+                            color = Color(0xFF7DCE82),
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -514,7 +514,7 @@ private fun FinancialBloomCard(
                                 R.string.dashboard_monthly_budget_edit
                             }
                         ),
-                        tint = MeadowGreenDark
+                        tint = MeadowWhite
                     )
                 }
             }

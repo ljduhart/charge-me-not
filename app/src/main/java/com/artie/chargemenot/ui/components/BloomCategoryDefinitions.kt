@@ -112,7 +112,11 @@ data class BloomLayoutSpec(
     val innerTouchRadius: Float,
     val outerTouchRadius: Float,
     val labelTouchRadius: Float,
-    val labelTextSizePx: Float
+    val labelTextSizePx: Float,
+    val soilMoundTopY: Float,
+    val soilMoundWidth: Float,
+    val soilMoundHeight: Float,
+    val stemBottomY: Float
 )
 
 object BloomLayout {
@@ -126,9 +130,14 @@ object BloomLayout {
         val drawableWidth = (canvasWidth - uniformInset * 2f).coerceAtLeast(1f)
         val drawableHeight = (canvasHeight - uniformInset * 2f).coerceAtLeast(1f)
         val centerX = canvasWidth / 2f
-        val centerY = canvasHeight / 2f
-        val drawableMin = minOf(drawableWidth, drawableHeight)
-        val labelBand = drawableMin * 0.18f
+        val soilMoundHeight = canvasHeight * 0.20f
+        val soilMoundWidth = drawableWidth * 0.88f
+        val soilMoundTopY = canvasHeight - soilMoundHeight * 0.92f
+        val stemBottomY = soilMoundTopY + soilMoundHeight * 0.22f
+        val flowerBandHeight = (soilMoundTopY - uniformInset).coerceAtLeast(drawableHeight * 0.55f)
+        val centerY = uniformInset + flowerBandHeight * 0.46f
+        val drawableMin = minOf(drawableWidth, flowerBandHeight)
+        val labelBand = drawableMin * 0.16f
         val availableRadius = ((drawableMin / 2f) - labelBand)
             .coerceAtLeast(drawableMin * 0.2f)
         val maxRadius = (availableRadius * FLOWER_LAYOUT_SCALE)
@@ -154,7 +163,11 @@ object BloomLayout {
             outerTouchRadius = maxRadius * 0.98f,
             labelTouchRadius = (labelRadius + labelTextSizePx * 0.55f)
                 .coerceAtMost(minOf(canvasWidth, canvasHeight) * 0.49f),
-            labelTextSizePx = labelTextSizePx
+            labelTextSizePx = labelTextSizePx,
+            soilMoundTopY = soilMoundTopY,
+            soilMoundWidth = soilMoundWidth,
+            soilMoundHeight = soilMoundHeight,
+            stemBottomY = stemBottomY
         )
     }
 
