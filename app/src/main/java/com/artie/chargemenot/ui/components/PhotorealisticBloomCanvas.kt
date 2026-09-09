@@ -96,7 +96,7 @@ fun PhotorealisticBloomCanvas(
     }
     val context = LocalContext.current
     val soilMoundBitmap = remember {
-        BitmapFactory.decodeResource(context.resources, R.drawable.soil_mound).asImageBitmap()
+        BitmapFactory.decodeResource(context.resources, R.drawable.soil_mound)?.asImageBitmap()
     }
 
     Canvas(
@@ -199,19 +199,47 @@ fun PhotorealisticBloomCanvas(
 
 private fun DrawScope.drawSoilMound(
     layout: BloomLayoutSpec,
-    soilMoundBitmap: ImageBitmap,
+    soilMoundBitmap: ImageBitmap?,
     canvasHeight: Float
 ) {
     val left = layout.centerX - layout.soilMoundWidth / 2f
     val top = layout.soilMoundTopY
-    drawImage(
-        image = soilMoundBitmap,
-        dstOffset = IntOffset(left.toInt(), top.toInt()),
-        dstSize = IntSize(
-            layout.soilMoundWidth.toInt().coerceAtLeast(1),
-            layout.soilMoundHeight.toInt().coerceAtLeast(1)
+    if (soilMoundBitmap != null) {
+        drawImage(
+            image = soilMoundBitmap,
+            dstOffset = IntOffset(left.toInt(), top.toInt()),
+            dstSize = IntSize(
+                layout.soilMoundWidth.toInt().coerceAtLeast(1),
+                layout.soilMoundHeight.toInt().coerceAtLeast(1)
+            )
         )
-    )
+    } else {
+        val moundHeight = layout.soilMoundHeight
+        val soilPath = Path().apply {
+            moveTo(left, top + moundHeight * 0.35f)
+            quadraticTo(
+                layout.centerX,
+                top - moundHeight * 0.15f,
+                left + layout.soilMoundWidth,
+                top + moundHeight * 0.35f
+            )
+            lineTo(left + layout.soilMoundWidth, canvasHeight)
+            lineTo(left, canvasHeight)
+            close()
+        }
+        drawPath(
+            path = soilPath,
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFF7A4E28),
+                    Color(0xFF5C3A1E),
+                    Color(0xFF2E1A0E)
+                ),
+                startY = top,
+                endY = canvasHeight
+            )
+        )
+    }
 
     drawRect(
         brush = Brush.verticalGradient(
@@ -488,8 +516,8 @@ private fun DrawScope.drawStemAndLeaves(
     stemBottomY: Float
 ) {
     val stemTop = Offset(center.x, center.y + maxRadius * 0.10f)
-    val stemBottom = Offset(center.x, stemBottomY)
-    val stemLength = stemBottom.y - stemTop.y
+    val stemBottom = Offset(center.x, stemBottomY.coerceAtLeast(stemTop.y + 4f))
+    val stemLength = (stemBottom.y - stemTop.y).coerceAtLeast(1f)
 
     drawLine(
         brush = Brush.verticalGradient(
