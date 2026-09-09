@@ -165,7 +165,7 @@ fun ChargeMeNotNavHost(
                 onOpenDrawer = onOpenDrawer,
                 onKeepSubscription = onKeepSubscription,
                 onPullSubscription = onPullSubscription,
-                onMonthlyBudgetChange = { input -> onMonthlyBudgetChange(input) },
+                onMonthlyBudgetChange = onMonthlyBudgetChange,
                 onLinkBillToParent = onLinkBillToParent,
                 onSelectBillForEdit = onSelectBillForEdit,
                 onPetalTapped = onPetalTapped,

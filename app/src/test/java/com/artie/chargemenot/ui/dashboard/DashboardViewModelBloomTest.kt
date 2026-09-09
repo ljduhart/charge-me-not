@@ -310,6 +310,20 @@ class DashboardViewModelBloomTest {
     }
 
     @Test
+    fun startParallaxSensor_whenAlreadyActive_doesNotRestartCollection() = runTest(testDispatcher) {
+        val tiltSensor = FakeDeviceTiltSensor()
+        val viewModel = createViewModel(deviceTiltSensor = tiltSensor)
+        testScope.advanceUntilIdle()
+
+        viewModel.startParallaxSensor()
+        viewModel.startParallaxSensor()
+        tiltSensor.emit(0.3f, 0.1f)
+        testScope.advanceUntilIdle()
+
+        assertEquals(0.3f to 0.1f, viewModel.parallaxOffset.value)
+    }
+
+    @Test
     fun stopParallaxSensor_resetsParallaxOffset() = runTest(testDispatcher) {
         val tiltSensor = FakeDeviceTiltSensor()
         val viewModel = createViewModel(deviceTiltSensor = tiltSensor)

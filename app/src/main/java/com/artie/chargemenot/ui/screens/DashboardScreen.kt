@@ -96,7 +96,7 @@ fun DashboardScreen(
     onOpenDrawer: () -> Unit,
     onKeepSubscription: (Bill) -> Unit,
     onPullSubscription: (Bill) -> Unit,
-    onMonthlyBudgetChange: (String) -> Unit,
+    onMonthlyBudgetChange: (String) -> Boolean,
     onLinkBillToParent: (Long, Long?) -> Unit,
     onSelectBillForEdit: (Bill) -> Unit,
     onPetalTapped: (String) -> Unit,
@@ -119,6 +119,9 @@ fun DashboardScreen(
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            onStartParallaxSensor()
+        }
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             onStopParallaxSensor()
@@ -426,7 +429,7 @@ private fun FinancialBloomCard(
     highlightedBloomParent: String?,
     parallaxOffset: Pair<Float, Float>,
     onBloomSettingsClick: () -> Unit,
-    onMonthlyBudgetChange: (String) -> Unit,
+    onMonthlyBudgetChange: (String) -> Boolean,
     onPetalTapped: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -493,8 +496,9 @@ private fun FinancialBloomCard(
                 IconButton(
                     onClick = {
                         if (isEditingBudget) {
-                            onMonthlyBudgetChange(budgetInput)
-                            isEditingBudget = false
+                            if (onMonthlyBudgetChange(budgetInput)) {
+                                isEditingBudget = false
+                            }
                         } else {
                             budgetInput = monthlyBudget.toInt().toString()
                             isEditingBudget = true
@@ -673,7 +677,7 @@ private fun DashboardScreenPreview() {
             onOpenDrawer = {},
             onKeepSubscription = {},
             onPullSubscription = {},
-            onMonthlyBudgetChange = {},
+            onMonthlyBudgetChange = { _ -> true },
             onLinkBillToParent = { _, _ -> },
             onSelectBillForEdit = {},
             onPetalTapped = {},

@@ -27,8 +27,8 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.ui.theme.MeadowEarth
@@ -92,11 +92,7 @@ fun PhotorealisticBloomCanvas(
             .fillMaxWidth()
             .height(350.dp)
             .padding(horizontal = 2.dp)
-            .graphicsLayer {
-                translationX = foregroundTranslationX
-                translationY = foregroundTranslationY
-            }
-            .pointerInput(density) {
+            .pointerInput(density, foregroundTranslationX, foregroundTranslationY) {
                 detectTapGestures { offset ->
                     val layout = BloomLayout.compute(
                         canvasWidth = size.width.toFloat(),
@@ -105,8 +101,8 @@ fun PhotorealisticBloomCanvas(
                     )
 
                     val sliceIndex = BloomTouchMath.resolveSliceIndex(
-                        tapX = offset.x,
-                        tapY = offset.y,
+                        tapX = offset.x - foregroundTranslationX,
+                        tapY = offset.y - foregroundTranslationY,
                         layout = layout
                     ) ?: return@detectTapGestures
 
@@ -116,6 +112,7 @@ fun PhotorealisticBloomCanvas(
                 }
             }
     ) {
+        translate(left = foregroundTranslationX, top = foregroundTranslationY) {
         val layout = BloomLayout.compute(
             canvasWidth = size.width,
             canvasHeight = size.height,
@@ -179,6 +176,7 @@ fun PhotorealisticBloomCanvas(
 
         drawFlowerCenter(center = center, radius = layout.maxRadius * 0.15f)
         drawStemAndLeaves(center = center, maxRadius = layout.maxRadius)
+        }
     }
 }
 
