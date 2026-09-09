@@ -35,22 +35,27 @@ fun GlasshouseCard(
             .fillMaxWidth()
             .clip(cardShape)
             .border(width = 1.dp, color = GlasshouseBorder, shape = cardShape)
-            .then(
-                if (supportsNativeBlur) {
-                    Modifier.blur(
-                        radius = 32.dp,
-                        edgeTreatment = BlurredEdgeTreatment.Rectangle
-                    )
-                } else {
-                    Modifier
-                }
-            )
-            .background(
-                GlasshouseCream.copy(
-                    alpha = if (supportsNativeBlur) 0.55f else 0.72f
-                )
-            )
     ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .then(
+                    if (supportsNativeBlur) {
+                        Modifier.blur(
+                            radius = 32.dp,
+                            edgeTreatment = BlurredEdgeTreatment.Rectangle
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
+                .background(
+                    GlasshouseCream.copy(
+                        alpha = if (supportsNativeBlur) 0.55f else 0.72f
+                    )
+                )
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
