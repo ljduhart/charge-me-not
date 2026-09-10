@@ -42,7 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.MeadowCategories
@@ -55,10 +55,10 @@ import java.util.Locale
 const val GARDEN_PATH_FAR_OFF_DAYS = 7L
 
 const val GARDEN_PAID_ROSE_IMAGE_URL =
-    "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Rose_flower_transparent_background.png/500px-Rose_flower_transparent_background.png"
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/The_Rose.png/500px-The_Rose.png"
 
 const val GARDEN_OVERDUE_LEAF_IMAGE_URL =
-    "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Autumn_Leaf_Transparent.png/500px-Autumn_Leaf_Transparent.png"
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Autumn_Red_Oak_Leaf.jpg/500px-Autumn_Red_Oak_Leaf.jpg"
 
 enum class GardenBillState {
     Paid,
@@ -153,6 +153,7 @@ fun LeafBillCard(
 ) {
     when (gardenState) {
         GardenBillState.Paid -> PaidRoseBillCard(
+            billName = bill.name,
             isFeatured = isFeaturedPaidRose,
             modifier = modifier
         )
@@ -174,11 +175,13 @@ fun LeafBillCard(
 
 @Composable
 private fun PaidRoseBillCard(
+    billName: String,
     isFeatured: Boolean,
     modifier: Modifier = Modifier
 ) {
     val roseHeight = if (isFeatured) 148.dp else 120.dp
     val stampFontSize = if (isFeatured) 12.sp else 10.sp
+    val paidBloomDescription = stringResource(R.string.petals_and_weeds_paid_bloom)
 
     Box(
         modifier = modifier
@@ -186,13 +189,16 @@ private fun PaidRoseBillCard(
             .height(roseHeight),
         contentAlignment = Alignment.Center
     ) {
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = GARDEN_PAID_ROSE_IMAGE_URL,
-            contentDescription = stringResource(R.string.petals_and_weeds_paid_bloom),
+            contentDescription = "$paidBloomDescription: $billName",
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(roseHeight)
+                .height(roseHeight),
+            error = {
+                BloomedRoseAnchor(large = isFeatured)
+            }
         )
 
         Box(
@@ -229,13 +235,23 @@ private fun OverdueLeafBillCard(
             .height(132.dp),
         contentAlignment = Alignment.Center
     ) {
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = GARDEN_OVERDUE_LEAF_IMAGE_URL,
-            contentDescription = stringResource(R.string.petals_and_weeds_overdue),
+            contentDescription = stringResource(
+                R.string.petals_and_weeds_overdue
+            ) + ": ${bill.name}",
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(132.dp)
+                .height(132.dp),
+            error = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(132.dp)
+                        .background(Color(0x99BCAAA4), RoundedCornerShape(16.dp))
+                )
+            }
         )
 
         Column(

@@ -2,6 +2,7 @@ package com.artie.chargemenot.ui.components
 
 import com.artie.chargemenot.domain.model.Bill
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 
@@ -96,5 +97,13 @@ class GardenBillStateTest {
         )
 
         assertEquals(listOf("Paid", "Overdue", "Soon", "FarOff"), sorted.map { bill -> bill.name })
+    }
+
+    @Test
+    fun gardenPathImageUrls_useReachableWikimediaEndpoints() {
+        assertTrue(GARDEN_PAID_ROSE_IMAGE_URL.startsWith("https://upload.wikimedia.org/"))
+        assertTrue(GARDEN_OVERDUE_LEAF_IMAGE_URL.startsWith("https://upload.wikimedia.org/"))
+        assertTrue(GARDEN_PAID_ROSE_IMAGE_URL.endsWith("The_Rose.png"))
+        assertTrue(GARDEN_OVERDUE_LEAF_IMAGE_URL.contains("Autumn_Red_Oak_Leaf"))
     }
 }
