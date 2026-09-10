@@ -9,6 +9,7 @@ import com.artie.chargemenot.domain.model.ForecastResult
 import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.model.UserSettings
 import com.artie.chargemenot.ui.components.BloomCategoryDefinitions
+import com.artie.chargemenot.ui.components.sortGardenPathBills
 import com.artie.chargemenot.domain.usecase.ForecastUseCase
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -105,6 +106,7 @@ class DashboardViewModel(
                 billRepository.getAllBills(),
                 userSettingsRepository.observeUserSettings()
             ) { upcoming, all, settings ->
+                val today = LocalDate.now()
                 val subscriptions = all.filter {
                     it.parentCategory == MeadowCategories.VINES && !it.isPaid
                 }
@@ -130,6 +132,7 @@ class DashboardViewModel(
                     upcomingBills = upcoming,
                     subscriptionBills = subscriptions,
                     allBills = all,
+                    gardenPathBills = sortGardenPathBills(all, today),
                     parentCategoryTotals = parentCategoryTotals,
                     forecastResult = forecast,
                     highlightedBloomParent = _uiState.value.highlightedBloomParent,

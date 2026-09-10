@@ -238,6 +238,18 @@ class DashboardViewModelBloomTest {
     }
 
     @Test
+    fun observeDashboard_populatesGardenPathBillsSortedByTimelineState() {
+        val viewModel = createViewModel()
+        testScope.advanceUntilIdle()
+
+        val gardenPathBills = viewModel.uiState.value.gardenPathBills
+
+        assertEquals(3, gardenPathBills.size)
+        assertEquals("Maple Street Apartment", gardenPathBills.first().name)
+        assertTrue(gardenPathBills.zipWithNext().all { (left, right) -> left.dueDate <= right.dueDate })
+    }
+
+    @Test
     fun clearDashboardTransientState_resetsAllOverlaySelections() {
         val viewModel = createViewModel()
         viewModel.showProfileEdit()
