@@ -106,4 +106,17 @@ class GardenBillStateTest {
         assertTrue(GARDEN_PAID_ROSE_IMAGE_URL.endsWith("The_Rose.png"))
         assertTrue(GARDEN_OVERDUE_LEAF_IMAGE_URL.contains("Autumn_Red_Oak_Leaf"))
     }
+
+    @Test
+    fun stemXAt_weavesAwayFromTheCenterLine() {
+        val centerX = 200f
+        val offsetAtFirstBend = stemXAt(
+            centerX = centerX,
+            y = 160f,
+            amplitude = 80f,
+            segmentHeight = 160f
+        )
+
+        assertTrue(kotlin.math.abs(offsetAtFirstBend - centerX) > 1f)
+    }
 }

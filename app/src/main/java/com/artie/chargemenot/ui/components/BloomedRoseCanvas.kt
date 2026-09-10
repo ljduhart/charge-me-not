@@ -33,7 +33,8 @@ private val RoseStemGreen = Color(0xFF388E3C)
 @Composable
 fun BloomedRoseAnchor(
     modifier: Modifier = Modifier,
-    large: Boolean = false
+    large: Boolean = false,
+    showStamp: Boolean = true
 ) {
     val roseSize = if (large) 88.dp else 64.dp
     val stampFontSize = if (large) 12.sp else 9.sp
@@ -126,22 +127,24 @@ fun BloomedRoseAnchor(
             }
         }
 
-        Box(
-            modifier = Modifier
-                .background(
-                    color = Color.White.copy(alpha = 0.78f),
-                    shape = RoundedCornerShape(4.dp)
+        if (showStamp) {
+            Box(
+                modifier = Modifier
+                    .background(
+                        color = Color.White.copy(alpha = 0.78f),
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.petals_and_weeds_paid_stamp),
+                    color = Color(0xFF1B3B22),
+                    fontSize = stampFontSize,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp
                 )
-                .padding(horizontal = 6.dp, vertical = 2.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = stringResource(R.string.petals_and_weeds_paid_stamp),
-                color = Color(0xFF5D4037),
-                fontSize = stampFontSize,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp
-            )
+            }
         }
     }
 }

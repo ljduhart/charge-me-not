@@ -25,24 +25,33 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.SubcomposeAsyncImage
+import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
+import coil.request.ImageRequest
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.MeadowCategories
@@ -82,8 +91,11 @@ fun sortGardenPathBills(bills: List<Bill>): List<Bill> {
 
 private val GardenForestGreen = Color(0xFF1B3B22)
 private val LeafGlassFill = Color.White.copy(alpha = 0.35f)
+private val LeafCyanEdge = Color(0xB380DEEA)
 private val BudGreen = Color(0xFF4CAF50)
 private val BudStem = Color(0xAA81C784)
+private val BudCream = Color(0xFFFFF8E1)
+private val BudGold = Color(0xFFFFE082)
 private val VineDateLabel = Color(0xFFF5F5F5)
 private val CategoryChipBackground = Color.White.copy(alpha = 0.35f)
 private val OverdueStampBrown = Color(0xCCBF360C)
@@ -127,19 +139,12 @@ fun GardenPathStemConnector(
     isLeftLeaf: Boolean,
     modifier: Modifier = Modifier
 ) {
-    when (gardenState) {
-        GardenBillState.Upcoming -> OrganicStemBud(
-            isSmall = false,
-            alignToStemOnLeft = isLeftLeaf,
-            modifier = modifier
-        )
-        GardenBillState.FarOff -> OrganicStemBud(
-            isSmall = true,
-            alignToStemOnLeft = isLeftLeaf,
-            modifier = modifier
-        )
-        else -> Unit
-    }
+    OrganicStemBud(
+        isSmall = gardenState != GardenBillState.Upcoming,
+        alignToStemOnLeft = isLeftLeaf,
+        showBud = gardenState != GardenBillState.Paid,
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -186,28 +191,32 @@ private fun PaidRoseBillCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(roseHeight),
+            .height(roseHeight)
+            .gardenLeafCyanGlow(),
         contentAlignment = Alignment.Center
     ) {
-        SubcomposeAsyncImage(
-            model = GARDEN_PAID_ROSE_IMAGE_URL,
+        GardenCoilAsset(
+            modelUrl = GARDEN_PAID_ROSE_IMAGE_URL,
             contentDescription = "$paidBloomDescription: $billName",
-            contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(roseHeight),
-            error = {
-                BloomedRoseAnchor(large = isFeatured)
+            contentScale = ContentScale.Fit,
+            fallback = {
+                BloomedRoseAnchor(
+                    large = isFeatured,
+                    showStamp = false
+                )
             }
         )
 
         Box(
             modifier = Modifier
                 .background(
-                    color = Color.White.copy(alpha = 0.78f),
-                    shape = RoundedCornerShape(6.dp)
+                    color = Color.White.copy(alpha = 0.72f),
+                    shape = RoundedCornerShape(50)
                 )
-                .padding(horizontal = 10.dp, vertical = 4.dp),
+                .padding(horizontal = 12.dp, vertical = 5.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -232,26 +241,20 @@ private fun OverdueLeafBillCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(132.dp),
+            .height(132.dp)
+            .gardenLeafCyanGlow(),
         contentAlignment = Alignment.Center
     ) {
-        SubcomposeAsyncImage(
-            model = GARDEN_OVERDUE_LEAF_IMAGE_URL,
+        GardenCoilAsset(
+            modelUrl = GARDEN_OVERDUE_LEAF_IMAGE_URL,
             contentDescription = stringResource(
                 R.string.petals_and_weeds_overdue
             ) + ": ${bill.name}",
-            contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(132.dp),
-            error = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(132.dp)
-                        .background(Color(0x99BCAAA4), RoundedCornerShape(16.dp))
-                )
-            }
+            contentScale = ContentScale.Fit,
+            fallback = { AutumnLeafAnchor() }
         )
 
         Column(
@@ -320,7 +323,13 @@ private fun GlassLeafBillCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .gardenLeafCyanGlow()
             .clip(leafShape)
+            .border(
+                width = 1.4.dp,
+                color = LeafCyanEdge,
+                shape = leafShape
+            )
             .border(
                 width = 1.dp,
                 color = Color.White.copy(alpha = 0.4f),
@@ -447,27 +456,59 @@ private fun gardenCategoryIcon(parentCategory: String): ImageVector {
 }
 
 @Composable
+private fun GardenCoilAsset(
+    modelUrl: String,
+    contentDescription: String,
+    modifier: Modifier,
+    contentScale: ContentScale,
+    fallback: @Composable () -> Unit
+) {
+    val context = LocalContext.current
+    var painterState by remember(modelUrl) {
+        mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Empty)
+    }
+
+    if (painterState is AsyncImagePainter.State.Error) {
+        fallback()
+        return
+    }
+
+    AsyncImage(
+        model = ImageRequest.Builder(context)
+            .data(modelUrl)
+            .crossfade(true)
+            .allowHardware(false)
+            .build(),
+        contentDescription = contentDescription,
+        contentScale = contentScale,
+        modifier = modifier,
+        onState = { state -> painterState = state }
+    )
+}
+
+@Composable
 private fun OrganicStemBud(
     isSmall: Boolean,
     alignToStemOnLeft: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showBud: Boolean = true
 ) {
-    val budRadius = if (isSmall) 4.dp else 6.dp
+    val budRadius = if (isSmall) 5.dp else 7.dp
 
     Canvas(
-        modifier = modifier.size(width = 28.dp, height = 24.dp)
+        modifier = modifier.size(width = 34.dp, height = 28.dp)
     ) {
-        val stemEndX = if (alignToStemOnLeft) size.width * 0.85f else size.width * 0.15f
-        val stemStartX = if (alignToStemOnLeft) size.width * 0.15f else size.width * 0.85f
-        val centerY = size.height * 0.5f
+        val stemEndX = if (alignToStemOnLeft) size.width * 0.88f else size.width * 0.12f
+        val stemStartX = if (alignToStemOnLeft) size.width * 0.12f else size.width * 0.88f
+        val centerY = size.height * 0.58f
 
         val stemPath = Path().apply {
             moveTo(stemStartX, centerY)
             cubicTo(
                 x1 = (stemStartX + stemEndX) * 0.5f,
-                y1 = centerY - size.height * 0.15f,
+                y1 = centerY - size.height * 0.22f,
                 x2 = (stemStartX + stemEndX) * 0.5f,
-                y2 = centerY + size.height * 0.12f,
+                y2 = centerY + size.height * 0.16f,
                 x3 = stemEndX,
                 y3 = centerY
             )
@@ -475,20 +516,117 @@ private fun OrganicStemBud(
 
         drawPath(
             path = stemPath,
+            color = Color(0x664DD0E1),
+            style = Stroke(width = 5.5f, cap = StrokeCap.Round)
+        )
+        drawPath(
+            path = stemPath,
             color = BudStem,
             style = Stroke(width = 2.5f, cap = StrokeCap.Round)
         )
 
-        val budCenter = Offset(size.width / 2f, centerY)
-        drawCircle(
-            color = BudGreen,
-            radius = budRadius.toPx(),
-            center = budCenter
+        if (!showBud) {
+            return@Canvas
+        }
+
+        val budCenter = Offset(size.width / 2f, size.height * 0.42f)
+        val radius = budRadius.toPx()
+
+        rotate(degrees = if (alignToStemOnLeft) -18f else 18f, pivot = budCenter) {
+            drawOval(
+                color = BudGreen,
+                topLeft = Offset(budCenter.x - radius * 0.7f, budCenter.y + radius * 0.15f),
+                size = androidx.compose.ui.geometry.Size(radius * 0.55f, radius * 0.9f)
+            )
+            drawOval(
+                color = BudGreen,
+                topLeft = Offset(budCenter.x + radius * 0.15f, budCenter.y + radius * 0.15f),
+                size = androidx.compose.ui.geometry.Size(radius * 0.55f, radius * 0.9f)
+            )
+            drawOval(
+                brush = Brush.verticalGradient(
+                    colors = listOf(BudGold, BudCream, Color(0xFFC8E6C9))
+                ),
+                topLeft = Offset(budCenter.x - radius * 0.72f, budCenter.y - radius * 1.15f),
+                size = androidx.compose.ui.geometry.Size(radius * 1.44f, radius * 1.85f)
+            )
+            drawCircle(
+                color = Color.White.copy(alpha = 0.45f),
+                radius = radius * 0.28f,
+                center = Offset(budCenter.x - radius * 0.18f, budCenter.y - radius * 0.45f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AutumnLeafAnchor(
+    modifier: Modifier = Modifier
+) {
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(132.dp)
+    ) {
+        val center = Offset(size.width / 2f, size.height / 2f)
+        val leafWidth = size.width * 0.42f
+        val leafHeight = size.height * 0.78f
+
+        val leafPath = Path().apply {
+            moveTo(center.x, center.y - leafHeight * 0.48f)
+            cubicTo(
+                center.x + leafWidth * 0.22f,
+                center.y - leafHeight * 0.42f,
+                center.x + leafWidth * 0.62f,
+                center.y - leafHeight * 0.18f,
+                center.x + leafWidth * 0.38f,
+                center.y
+            )
+            cubicTo(
+                center.x + leafWidth * 0.58f,
+                center.y + leafHeight * 0.12f,
+                center.x + leafWidth * 0.18f,
+                center.y + leafHeight * 0.32f,
+                center.x,
+                center.y + leafHeight * 0.42f
+            )
+            cubicTo(
+                center.x - leafWidth * 0.18f,
+                center.y + leafHeight * 0.32f,
+                center.x - leafWidth * 0.58f,
+                center.y + leafHeight * 0.12f,
+                center.x - leafWidth * 0.38f,
+                center.y
+            )
+            cubicTo(
+                center.x - leafWidth * 0.62f,
+                center.y - leafHeight * 0.18f,
+                center.x - leafWidth * 0.22f,
+                center.y - leafHeight * 0.42f,
+                center.x,
+                center.y - leafHeight * 0.48f
+            )
+            close()
+        }
+
+        drawPath(
+            path = leafPath,
+            brush = Brush.linearGradient(
+                colors = listOf(
+                    Color(0xFFD7A35A),
+                    Color(0xFFC4783A),
+                    Color(0xFF8D4E24)
+                ),
+                start = Offset(center.x, center.y - leafHeight * 0.5f),
+                end = Offset(center.x, center.y + leafHeight * 0.5f)
+            )
         )
-        drawCircle(
-            color = Color.White.copy(alpha = 0.35f),
-            radius = budRadius.toPx() * 0.45f,
-            center = Offset(budCenter.x - budRadius.toPx() * 0.25f, budCenter.y - budRadius.toPx() * 0.25f)
+        drawLine(
+            color = Color(0xAA5D4037),
+            start = Offset(center.x, center.y - leafHeight * 0.42f),
+            end = Offset(center.x, center.y + leafHeight * 0.48f),
+            strokeWidth = 2.4f,
+            cap = StrokeCap.Round
         )
     }
 }

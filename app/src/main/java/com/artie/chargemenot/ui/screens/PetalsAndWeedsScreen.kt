@@ -338,13 +338,11 @@ private fun GardenPathTimelineRow(
                     modifier = Modifier.width(52.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (!isPaid) {
-                        GardenPathStemConnector(
-                            gardenState = gardenState,
-                            isLeftLeaf = true,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
+                    GardenPathStemConnector(
+                        gardenState = gardenState,
+                        isLeftLeaf = true,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
                 }
                 Box(modifier = Modifier.weight(0.42f))
             } else {
@@ -353,13 +351,11 @@ private fun GardenPathTimelineRow(
                     modifier = Modifier.width(52.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (!isPaid) {
-                        GardenPathStemConnector(
-                            gardenState = gardenState,
-                            isLeftLeaf = false,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
+                    GardenPathStemConnector(
+                        gardenState = gardenState,
+                        isLeftLeaf = false,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
                 }
                 Box(
                     modifier = Modifier
