@@ -9,16 +9,16 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.unit.dp
 import kotlin.math.sin
 
-private val VineStemColor = Color(0xCC81C784)
-private val VineGlowCyan = Color(0x554DD0E1)
-private val VineGlowHalo = Color(0x6681C784)
-private val VineHighlight = Color(0xE6B9F6CA)
+private val VineBaseGlow = Color(0x664CAF50)
+private val VineCoreGlow = Color(0xAA81C784)
 private val VineTendril = Color(0xAA66BB6A)
+private val VineHighlight = Color(0xE6B9F6CA)
 
 /**
- * Draws a thick, glowing central vine stem behind the garden-path timeline.
+ * Draws a curvy, organic glowing vine stem behind the garden-path timeline.
  */
 fun Modifier.gardenPathVineBackground(
     listState: LazyListState,
@@ -32,13 +32,15 @@ fun Modifier.gardenPathVineBackground(
             listState.firstVisibleItemScrollOffset.toFloat()
     val vineLength = itemCount * estimatedItemHeightPx + size.height
     val centerX = size.width / 2f
+    val baseStrokeWidth = 6.dp.toPx()
+    val coreStrokeWidth = 2.dp.toPx()
 
-    val path = buildMeanderingVinePath(
+    val path = buildOrganicVinePath(
         centerX = centerX,
         startY = 0f,
         totalHeight = vineLength,
-        amplitude = size.width * 0.05f,
-        segmentHeight = estimatedItemHeightPx * 0.82f
+        amplitude = size.width * 0.08f,
+        segmentHeight = estimatedItemHeightPx * 0.9f
     )
 
     drawContext.canvas.save()
@@ -46,34 +48,24 @@ fun Modifier.gardenPathVineBackground(
 
     drawPath(
         path = path,
-        color = VineGlowCyan,
-        style = Stroke(width = 28f, cap = StrokeCap.Round)
+        color = VineBaseGlow,
+        style = Stroke(width = baseStrokeWidth, cap = StrokeCap.Round)
     )
     drawPath(
         path = path,
-        color = VineGlowHalo,
-        style = Stroke(width = 18f, cap = StrokeCap.Round)
-    )
-    drawPath(
-        path = path,
-        color = VineStemColor,
-        style = Stroke(width = 10f, cap = StrokeCap.Round)
-    )
-    drawPath(
-        path = path,
-        color = VineHighlight.copy(alpha = 0.7f),
-        style = Stroke(width = 4f, cap = StrokeCap.Round)
+        color = VineCoreGlow,
+        style = Stroke(width = coreStrokeWidth, cap = StrokeCap.Round)
     )
 
-    var tendrilY = estimatedItemHeightPx * 0.5f
+    var tendrilY = estimatedItemHeightPx * 0.72f
     var tendrilIndex = 0
     while (tendrilY < vineLength) {
-        val wave = sin(tendrilIndex * 0.85f) * size.width * 0.04f
-        val tendrilX = centerX + wave
-        drawTendrilBranch(
-            center = Offset(tendrilX, tendrilY),
+        val wave = sin(tendrilIndex * 0.9f) * size.width * 0.06f
+        val stemPoint = Offset(centerX + wave, tendrilY)
+        drawBezierOffshoot(
+            stemPoint = stemPoint,
             branchLeft = tendrilIndex % 2 == 0,
-            branchLength = size.width * 0.12f
+            branchLength = size.width * 0.22f
         )
         tendrilY += estimatedItemHeightPx
         tendrilIndex++
@@ -82,34 +74,45 @@ fun Modifier.gardenPathVineBackground(
     drawContext.canvas.restore()
 }
 
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawTendrilBranch(
-    center: Offset,
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawBezierOffshoot(
+    stemPoint: Offset,
     branchLeft: Boolean,
     branchLength: Float
 ) {
     val direction = if (branchLeft) -1f else 1f
-    drawLine(
+    val tipX = stemPoint.x + direction * branchLength
+    val tipY = stemPoint.y
+
+    val offshootPath = Path().apply {
+        moveTo(stemPoint.x, stemPoint.y)
+        cubicTo(
+            x1 = stemPoint.x + direction * branchLength * 0.25f,
+            y1 = stemPoint.y - 10f,
+            x2 = stemPoint.x + direction * branchLength * 0.72f,
+            y2 = stemPoint.y + 8f,
+            x3 = tipX,
+            y3 = tipY
+        )
+    }
+
+    drawPath(
+        path = offshootPath,
         color = VineTendril,
-        start = center,
-        end = Offset(center.x + direction * branchLength, center.y - 8f),
-        strokeWidth = 2.5f,
-        cap = StrokeCap.Round
+        style = Stroke(width = 2.5f, cap = StrokeCap.Round)
     )
-    drawLine(
-        color = VineTendril.copy(alpha = 0.6f),
-        start = Offset(center.x + direction * branchLength * 0.5f, center.y - 4f),
-        end = Offset(center.x + direction * branchLength * 0.85f, center.y + 6f),
-        strokeWidth = 1.5f,
-        cap = StrokeCap.Round
+    drawPath(
+        path = offshootPath,
+        color = VineCoreGlow.copy(alpha = 0.55f),
+        style = Stroke(width = 1.2f, cap = StrokeCap.Round)
     )
     drawCircle(
         color = VineHighlight,
-        radius = 3f,
-        center = Offset(center.x + direction * branchLength, center.y - 8f)
+        radius = 3.5f,
+        center = Offset(tipX, tipY)
     )
 }
 
-private fun buildMeanderingVinePath(
+private fun buildOrganicVinePath(
     centerX: Float,
     startY: Float,
     totalHeight: Float,
@@ -123,14 +126,14 @@ private fun buildMeanderingVinePath(
     var segmentIndex = 0
     while (currentY < totalHeight) {
         val nextY = (currentY + segmentHeight).coerceAtMost(totalHeight)
-        val wave = sin(segmentIndex * 0.85f) * amplitude
-        val nextWave = sin((segmentIndex + 1) * 0.85f) * amplitude * 0.55f
+        val waveA = sin(segmentIndex * 0.9f) * amplitude
+        val waveB = sin((segmentIndex + 1) * 0.9f) * amplitude
         path.cubicTo(
-            x1 = centerX + wave,
-            y1 = currentY + segmentHeight * 0.33f,
-            x2 = centerX - wave * 0.7f,
-            y2 = currentY + segmentHeight * 0.67f,
-            x3 = centerX + nextWave,
+            x1 = centerX + waveA,
+            y1 = currentY + segmentHeight * 0.28f,
+            x2 = centerX - waveB,
+            y2 = currentY + segmentHeight * 0.72f,
+            x3 = centerX + waveB * 0.45f,
             y3 = nextY
         )
         currentY = nextY

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -58,7 +57,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
-import com.artie.chargemenot.ui.components.BloomedRoseAnchor
 import com.artie.chargemenot.ui.components.GardenBillState
 import com.artie.chargemenot.ui.components.GardenPathDateMarker
 import com.artie.chargemenot.ui.components.GardenPathStemConnector
@@ -66,8 +64,8 @@ import com.artie.chargemenot.ui.components.GlasshouseForestGreen
 import com.artie.chargemenot.ui.components.LeafBillCard
 import com.artie.chargemenot.ui.components.MeadowHubScaffold
 import com.artie.chargemenot.ui.components.decorativeVineBorder
+import com.artie.chargemenot.ui.components.dismissShapeForGardenState
 import com.artie.chargemenot.ui.components.gardenPathVineBackground
-import com.artie.chargemenot.ui.components.leafShapeForIndex
 import com.artie.chargemenot.ui.components.resolveGardenBillState
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import com.artie.chargemenot.ui.theme.WeedRed
@@ -293,7 +291,13 @@ private fun GardenPathTimelineRow(
     val gardenState = resolveGardenBillState(bill)
     val isLeftLeaf = index % 2 == 0
     val isPaid = gardenState == GardenBillState.Paid
-    val rowMinHeight = if (isFeaturedPaidRose) 160.dp else if (isPaid) 148.dp else 128.dp
+    val isOverdue = gardenState == GardenBillState.Overdue
+    val rowMinHeight = when {
+        isFeaturedPaidRose -> 168.dp
+        isPaid -> 148.dp
+        isOverdue -> 140.dp
+        else -> 128.dp
+    }
 
     Box(
         modifier = Modifier
@@ -325,6 +329,7 @@ private fun GardenPathTimelineRow(
                         index = index,
                         gardenState = gardenState,
                         currencyFormat = currencyFormat,
+                        isFeaturedPaidRose = isFeaturedPaidRose,
                         onSelectBillForEdit = onSelectBillForEdit,
                         onRequestDelete = onRequestDelete
                     )
@@ -333,12 +338,7 @@ private fun GardenPathTimelineRow(
                     modifier = Modifier.width(52.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isPaid) {
-                        BloomedRoseAnchor(
-                            large = isFeaturedPaidRose,
-                            modifier = Modifier.offset(x = (-4).dp)
-                        )
-                    } else {
+                    if (!isPaid) {
                         GardenPathStemConnector(
                             gardenState = gardenState,
                             isLeftLeaf = true,
@@ -353,12 +353,7 @@ private fun GardenPathTimelineRow(
                     modifier = Modifier.width(52.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isPaid) {
-                        BloomedRoseAnchor(
-                            large = isFeaturedPaidRose,
-                            modifier = Modifier.offset(x = 4.dp)
-                        )
-                    } else {
+                    if (!isPaid) {
                         GardenPathStemConnector(
                             gardenState = gardenState,
                             isLeftLeaf = false,
@@ -376,6 +371,7 @@ private fun GardenPathTimelineRow(
                         index = index,
                         gardenState = gardenState,
                         currencyFormat = currencyFormat,
+                        isFeaturedPaidRose = isFeaturedPaidRose,
                         onSelectBillForEdit = onSelectBillForEdit,
                         onRequestDelete = onRequestDelete
                     )
@@ -442,10 +438,11 @@ private fun SwipeableGardenPathBillCard(
     index: Int,
     gardenState: GardenBillState,
     currencyFormat: NumberFormat,
+    isFeaturedPaidRose: Boolean,
     onSelectBillForEdit: (Bill) -> Unit,
     onRequestDelete: (Bill) -> Unit
 ) {
-    val leafShape = leafShapeForIndex(index)
+    val dismissShape = dismissShapeForGardenState(gardenState, index)
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { direction ->
             if (direction == SwipeToDismissBoxValue.EndToStart) {
@@ -466,7 +463,7 @@ private fun SwipeableGardenPathBillCard(
                     .fillMaxSize()
                     .background(
                         color = WeedRed.copy(alpha = 0.88f),
-                        shape = leafShape
+                        shape = dismissShape
                     )
                     .padding(horizontal = 20.dp),
                 contentAlignment = Alignment.CenterEnd
@@ -484,6 +481,7 @@ private fun SwipeableGardenPathBillCard(
             index = index,
             gardenState = gardenState,
             currencyFormat = currencyFormat,
+            isFeaturedPaidRose = isFeaturedPaidRose,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onSelectBillForEdit(bill) }

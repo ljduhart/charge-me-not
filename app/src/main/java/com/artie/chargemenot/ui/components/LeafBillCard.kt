@@ -1,13 +1,15 @@
 package com.artie.chargemenot.ui.components
 
 import android.os.Build
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,15 +30,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.MeadowCategories
@@ -47,6 +53,12 @@ import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 const val GARDEN_PATH_FAR_OFF_DAYS = 7L
+
+const val GARDEN_PAID_ROSE_IMAGE_URL =
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Rose_flower_transparent_background.png/500px-Rose_flower_transparent_background.png"
+
+const val GARDEN_OVERDUE_LEAF_IMAGE_URL =
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Autumn_Leaf_Transparent.png/500px-Autumn_Leaf_Transparent.png"
 
 enum class GardenBillState {
     Paid,
@@ -68,22 +80,29 @@ fun sortGardenPathBills(bills: List<Bill>): List<Bill> {
     return bills.sortedBy { bill -> bill.dueDate }
 }
 
-private val LeafGlassCream = Color(0xFFF9F9F4)
-private val WitheredLeafTint = Color(0x99BCAAA4)
-private val WitheredBorderDark = Color(0xFF5D4037)
-private val WitheredBorderLight = Color(0xFF8D6E63)
+private val GardenForestGreen = Color(0xFF1B3B22)
+private val LeafGlassFill = Color.White.copy(alpha = 0.35f)
 private val BudGreen = Color(0xFF4CAF50)
 private val BudStem = Color(0xAA81C784)
 private val VineDateLabel = Color(0xFFF5F5F5)
-private val CategoryChipBackground = Color(0xFFF9F9F4).copy(alpha = 0.45f)
+private val CategoryChipBackground = Color.White.copy(alpha = 0.35f)
 private val OverdueStampBrown = Color(0xCCBF360C)
 
 @Composable
 fun leafShapeForIndex(index: Int): RoundedCornerShape {
     return if (index % 2 == 0) {
-        RoundedCornerShape(topStart = 4.dp, topEnd = 40.dp, bottomEnd = 4.dp, bottomStart = 40.dp)
+        RoundedCornerShape(topStart = 0.dp, topEnd = 48.dp, bottomEnd = 0.dp, bottomStart = 48.dp)
     } else {
-        RoundedCornerShape(topStart = 40.dp, topEnd = 4.dp, bottomEnd = 40.dp, bottomStart = 4.dp)
+        RoundedCornerShape(topStart = 48.dp, topEnd = 0.dp, bottomEnd = 48.dp, bottomStart = 0.dp)
+    }
+}
+
+@Composable
+fun dismissShapeForGardenState(gardenState: GardenBillState, index: Int): RoundedCornerShape {
+    return when (gardenState) {
+        GardenBillState.Paid,
+        GardenBillState.Overdue -> RoundedCornerShape(16.dp)
+        else -> leafShapeForIndex(index)
     }
 }
 
@@ -109,12 +128,12 @@ fun GardenPathStemConnector(
     modifier: Modifier = Modifier
 ) {
     when (gardenState) {
-        GardenBillState.Upcoming -> StemBud(
+        GardenBillState.Upcoming -> OrganicStemBud(
             isSmall = false,
             alignToStemOnLeft = isLeftLeaf,
             modifier = modifier
         )
-        GardenBillState.FarOff -> StemBud(
+        GardenBillState.FarOff -> OrganicStemBud(
             isSmall = true,
             alignToStemOnLeft = isLeftLeaf,
             modifier = modifier
@@ -129,94 +148,190 @@ fun LeafBillCard(
     index: Int,
     gardenState: GardenBillState,
     currencyFormat: NumberFormat,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit = {
-        DefaultLeafBillContent(
+    isFeaturedPaidRose: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    when (gardenState) {
+        GardenBillState.Paid -> PaidRoseBillCard(
+            isFeatured = isFeaturedPaidRose,
+            modifier = modifier
+        )
+        GardenBillState.Overdue -> OverdueLeafBillCard(
             bill = bill,
+            currencyFormat = currencyFormat,
+            modifier = modifier
+        )
+        GardenBillState.Upcoming,
+        GardenBillState.FarOff -> GlassLeafBillCard(
+            bill = bill,
+            index = index,
             gardenState = gardenState,
-            currencyFormat = currencyFormat
+            currencyFormat = currencyFormat,
+            modifier = modifier
         )
     }
+}
+
+@Composable
+private fun PaidRoseBillCard(
+    isFeatured: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val roseHeight = if (isFeatured) 148.dp else 120.dp
+    val stampFontSize = if (isFeatured) 12.sp else 10.sp
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(roseHeight),
+        contentAlignment = Alignment.Center
+    ) {
+        AsyncImage(
+            model = GARDEN_PAID_ROSE_IMAGE_URL,
+            contentDescription = stringResource(R.string.petals_and_weeds_paid_bloom),
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(roseHeight)
+        )
+
+        Box(
+            modifier = Modifier
+                .background(
+                    color = Color.White.copy(alpha = 0.78f),
+                    shape = RoundedCornerShape(6.dp)
+                )
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = stringResource(R.string.petals_and_weeds_paid_stamp),
+                color = GardenForestGreen,
+                fontSize = stampFontSize,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.8.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun OverdueLeafBillCard(
+    bill: Bill,
+    currencyFormat: NumberFormat,
+    modifier: Modifier = Modifier
+) {
+    val statusDateFormat = DateTimeFormatter.ofPattern("MMM d", Locale.US)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(132.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        AsyncImage(
+            model = GARDEN_OVERDUE_LEAF_IMAGE_URL,
+            contentDescription = stringResource(R.string.petals_and_weeds_overdue),
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(132.dp)
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = bill.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = GardenForestGreen,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = stringResource(
+                    R.string.petals_and_weeds_status_overdue,
+                    statusDateFormat.format(bill.dueDate)
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = GardenForestGreen,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+            Text(
+                text = currencyFormat.format(bill.amount),
+                style = MaterialTheme.typography.titleLarge,
+                color = GardenForestGreen,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+
+        Text(
+            text = stringResource(R.string.petals_and_weeds_overdue),
+            color = Color.White,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 8.dp)
+                .background(
+                    color = OverdueStampBrown,
+                    shape = RoundedCornerShape(4.dp)
+                )
+                .padding(horizontal = 14.dp, vertical = 5.dp)
+        )
+    }
+}
+
+@Composable
+private fun GlassLeafBillCard(
+    bill: Bill,
+    index: Int,
+    gardenState: GardenBillState,
+    currencyFormat: NumberFormat,
+    modifier: Modifier = Modifier
 ) {
     val leafShape = leafShapeForIndex(index)
     val supportsNativeBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    val glassColor = when (gardenState) {
-        GardenBillState.Overdue -> WitheredLeafTint
-        else -> LeafGlassCream.copy(alpha = 0.6f)
-    }
-    val borderModifier = when (gardenState) {
-        GardenBillState.Overdue -> Modifier
-            .border(width = 2.dp, color = WitheredBorderDark, shape = leafShape)
-            .border(width = 1.dp, color = WitheredBorderLight.copy(alpha = 0.75f), shape = leafShape)
-        else -> Modifier.border(
-            width = 1.dp,
-            color = Color.White.copy(alpha = 0.35f),
-            shape = leafShape
-        )
-    }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(leafShape)
-            .then(borderModifier)
-            .then(
-                if (gardenState == GardenBillState.Overdue) {
-                    Modifier.drawWithContent {
-                        drawContent()
-                        drawCrackedWitheredOverlay()
-                        drawRuggedLeafEdge()
-                    }
-                } else {
-                    Modifier
-                }
+            .border(
+                width = 1.dp,
+                color = Color.White.copy(alpha = 0.4f),
+                shape = leafShape
             )
     ) {
-        if (gardenState != GardenBillState.Overdue) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .then(
-                        if (supportsNativeBlur) {
-                            Modifier.blur(
-                                radius = 16.dp,
-                                edgeTreatment = BlurredEdgeTreatment.Rectangle
-                            )
-                        } else {
-                            Modifier
-                        }
-                    )
-                    .background(glassColor)
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .background(glassColor)
-            )
-        }
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .then(
+                    if (supportsNativeBlur) {
+                        Modifier.blur(
+                            radius = 20.dp,
+                            edgeTreatment = BlurredEdgeTreatment.Rectangle
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
+                .background(LeafGlassFill)
+        )
 
-        Box(modifier = Modifier.fillMaxWidth()) {
-            content()
-        }
-
-        if (gardenState == GardenBillState.Overdue) {
-            Text(
-                text = stringResource(R.string.petals_and_weeds_overdue),
-                color = Color.White,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .graphicsLayer { rotationZ = -16f }
-                    .background(
-                        color = OverdueStampBrown,
-                        shape = RoundedCornerShape(4.dp)
-                    )
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
-            )
-        }
+        DefaultLeafBillContent(
+            bill = bill,
+            gardenState = gardenState,
+            currencyFormat = currencyFormat
+        )
     }
 }
 
@@ -244,7 +359,7 @@ private fun DefaultLeafBillContent(
             Text(
                 text = bill.name,
                 style = MaterialTheme.typography.titleMedium,
-                color = GlasshouseForestGreen,
+                color = GardenForestGreen,
                 fontWeight = FontWeight.Bold
             )
             Text(
@@ -267,13 +382,13 @@ private fun DefaultLeafBillContent(
                     )
                 },
                 style = MaterialTheme.typography.bodyMedium,
-                color = GlasshouseForestGreen.copy(alpha = 0.82f),
+                color = GardenForestGreen,
                 modifier = Modifier.padding(top = 4.dp)
             )
             Text(
                 text = currencyFormat.format(bill.amount),
                 style = MaterialTheme.typography.titleLarge,
-                color = GlasshouseForestGreen,
+                color = GardenForestGreen,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 8.dp)
             )
@@ -290,13 +405,13 @@ private fun DefaultLeafBillContent(
             Icon(
                 imageVector = categoryIcon,
                 contentDescription = categoryLabel,
-                tint = GlasshouseForestGreen,
+                tint = GardenForestGreen,
                 modifier = Modifier.size(14.dp)
             )
             Text(
                 text = categoryLabel,
                 style = MaterialTheme.typography.labelSmall,
-                color = GlasshouseForestGreen,
+                color = GardenForestGreen,
                 fontWeight = FontWeight.SemiBold
             )
         }
@@ -316,80 +431,48 @@ private fun gardenCategoryIcon(parentCategory: String): ImageVector {
 }
 
 @Composable
-private fun StemBud(
+private fun OrganicStemBud(
     isSmall: Boolean,
     alignToStemOnLeft: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val budSize = if (isSmall) 8.dp else 12.dp
-    val stemHeight = if (isSmall) 10.dp else 14.dp
+    val budRadius = if (isSmall) 4.dp else 6.dp
 
-    Box(
-        modifier = modifier.size(width = 24.dp, height = 22.dp),
-        contentAlignment = Alignment.Center
+    Canvas(
+        modifier = modifier.size(width = 28.dp, height = 24.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(width = 2.dp, height = stemHeight)
-                .background(BudStem)
-                .align(if (alignToStemOnLeft) Alignment.CenterEnd else Alignment.CenterStart)
-        )
-        Box(
-            modifier = Modifier
-                .size(budSize)
-                .background(BudGreen, shape = RoundedCornerShape(50))
-                .align(Alignment.Center)
-        )
-    }
-}
+        val stemEndX = if (alignToStemOnLeft) size.width * 0.85f else size.width * 0.15f
+        val stemStartX = if (alignToStemOnLeft) size.width * 0.15f else size.width * 0.85f
+        val centerY = size.height * 0.5f
 
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCrackedWitheredOverlay() {
-    val crackColor = Color(0x664E342E)
-    val crackStroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5f)
-
-    val cracks = listOf(
-        Path().apply {
-            moveTo(size.width * 0.18f, size.height * 0.12f)
-            lineTo(size.width * 0.34f, size.height * 0.42f)
-            lineTo(size.width * 0.28f, size.height * 0.78f)
-        },
-        Path().apply {
-            moveTo(size.width * 0.72f, size.height * 0.18f)
-            lineTo(size.width * 0.58f, size.height * 0.52f)
-            lineTo(size.width * 0.66f, size.height * 0.86f)
-        },
-        Path().apply {
-            moveTo(size.width * 0.48f, size.height * 0.08f)
-            lineTo(size.width * 0.44f, size.height * 0.55f)
-            lineTo(size.width * 0.50f, size.height * 0.92f)
+        val stemPath = Path().apply {
+            moveTo(stemStartX, centerY)
+            cubicTo(
+                x1 = (stemStartX + stemEndX) * 0.5f,
+                y1 = centerY - size.height * 0.15f,
+                x2 = (stemStartX + stemEndX) * 0.5f,
+                y2 = centerY + size.height * 0.12f,
+                x3 = stemEndX,
+                y3 = centerY
+            )
         }
-    )
 
-    cracks.forEach { path ->
-        drawPath(path = path, color = crackColor, style = crackStroke)
+        drawPath(
+            path = stemPath,
+            color = BudStem,
+            style = Stroke(width = 2.5f, cap = StrokeCap.Round)
+        )
+
+        val budCenter = Offset(size.width / 2f, centerY)
+        drawCircle(
+            color = BudGreen,
+            radius = budRadius.toPx(),
+            center = budCenter
+        )
+        drawCircle(
+            color = Color.White.copy(alpha = 0.35f),
+            radius = budRadius.toPx() * 0.45f,
+            center = Offset(budCenter.x - budRadius.toPx() * 0.25f, budCenter.y - budRadius.toPx() * 0.25f)
+        )
     }
-}
-
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawRuggedLeafEdge() {
-    val edgeColor = Color(0x885D4037)
-    val edgeStroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.2f)
-    val inset = 4f
-
-    val ruggedPath = Path().apply {
-        moveTo(inset, size.height * 0.2f)
-        lineTo(inset + 6f, size.height * 0.35f)
-        lineTo(inset, size.height * 0.5f)
-        lineTo(inset + 5f, size.height * 0.68f)
-        lineTo(inset, size.height * 0.85f)
-    }
-    drawPath(path = ruggedPath, color = edgeColor, style = edgeStroke)
-
-    val rightPath = Path().apply {
-        moveTo(size.width - inset, size.height * 0.18f)
-        lineTo(size.width - inset - 5f, size.height * 0.38f)
-        lineTo(size.width - inset, size.height * 0.55f)
-        lineTo(size.width - inset - 6f, size.height * 0.72f)
-        lineTo(size.width - inset, size.height * 0.88f)
-    }
-    drawPath(path = rightPath, color = edgeColor, style = edgeStroke)
 }
