@@ -65,7 +65,6 @@ import com.artie.chargemenot.ui.components.resolveGardenBillState
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import com.artie.chargemenot.ui.theme.WeedRed
 import java.text.NumberFormat
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
@@ -82,22 +81,24 @@ fun PetalsAndWeedsScreen(
     modifier: Modifier = Modifier
 ) {
     val currencyFormat = rememberCurrencyFormat()
-    val dateFormat = DateTimeFormatter.ofPattern("MMM d, yyyy")
     var billPendingDelete by remember { mutableStateOf<Bill?>(null) }
     val listState = rememberLazyListState()
     val density = LocalDensity.current
     val estimatedItemHeightPx = remember(density) { with(density) { 148.dp.toPx() } }
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    DisposableEffect(lifecycleOwner) {
+    DisposableEffect(lifecycleOwner, onStartParallaxSensor, onStopParallaxSensor) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_RESUME -> onStartParallaxSensor()
-                Lifecycle.Event.ON_PAUSE -> onStopParallaxSensor()
+                Lifecycle.Event.ON_START -> onStartParallaxSensor()
+                Lifecycle.Event.ON_STOP -> onStopParallaxSensor()
                 else -> Unit
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            onStartParallaxSensor()
+        }
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             onStopParallaxSensor()
@@ -205,7 +206,7 @@ fun PetalsAndWeedsScreen(
                         .padding(innerPadding)
                         .gardenPathVineBackground(
                             listState = listState,
-                            itemCount = gardenBills.size,
+                            itemCount = gardenBills.size + 1,
                             estimatedItemHeightPx = estimatedItemHeightPx
                         ),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
@@ -233,7 +234,6 @@ fun PetalsAndWeedsScreen(
                             bill = bill,
                             index = index,
                             currencyFormat = currencyFormat,
-                            dateFormat = dateFormat,
                             onSelectBillForEdit = onSelectBillForEdit,
                             onRequestDelete = { billPendingDelete = it }
                         )
@@ -249,7 +249,6 @@ private fun GardenPathTimelineRow(
     bill: Bill,
     index: Int,
     currencyFormat: NumberFormat,
-    dateFormat: DateTimeFormatter,
     onSelectBillForEdit: (Bill) -> Unit,
     onRequestDelete: (Bill) -> Unit
 ) {
@@ -266,7 +265,6 @@ private fun GardenPathTimelineRow(
             bill = bill,
             index = index,
             currencyFormat = currencyFormat,
-            dateFormat = dateFormat,
             onSelectBillForEdit = onSelectBillForEdit,
             onRequestDelete = onRequestDelete,
             modifier = Modifier.fillMaxWidth()
@@ -330,7 +328,6 @@ private fun SwipeableGardenPathBillCard(
     bill: Bill,
     index: Int,
     currencyFormat: NumberFormat,
-    dateFormat: DateTimeFormatter,
     onSelectBillForEdit: (Bill) -> Unit,
     onRequestDelete: (Bill) -> Unit,
     modifier: Modifier = Modifier
@@ -376,7 +373,6 @@ private fun SwipeableGardenPathBillCard(
             index = index,
             gardenState = gardenState,
             currencyFormat = currencyFormat,
-            dateFormat = dateFormat,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onSelectBillForEdit(bill) }

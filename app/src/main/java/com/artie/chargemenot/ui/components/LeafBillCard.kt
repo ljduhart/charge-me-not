@@ -95,7 +95,6 @@ fun LeafBillCard(
     index: Int,
     gardenState: GardenBillState,
     currencyFormat: NumberFormat,
-    dateFormat: DateTimeFormatter,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit = {
         DefaultLeafBillContent(

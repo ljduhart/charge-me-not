@@ -243,13 +243,10 @@ class DashboardViewModelBloomTest {
         testScope.advanceUntilIdle()
 
         val gardenPathBills = viewModel.uiState.value.gardenPathBills
-        val allBills = viewModel.uiState.value.allBills
 
-        assertEquals(allBills.size, gardenPathBills.size)
-        assertEquals(
-            allBills.sortedBy { bill -> bill.dueDate },
-            gardenPathBills.sortedBy { bill -> bill.dueDate }
-        )
+        assertEquals(3, gardenPathBills.size)
+        assertEquals("Maple Street Apartment", gardenPathBills.first().name)
+        assertTrue(gardenPathBills.zipWithNext().all { (left, right) -> left.dueDate <= right.dueDate })
     }
 
     @Test
