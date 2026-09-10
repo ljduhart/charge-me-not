@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -87,6 +88,11 @@ fun PetalsAndWeedsScreen(
     modifier: Modifier = Modifier
 ) {
     val currencyFormat = rememberCurrencyFormat()
+    val featuredPaidBillId = remember(gardenBills) {
+        gardenBills.firstOrNull { bill ->
+            resolveGardenBillState(bill) == GardenBillState.Paid
+        }?.id
+    }
     var billPendingDelete by remember { mutableStateOf<Bill?>(null) }
     val listState = rememberLazyListState()
     val density = LocalDensity.current
@@ -264,6 +270,7 @@ fun PetalsAndWeedsScreen(
                             bill = bill,
                             index = index,
                             currencyFormat = currencyFormat,
+                            isFeaturedPaidRose = bill.id == featuredPaidBillId,
                             onSelectBillForEdit = onSelectBillForEdit,
                             onRequestDelete = { billPendingDelete = it }
                         )
@@ -279,13 +286,14 @@ private fun GardenPathTimelineRow(
     bill: Bill,
     index: Int,
     currencyFormat: NumberFormat,
+    isFeaturedPaidRose: Boolean,
     onSelectBillForEdit: (Bill) -> Unit,
     onRequestDelete: (Bill) -> Unit
 ) {
     val gardenState = resolveGardenBillState(bill)
     val isLeftLeaf = index % 2 == 0
     val isPaid = gardenState == GardenBillState.Paid
-    val rowMinHeight = if (isPaid) 148.dp else 128.dp
+    val rowMinHeight = if (isFeaturedPaidRose) 160.dp else if (isPaid) 148.dp else 128.dp
 
     Box(
         modifier = Modifier
@@ -326,7 +334,10 @@ private fun GardenPathTimelineRow(
                     contentAlignment = Alignment.Center
                 ) {
                     if (isPaid) {
-                        BloomedRoseAnchor(large = index == 0)
+                        BloomedRoseAnchor(
+                            large = isFeaturedPaidRose,
+                            modifier = Modifier.offset(x = (-4).dp)
+                        )
                     } else {
                         GardenPathStemConnector(
                             gardenState = gardenState,
@@ -343,7 +354,10 @@ private fun GardenPathTimelineRow(
                     contentAlignment = Alignment.Center
                 ) {
                     if (isPaid) {
-                        BloomedRoseAnchor(large = false)
+                        BloomedRoseAnchor(
+                            large = isFeaturedPaidRose,
+                            modifier = Modifier.offset(x = 4.dp)
+                        )
                     } else {
                         GardenPathStemConnector(
                             gardenState = gardenState,

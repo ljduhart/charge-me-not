@@ -236,7 +236,11 @@ private fun DefaultLeafBillContent(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 28.dp)
+        ) {
             Text(
                 text = bill.name,
                 style = MaterialTheme.typography.titleMedium,
@@ -273,27 +277,28 @@ private fun DefaultLeafBillContent(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 8.dp)
             )
-            Row(
-                modifier = Modifier
-                    .padding(top = 10.dp)
-                    .background(CategoryChipBackground, RoundedCornerShape(12.dp))
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    imageVector = categoryIcon,
-                    contentDescription = categoryLabel,
-                    tint = GlasshouseForestGreen,
-                    modifier = Modifier.size(14.dp)
-                )
-                Text(
-                    text = categoryLabel,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = GlasshouseForestGreen,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+        }
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .background(CategoryChipBackground, RoundedCornerShape(12.dp))
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                imageVector = categoryIcon,
+                contentDescription = categoryLabel,
+                tint = GlasshouseForestGreen,
+                modifier = Modifier.size(14.dp)
+            )
+            Text(
+                text = categoryLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = GlasshouseForestGreen,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }

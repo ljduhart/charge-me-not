@@ -35,8 +35,8 @@ fun BloomedRoseAnchor(
     modifier: Modifier = Modifier,
     large: Boolean = false
 ) {
-    val roseSize = if (large) 80.dp else 64.dp
-    val stampFontSize = if (large) 11.sp else 9.sp
+    val roseSize = if (large) 88.dp else 64.dp
+    val stampFontSize = if (large) 12.sp else 9.sp
 
     Box(
         modifier = modifier.size(roseSize),

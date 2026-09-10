@@ -75,6 +75,16 @@ class GardenBillStateTest {
     }
 
     @Test
+    fun resolveGardenBillState_marksExactlySevenDaysOutAsUpcoming() {
+        val state = resolveGardenBillState(
+            bill = sampleBill(isPaid = false, dueDate = today.plusDays(7)),
+            today = today
+        )
+
+        assertEquals(GardenBillState.Upcoming, state)
+    }
+
+    @Test
     fun sortGardenPathBills_ordersChronologicallyByDueDate() {
         val paid = sampleBill(isPaid = true, dueDate = today.minusDays(9)).copy(id = 1L, name = "Paid")
         val overdue = sampleBill(isPaid = false, dueDate = today.minusDays(2)).copy(id = 2L, name = "Overdue")
