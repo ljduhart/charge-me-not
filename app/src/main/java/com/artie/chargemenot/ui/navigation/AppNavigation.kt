@@ -187,7 +187,7 @@ fun ChargeMeNotNavHost(
             popExitTransition = { meadowPopExitTransition }
         ) {
             PetalsAndWeedsScreen(
-                upcomingBills = dashboardUiState.upcomingBills,
+                gardenBills = dashboardUiState.allBills,
                 onOpenDrawer = onOpenDrawer,
                 onNavigateBack = onMeadowHubNavigateBack,
                 onSelectBillForEdit = onSelectBillForEdit,

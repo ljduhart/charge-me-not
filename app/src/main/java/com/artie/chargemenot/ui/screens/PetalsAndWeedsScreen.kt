@@ -1,25 +1,25 @@
 package com.artie.chargemenot.ui.screens
 
+import android.os.Build
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
@@ -34,16 +34,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
+import com.artie.chargemenot.ui.components.GlasshouseForestGreen
+import com.artie.chargemenot.ui.components.LeafBillCard
 import com.artie.chargemenot.ui.components.MeadowHubScaffold
-import com.artie.chargemenot.ui.theme.MeadowCream
-import com.artie.chargemenot.ui.theme.MeadowGreenDark
-import com.artie.chargemenot.ui.theme.MeadowSky
+import com.artie.chargemenot.ui.components.decorativeVineBorder
+import com.artie.chargemenot.ui.components.gardenPathVineBackground
+import com.artie.chargemenot.ui.components.leafShapeForIndex
+import com.artie.chargemenot.ui.components.resolveGardenBillState
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import com.artie.chargemenot.ui.theme.WeedRed
 import java.text.NumberFormat
@@ -52,7 +61,7 @@ import java.util.Locale
 
 @Composable
 fun PetalsAndWeedsScreen(
-    upcomingBills: List<Bill>,
+    gardenBills: List<Bill>,
     onOpenDrawer: () -> Unit,
     onNavigateBack: () -> Unit,
     onSelectBillForEdit: (Bill) -> Unit,
@@ -63,6 +72,15 @@ fun PetalsAndWeedsScreen(
     val currencyFormat = rememberCurrencyFormat()
     val dateFormat = DateTimeFormatter.ofPattern("MMM d, yyyy")
     var billPendingDelete by remember { mutableStateOf<Bill?>(null) }
+    val sortedBills = remember(gardenBills) {
+        gardenBills.sortedWith(
+            compareBy<Bill> { bill -> resolveGardenBillState(bill).timelineOrder }
+                .thenBy { bill -> bill.dueDate }
+        )
+    }
+    val listState = rememberLazyListState()
+    val density = LocalDensity.current
+    val estimatedItemHeightPx = remember(density) { with(density) { 132.dp.toPx() } }
 
     billPendingDelete?.let { bill ->
         AlertDialog(
@@ -99,73 +117,129 @@ fun PetalsAndWeedsScreen(
         )
     }
 
-    MeadowHubScaffold(
-        title = stringResource(R.string.meadow_route_petals_and_weeds),
-        onOpenDrawer = onOpenDrawer,
-        onNavigateBack = onNavigateBack,
-        modifier = modifier,
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onShowManualBillEntry,
-                containerColor = MeadowSky,
-                contentColor = MeadowGreenDark,
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = stringResource(R.string.dashboard_manual_bill_entry)
-                    )
-                },
-                text = {
-                    Text(stringResource(R.string.dashboard_manual_bill_entry))
-                }
-            )
-        }
-    ) { innerPadding ->
-        if (upcomingBills.isEmpty()) {
-            Text(
-                text = stringResource(R.string.petals_and_weeds_empty),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(24.dp)
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .background(MeadowCream),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(
-                    items = upcomingBills,
-                    key = { bill -> "petal_bill_${bill.id}" }
-                ) { bill ->
-                    SwipeablePetalBillCard(
-                        bill = bill,
-                        currencyFormat = currencyFormat,
-                        dateFormat = dateFormat,
-                        onSelectBillForEdit = onSelectBillForEdit,
-                        onRequestDelete = { billPendingDelete = it }
-                    )
+    Box(modifier = modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(id = R.drawable.bg_greenhouse),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        MeadowHubScaffold(
+            title = stringResource(R.string.meadow_route_petals_and_weeds),
+            onOpenDrawer = onOpenDrawer,
+            onNavigateBack = onNavigateBack,
+            containerColor = Color.Transparent,
+            topBarContainerColor = Color.Transparent,
+            floatingActionButton = {
+                GardenPathAddBillFab(onClick = onShowManualBillEntry)
+            }
+        ) { innerPadding ->
+            if (sortedBills.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.petals_and_weeds_empty),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MeadowWhite,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(24.dp)
+                )
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .gardenPathVineBackground(
+                            listState = listState,
+                            itemCount = sortedBills.size,
+                            estimatedItemHeightPx = estimatedItemHeightPx
+                        ),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                ) {
+                    itemsIndexed(
+                        items = sortedBills,
+                        key = { _, bill -> "petal_bill_${bill.id}" }
+                    ) { index, bill ->
+                        SwipeableGardenPathBillCard(
+                            bill = bill,
+                            index = index,
+                            currencyFormat = currencyFormat,
+                            dateFormat = dateFormat,
+                            onSelectBillForEdit = onSelectBillForEdit,
+                            onRequestDelete = { billPendingDelete = it }
+                        )
+                    }
                 }
             }
         }
     }
 }
 
+@Composable
+private fun GardenPathAddBillFab(
+    onClick: () -> Unit
+) {
+    val supportsNativeBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val pillShape = RoundedCornerShape(50)
+
+    Box(
+        modifier = Modifier
+            .clip(pillShape)
+            .clickable(onClick = onClick)
+            .decorativeVineBorder()
+    ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .then(
+                    if (supportsNativeBlur) {
+                        Modifier.blur(
+                            radius = 16.dp,
+                            edgeTreatment = BlurredEdgeTreatment.Rectangle
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
+                .background(Color(0xFFF9F9F4).copy(alpha = 0.6f), pillShape)
+        )
+
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = stringResource(R.string.dashboard_manual_bill_entry),
+                tint = GlasshouseForestGreen
+            )
+            Text(
+                text = stringResource(R.string.dashboard_manual_bill_entry),
+                color = GlasshouseForestGreen,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SwipeablePetalBillCard(
+private fun SwipeableGardenPathBillCard(
     bill: Bill,
+    index: Int,
     currencyFormat: NumberFormat,
     dateFormat: DateTimeFormatter,
     onSelectBillForEdit: (Bill) -> Unit,
     onRequestDelete: (Bill) -> Unit
 ) {
+    val gardenState = resolveGardenBillState(bill)
+    val leafShape = leafShapeForIndex(index)
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { direction ->
             if (direction == SwipeToDismissBoxValue.EndToStart) {
@@ -186,7 +260,7 @@ private fun SwipeablePetalBillCard(
                     .fillMaxSize()
                     .background(
                         color = WeedRed.copy(alpha = 0.88f),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = leafShape
                     )
                     .padding(horizontal = 20.dp),
                 contentAlignment = Alignment.CenterEnd
@@ -199,44 +273,16 @@ private fun SwipeablePetalBillCard(
             }
         }
     ) {
-        Card(
+        LeafBillCard(
+            bill = bill,
+            index = index,
+            gardenState = gardenState,
+            currencyFormat = currencyFormat,
+            dateFormat = dateFormat,
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onSelectBillForEdit(bill) },
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MeadowWhite),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp)
-            ) {
-                Text(
-                    text = bill.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF1A1A1A),
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = stringResource(
-                        R.string.petals_and_weeds_bill_meta,
-                        "${bill.parentCategory} · ${bill.subCategory}",
-                        dateFormat.format(bill.dueDate)
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-                Text(
-                    text = currencyFormat.format(bill.amount),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MeadowGreenDark,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-        }
+                .clickable { onSelectBillForEdit(bill) }
+        )
     }
 }
 

@@ -181,6 +181,8 @@
     <string name="petals_and_weeds_delete_confirm">Remove</string>
     <string name="petals_and_weeds_delete_cancel">Keep</string>
     <string name="petals_and_weeds_swipe_delete">Remove bill</string>
+    <string name="petals_and_weeds_overdue">OVERDUE</string>
+    <string name="petals_and_weeds_paid_bloom">Fully bloomed</string>
 
     <string name="rich_soil_subtitle">Track how much fertile soil remains in your monthly garden bed.</string>
     <string name="rich_soil_monthly_budget">Monthly soil capacity</string>

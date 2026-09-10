@@ -15,6 +15,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.artie.chargemenot.R
@@ -28,6 +29,8 @@ fun MeadowHubScaffold(
     onOpenDrawer: () -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
+    containerColor: Color = MeadowCream,
+    topBarContainerColor: Color = MeadowCream,
     floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit
 ) {
@@ -35,7 +38,7 @@ fun MeadowHubScaffold(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = MeadowCream,
+        containerColor = containerColor,
         floatingActionButton = floatingActionButton,
         topBar = {
             TopAppBar(
@@ -54,7 +57,7 @@ fun MeadowHubScaffold(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MeadowCream,
+                    containerColor = topBarContainerColor,
                     titleContentColor = MeadowGreenDark,
                     navigationIconContentColor = MeadowGreenDark
                 )
