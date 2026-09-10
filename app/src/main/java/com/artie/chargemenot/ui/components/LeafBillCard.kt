@@ -21,7 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -106,6 +106,16 @@ fun LeafBillCard(
                 .align(if (index % 2 == 0) Alignment.CenterStart else Alignment.CenterEnd)
                 .clip(leafShape)
                 .border(width = 1.dp, color = Color.White.copy(alpha = 0.35f), shape = leafShape)
+                .then(
+                    if (gardenState == GardenBillState.Overdue) {
+                        Modifier.drawWithContent {
+                            drawContent()
+                            drawCrackedWitheredOverlay()
+                        }
+                    } else {
+                        Modifier
+                    }
+                )
         ) {
             Box(
                 modifier = Modifier
@@ -125,14 +135,6 @@ fun LeafBillCard(
 
             Box(modifier = Modifier.fillMaxWidth()) {
                 content()
-            }
-
-            if (gardenState == GardenBillState.Overdue) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .drawBehind { drawCrackedWitheredOverlay() }
-                )
             }
 
             if (gardenState == GardenBillState.Paid) {

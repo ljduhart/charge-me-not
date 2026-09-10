@@ -3,7 +3,6 @@ package com.artie.chargemenot.ui.components
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,6 +30,8 @@ fun MeadowHubScaffold(
     modifier: Modifier = Modifier,
     containerColor: Color = MeadowCream,
     topBarContainerColor: Color = MeadowCream,
+    titleContentColor: Color = MeadowGreenDark,
+    navigationIconContentColor: Color = MeadowGreenDark,
     floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit
 ) {
@@ -58,8 +59,8 @@ fun MeadowHubScaffold(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = topBarContainerColor,
-                    titleContentColor = MeadowGreenDark,
-                    navigationIconContentColor = MeadowGreenDark
+                    titleContentColor = titleContentColor,
+                    navigationIconContentColor = navigationIconContentColor
                 )
             )
         },

@@ -131,6 +131,8 @@ fun PetalsAndWeedsScreen(
             onNavigateBack = onNavigateBack,
             containerColor = Color.Transparent,
             topBarContainerColor = Color.Transparent,
+            titleContentColor = MeadowWhite,
+            navigationIconContentColor = MeadowWhite,
             floatingActionButton = {
                 GardenPathAddBillFab(onClick = onShowManualBillEntry)
             }
