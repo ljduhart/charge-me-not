@@ -174,12 +174,14 @@
     <string name="meadow_route_harvest_report">Harvest Report</string>
     <string name="meadow_route_greenhouse_settings">Greenhouse Settings</string>
 
+    <string name="petals_and_weeds_title">Financial Garden Path</string>
     <string name="petals_and_weeds_header">FINANCIAL CLARITY, ONE GARDEN PATH AT A TIME</string>
     <string name="petals_and_weeds_empty">No unpaid petals or weeds are sprouting in your garden right now.</string>
     <string name="petals_and_weeds_bill_meta">%1$s · Due %2$s</string>
     <string name="petals_and_weeds_status_paid">Paid, %1$s</string>
     <string name="petals_and_weeds_status_overdue">Overdue, %1$s</string>
-    <string name="petals_and_weeds_status_upcoming">Due %1$s</string>
+    <string name="petals_and_weeds_status_upcoming">Upcoming, %1$s</string>
+    <string name="petals_and_weeds_status_far_off">Far off, %1$s</string>
     <string name="petals_and_weeds_paid_stamp">PAID</string>
     <string name="petals_and_weeds_delete_title">Remove from garden?</string>
     <string name="petals_and_weeds_delete_message">Are you sure you want to remove %1$s from your petals and weeds?</string>

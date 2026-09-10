@@ -55,7 +55,7 @@ class GardenBillStateTest {
     }
 
     @Test
-    fun resolveGardenBillState_marksFutureUnpaidBillsAsUpcoming() {
+    fun resolveGardenBillState_marksNearFutureUnpaidBillsAsUpcoming() {
         val state = resolveGardenBillState(
             bill = sampleBill(isPaid = false, dueDate = today.plusDays(5)),
             today = today
@@ -65,24 +65,36 @@ class GardenBillStateTest {
     }
 
     @Test
-    fun gardenBillState_timelineOrder_sortsOverdueBeforeUpcomingBeforePaid() {
-        assertEquals(0, GardenBillState.Overdue.timelineOrder)
-        assertEquals(1, GardenBillState.Upcoming.timelineOrder)
-        assertEquals(2, GardenBillState.Paid.timelineOrder)
-    }
-
-    @Test
-    fun sortGardenPathBills_ordersOverdueThenUpcomingThenPaidByDueDate() {
-        val overdue = sampleBill(isPaid = false, dueDate = today.minusDays(2)).copy(id = 1L, name = "Overdue")
-        val upcomingSoon = sampleBill(isPaid = false, dueDate = today.plusDays(2)).copy(id = 2L, name = "Soon")
-        val upcomingLater = sampleBill(isPaid = false, dueDate = today.plusDays(10)).copy(id = 3L, name = "Later")
-        val paid = sampleBill(isPaid = true, dueDate = today.minusDays(1)).copy(id = 4L, name = "Paid")
-
-        val sorted = sortGardenPathBills(
-            bills = listOf(paid, upcomingLater, overdue, upcomingSoon),
+    fun resolveGardenBillState_marksDistantFutureUnpaidBillsAsFarOff() {
+        val state = resolveGardenBillState(
+            bill = sampleBill(isPaid = false, dueDate = today.plusDays(8)),
             today = today
         )
 
-        assertEquals(listOf("Overdue", "Soon", "Later", "Paid"), sorted.map { bill -> bill.name })
+        assertEquals(GardenBillState.FarOff, state)
+    }
+
+    @Test
+    fun resolveGardenBillState_marksExactlySevenDaysOutAsUpcoming() {
+        val state = resolveGardenBillState(
+            bill = sampleBill(isPaid = false, dueDate = today.plusDays(7)),
+            today = today
+        )
+
+        assertEquals(GardenBillState.Upcoming, state)
+    }
+
+    @Test
+    fun sortGardenPathBills_ordersChronologicallyByDueDate() {
+        val paid = sampleBill(isPaid = true, dueDate = today.minusDays(9)).copy(id = 1L, name = "Paid")
+        val overdue = sampleBill(isPaid = false, dueDate = today.minusDays(2)).copy(id = 2L, name = "Overdue")
+        val upcomingSoon = sampleBill(isPaid = false, dueDate = today.plusDays(1)).copy(id = 3L, name = "Soon")
+        val farOff = sampleBill(isPaid = false, dueDate = today.plusDays(10)).copy(id = 4L, name = "FarOff")
+
+        val sorted = sortGardenPathBills(
+            bills = listOf(farOff, upcomingSoon, paid, overdue)
+        )
+
+        assertEquals(listOf("Paid", "Overdue", "Soon", "FarOff"), sorted.map { bill -> bill.name })
     }
 }

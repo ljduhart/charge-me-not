@@ -5,12 +5,21 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.FilterVintage
+import androidx.compose.material.icons.filled.Grass
+import androidx.compose.material.icons.filled.LocalFlorist
+import androidx.compose.material.icons.filled.Park
+import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,40 +29,43 @@ import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
-import com.artie.chargemenot.ui.theme.WeedRed
+import com.artie.chargemenot.domain.model.MeadowCategories
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 
-enum class GardenBillState(val timelineOrder: Int) {
-    Overdue(0),
-    Upcoming(1),
-    Paid(2)
+const val GARDEN_PATH_FAR_OFF_DAYS = 7L
+
+enum class GardenBillState {
+    Paid,
+    Overdue,
+    Upcoming,
+    FarOff
 }
 
 fun resolveGardenBillState(bill: Bill, today: LocalDate = LocalDate.now()): GardenBillState {
     return when {
         bill.isPaid -> GardenBillState.Paid
         bill.dueDate.isBefore(today) -> GardenBillState.Overdue
+        ChronoUnit.DAYS.between(today, bill.dueDate) > GARDEN_PATH_FAR_OFF_DAYS -> GardenBillState.FarOff
         else -> GardenBillState.Upcoming
     }
 }
 
-fun sortGardenPathBills(bills: List<Bill>, today: LocalDate = LocalDate.now()): List<Bill> {
-    return bills.sortedWith(
-        compareBy<Bill> { bill -> resolveGardenBillState(bill, today).timelineOrder }
-            .thenBy { bill -> bill.dueDate }
-    )
+fun sortGardenPathBills(bills: List<Bill>): List<Bill> {
+    return bills.sortedBy { bill -> bill.dueDate }
 }
 
 private val LeafGlassCream = Color(0xFFF9F9F4)
@@ -64,6 +76,7 @@ private val BudGreen = Color(0xFF4CAF50)
 private val BudStem = Color(0xAA81C784)
 private val VineDateLabel = Color(0xFFF5F5F5)
 private val CategoryChipBackground = Color(0xFFF9F9F4).copy(alpha = 0.45f)
+private val OverdueStampBrown = Color(0xCCBF360C)
 
 @Composable
 fun leafShapeForIndex(index: Int): RoundedCornerShape {
@@ -90,6 +103,27 @@ fun GardenPathDateMarker(
 }
 
 @Composable
+fun GardenPathStemConnector(
+    gardenState: GardenBillState,
+    isLeftLeaf: Boolean,
+    modifier: Modifier = Modifier
+) {
+    when (gardenState) {
+        GardenBillState.Upcoming -> StemBud(
+            isSmall = false,
+            alignToStemOnLeft = isLeftLeaf,
+            modifier = modifier
+        )
+        GardenBillState.FarOff -> StemBud(
+            isSmall = true,
+            alignToStemOnLeft = isLeftLeaf,
+            modifier = modifier
+        )
+        else -> Unit
+    }
+}
+
+@Composable
 fun LeafBillCard(
     bill: Bill,
     index: Int,
@@ -106,7 +140,6 @@ fun LeafBillCard(
 ) {
     val leafShape = leafShapeForIndex(index)
     val supportsNativeBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    val isLeftLeaf = index % 2 == 0
     val glassColor = when (gardenState) {
         GardenBillState.Overdue -> WitheredLeafTint
         else -> LeafGlassCream.copy(alpha = 0.6f)
@@ -122,84 +155,67 @@ fun LeafBillCard(
         )
     }
 
-    Box(modifier = modifier.fillMaxWidth()) {
-        if (gardenState == GardenBillState.Upcoming) {
-            StemBud(
-                alignToStemOnLeft = isLeftLeaf,
-                modifier = Modifier.align(Alignment.Center)
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(leafShape)
+            .then(borderModifier)
+            .then(
+                if (gardenState == GardenBillState.Overdue) {
+                    Modifier.drawWithContent {
+                        drawContent()
+                        drawCrackedWitheredOverlay()
+                        drawRuggedLeafEdge()
+                    }
+                } else {
+                    Modifier
+                }
+            )
+    ) {
+        if (gardenState != GardenBillState.Overdue) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .then(
+                        if (supportsNativeBlur) {
+                            Modifier.blur(
+                                radius = 16.dp,
+                                edgeTreatment = BlurredEdgeTreatment.Rectangle
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .background(glassColor)
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(glassColor)
             )
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.86f)
-                .align(if (isLeftLeaf) Alignment.CenterStart else Alignment.CenterEnd)
-                .clip(leafShape)
-                .then(borderModifier)
-                .then(
-                    if (gardenState == GardenBillState.Overdue) {
-                        Modifier.drawWithContent {
-                            drawContent()
-                            drawCrackedWitheredOverlay()
-                            drawRuggedLeafEdge()
-                        }
-                    } else {
-                        Modifier
-                    }
-                )
-        ) {
-            if (gardenState != GardenBillState.Overdue) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .then(
-                            if (supportsNativeBlur) {
-                                Modifier.blur(
-                                    radius = 16.dp,
-                                    edgeTreatment = BlurredEdgeTreatment.Rectangle
-                                )
-                            } else {
-                                Modifier
-                            }
-                        )
-                        .background(glassColor)
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(glassColor)
-                )
-            }
+        Box(modifier = Modifier.fillMaxWidth()) {
+            content()
+        }
 
-            Box(modifier = Modifier.fillMaxWidth()) {
-                content()
-            }
-
-            if (gardenState == GardenBillState.Paid) {
-                BloomedRoseAnchor(
-                    modifier = Modifier
-                        .align(if (isLeftLeaf) Alignment.CenterStart else Alignment.CenterEnd)
-                        .offset(x = if (isLeftLeaf) (-30).dp else 30.dp)
-                )
-            }
-
-            if (gardenState == GardenBillState.Overdue) {
-                Text(
-                    text = stringResource(R.string.petals_and_weeds_overdue),
-                    color = WeedRed,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(10.dp)
-                        .background(
-                            color = Color(0xFF3E2723).copy(alpha = 0.82f),
-                            shape = RoundedCornerShape(6.dp)
-                        )
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
+        if (gardenState == GardenBillState.Overdue) {
+            Text(
+                text = stringResource(R.string.petals_and_weeds_overdue),
+                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .graphicsLayer { rotationZ = -16f }
+                    .background(
+                        color = OverdueStampBrown,
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
+            )
         }
     }
 }
@@ -213,51 +229,70 @@ private fun DefaultLeafBillContent(
     val statusDateFormat = DateTimeFormatter.ofPattern("MMM d", Locale.US)
     val categoryLabel = BloomCategoryDefinitions.fromParentName(bill.parentCategory)?.displayName
         ?: bill.subCategory
+    val categoryIcon = gardenCategoryIcon(bill.parentCategory)
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
-        Text(
-            text = bill.name,
-            style = MaterialTheme.typography.titleMedium,
-            color = GlasshouseForestGreen,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = when (gardenState) {
-                GardenBillState.Paid -> stringResource(
-                    R.string.petals_and_weeds_status_paid,
-                    statusDateFormat.format(bill.dueDate)
-                )
-                GardenBillState.Overdue -> stringResource(
-                    R.string.petals_and_weeds_status_overdue,
-                    statusDateFormat.format(bill.dueDate)
-                )
-                GardenBillState.Upcoming -> stringResource(
-                    R.string.petals_and_weeds_status_upcoming,
-                    statusDateFormat.format(bill.dueDate)
-                )
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = GlasshouseForestGreen.copy(alpha = 0.82f),
-            modifier = Modifier.padding(top = 4.dp)
-        )
-        Text(
-            text = currencyFormat.format(bill.amount),
-            style = MaterialTheme.typography.titleLarge,
-            color = GlasshouseForestGreen,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 8.dp)
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 28.dp)
+        ) {
+            Text(
+                text = bill.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = GlasshouseForestGreen,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = when (gardenState) {
+                    GardenBillState.Paid -> stringResource(
+                        R.string.petals_and_weeds_status_paid,
+                        statusDateFormat.format(bill.dueDate)
+                    )
+                    GardenBillState.Overdue -> stringResource(
+                        R.string.petals_and_weeds_status_overdue,
+                        statusDateFormat.format(bill.dueDate)
+                    )
+                    GardenBillState.FarOff -> stringResource(
+                        R.string.petals_and_weeds_status_far_off,
+                        statusDateFormat.format(bill.dueDate)
+                    )
+                    GardenBillState.Upcoming -> stringResource(
+                        R.string.petals_and_weeds_status_upcoming,
+                        statusDateFormat.format(bill.dueDate)
+                    )
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = GlasshouseForestGreen.copy(alpha = 0.82f),
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            Text(
+                text = currencyFormat.format(bill.amount),
+                style = MaterialTheme.typography.titleLarge,
+                color = GlasshouseForestGreen,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+
         Row(
             modifier = Modifier
-                .padding(top = 10.dp)
+                .align(Alignment.BottomEnd)
                 .background(CategoryChipBackground, RoundedCornerShape(12.dp))
                 .padding(horizontal = 10.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            Icon(
+                imageVector = categoryIcon,
+                contentDescription = categoryLabel,
+                tint = GlasshouseForestGreen,
+                modifier = Modifier.size(14.dp)
+            )
             Text(
                 text = categoryLabel,
                 style = MaterialTheme.typography.labelSmall,
@@ -268,40 +303,49 @@ private fun DefaultLeafBillContent(
     }
 }
 
+private fun gardenCategoryIcon(parentCategory: String): ImageVector {
+    return when (parentCategory) {
+        MeadowCategories.CANOPY -> Icons.Default.Park
+        MeadowCategories.FERTILIZER -> Icons.Default.Eco
+        MeadowCategories.ROOT_SYSTEM -> Icons.Default.WaterDrop
+        MeadowCategories.VINES -> Icons.Default.Grass
+        MeadowCategories.POLLINATORS -> Icons.Default.LocalFlorist
+        MeadowCategories.WILDFLOWERS -> Icons.Default.FilterVintage
+        else -> Icons.Default.Spa
+    }
+}
+
 @Composable
 private fun StemBud(
+    isSmall: Boolean,
     alignToStemOnLeft: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val budSize = if (isSmall) 8.dp else 12.dp
+    val stemHeight = if (isSmall) 10.dp else 14.dp
+
     Box(
-        modifier = modifier.size(width = 28.dp, height = 20.dp),
+        modifier = modifier.size(width = 24.dp, height = 22.dp),
         contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
-                .size(width = 2.dp, height = 14.dp)
+                .size(width = 2.dp, height = stemHeight)
                 .background(BudStem)
                 .align(if (alignToStemOnLeft) Alignment.CenterEnd else Alignment.CenterStart)
         )
         Box(
             modifier = Modifier
-                .size(12.dp)
+                .size(budSize)
                 .background(BudGreen, shape = RoundedCornerShape(50))
                 .align(Alignment.Center)
-        )
-        Box(
-            modifier = Modifier
-                .size(width = 2.dp, height = 8.dp)
-                .offset(x = if (alignToStemOnLeft) 6.dp else (-6).dp)
-                .background(BudStem.copy(alpha = 0.7f))
-                .align(if (alignToStemOnLeft) Alignment.CenterStart else Alignment.CenterEnd)
         )
     }
 }
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCrackedWitheredOverlay() {
     val crackColor = Color(0x664E342E)
-    val crackStroke = Stroke(width = 1.5f)
+    val crackStroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5f)
 
     val cracks = listOf(
         Path().apply {
@@ -328,7 +372,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCrackedWithered
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawRuggedLeafEdge() {
     val edgeColor = Color(0x885D4037)
-    val edgeStroke = Stroke(width = 1.2f)
+    val edgeStroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.2f)
     val inset = 4f
 
     val ruggedPath = Path().apply {

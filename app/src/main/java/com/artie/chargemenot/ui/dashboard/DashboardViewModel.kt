@@ -132,7 +132,7 @@ class DashboardViewModel(
                     upcomingBills = upcoming,
                     subscriptionBills = subscriptions,
                     allBills = all,
-                    gardenPathBills = sortGardenPathBills(all, today),
+                    gardenPathBills = sortGardenPathBills(all),
                     parentCategoryTotals = parentCategoryTotals,
                     forecastResult = forecast,
                     highlightedBloomParent = _uiState.value.highlightedBloomParent,
