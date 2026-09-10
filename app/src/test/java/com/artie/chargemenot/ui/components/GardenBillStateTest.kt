@@ -70,4 +70,19 @@ class GardenBillStateTest {
         assertEquals(1, GardenBillState.Upcoming.timelineOrder)
         assertEquals(2, GardenBillState.Paid.timelineOrder)
     }
+
+    @Test
+    fun sortGardenPathBills_ordersOverdueThenUpcomingThenPaidByDueDate() {
+        val overdue = sampleBill(isPaid = false, dueDate = today.minusDays(2)).copy(id = 1L, name = "Overdue")
+        val upcomingSoon = sampleBill(isPaid = false, dueDate = today.plusDays(2)).copy(id = 2L, name = "Soon")
+        val upcomingLater = sampleBill(isPaid = false, dueDate = today.plusDays(10)).copy(id = 3L, name = "Later")
+        val paid = sampleBill(isPaid = true, dueDate = today.minusDays(1)).copy(id = 4L, name = "Paid")
+
+        val sorted = sortGardenPathBills(
+            bills = listOf(paid, upcomingLater, overdue, upcomingSoon),
+            today = today
+        )
+
+        assertEquals(listOf("Overdue", "Soon", "Later", "Paid"), sorted.map { bill -> bill.name })
+    }
 }

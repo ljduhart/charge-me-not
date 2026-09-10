@@ -4,7 +4,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -12,14 +11,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import kotlin.math.sin
 
-private val VineGlowOuter = Color(0x4481C784)
-private val VineGlowMid = Color(0x9981C784)
-private val VineGlowCore = Color(0xAA81C784)
+private val VineStemColor = Color(0xAA81C784)
+private val VineGlowHalo = Color(0x4481C784)
 private val VineHighlight = Color(0xCCB9F6CA)
 
 /**
- * Draws a continuous, bioluminescent central vine behind a garden-path timeline list.
- * Scroll offset keeps the stem aligned as the user moves through bills.
+ * Draws a continuous, meandering central vine behind the garden-path timeline list.
  */
 fun Modifier.gardenPathVineBackground(
     listState: LazyListState,
@@ -32,13 +29,14 @@ fun Modifier.gardenPathVineBackground(
         listState.firstVisibleItemIndex * estimatedItemHeightPx +
             listState.firstVisibleItemScrollOffset.toFloat()
     val vineLength = itemCount * estimatedItemHeightPx + size.height
+    val centerX = size.width / 2f
 
     val path = buildMeanderingVinePath(
-        centerX = size.width / 2f,
+        centerX = centerX,
         startY = 0f,
         totalHeight = vineLength,
-        amplitude = size.width * 0.08f,
-        segmentHeight = estimatedItemHeightPx * 0.85f
+        amplitude = size.width * 0.07f,
+        segmentHeight = estimatedItemHeightPx * 0.82f
     )
 
     drawContext.canvas.save()
@@ -46,25 +44,18 @@ fun Modifier.gardenPathVineBackground(
 
     drawPath(
         path = path,
-        color = VineGlowOuter,
-        style = Stroke(width = 18f, cap = StrokeCap.Round)
+        color = VineGlowHalo,
+        style = Stroke(width = 14f, cap = StrokeCap.Round)
     )
     drawPath(
         path = path,
-        color = VineGlowMid,
-        style = Stroke(width = 10f, cap = StrokeCap.Round)
+        color = VineStemColor,
+        style = Stroke(width = 6f, cap = StrokeCap.Round)
     )
     drawPath(
         path = path,
-        brush = Brush.sweepGradient(
-            0f to VineGlowCore,
-            0.25f to VineHighlight,
-            0.5f to VineGlowCore,
-            0.75f to VineHighlight,
-            1f to VineGlowCore,
-            center = Offset(size.width / 2f, vineLength / 2f)
-        ),
-        style = Stroke(width = 5f, cap = StrokeCap.Round)
+        color = VineHighlight.copy(alpha = 0.55f),
+        style = Stroke(width = 2.5f, cap = StrokeCap.Round)
     )
 
     drawContext.canvas.restore()
@@ -84,15 +75,14 @@ private fun buildMeanderingVinePath(
     var segmentIndex = 0
     while (currentY < totalHeight) {
         val nextY = (currentY + segmentHeight).coerceAtMost(totalHeight)
-        val wave = sin(segmentIndex * 0.9f) * amplitude
-        val controlX1 = centerX + wave
-        val controlX2 = centerX - wave * 0.75f
+        val wave = sin(segmentIndex * 0.85f) * amplitude
+        val nextWave = sin((segmentIndex + 1) * 0.85f) * amplitude * 0.55f
         path.cubicTo(
-            x1 = controlX1,
-            y1 = currentY + segmentHeight * 0.35f,
-            x2 = controlX2,
-            y2 = currentY + segmentHeight * 0.65f,
-            x3 = centerX + sin((segmentIndex + 1) * 0.9f) * amplitude * 0.5f,
+            x1 = centerX + wave,
+            y1 = currentY + segmentHeight * 0.33f,
+            x2 = centerX - wave * 0.7f,
+            y2 = currentY + segmentHeight * 0.67f,
+            x3 = centerX + nextWave,
             y3 = nextY
         )
         currentY = nextY
@@ -102,7 +92,7 @@ private fun buildMeanderingVinePath(
 }
 
 /**
- * Small decorative vine strokes for frosted-glass pill buttons.
+ * Decorative vine strokes wrapping frosted-glass pill buttons.
  */
 fun Modifier.decorativeVineBorder(): Modifier = drawBehind {
     val inset = 6f

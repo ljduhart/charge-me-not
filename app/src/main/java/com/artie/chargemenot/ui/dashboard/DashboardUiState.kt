@@ -17,6 +17,7 @@ data class DashboardUiState(
     val upcomingBills: List<Bill> = emptyList(),
     val subscriptionBills: List<Bill> = emptyList(),
     val allBills: List<Bill> = emptyList(),
+    val gardenPathBills: List<Bill> = emptyList(),
     val parentCategoryTotals: Map<String, Double> = emptyMap(),
     val forecastResult: ForecastResult? = null,
     val highlightedBloomParent: String? = null,

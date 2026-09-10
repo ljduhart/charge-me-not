@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,14 +40,21 @@ import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
+import com.artie.chargemenot.ui.components.GardenPathDateMarker
 import com.artie.chargemenot.ui.components.GlasshouseForestGreen
 import com.artie.chargemenot.ui.components.LeafBillCard
 import com.artie.chargemenot.ui.components.MeadowHubScaffold
@@ -62,6 +71,9 @@ import java.util.Locale
 @Composable
 fun PetalsAndWeedsScreen(
     gardenBills: List<Bill>,
+    parallaxOffset: Pair<Float, Float>,
+    onStartParallaxSensor: () -> Unit,
+    onStopParallaxSensor: () -> Unit,
     onOpenDrawer: () -> Unit,
     onNavigateBack: () -> Unit,
     onSelectBillForEdit: (Bill) -> Unit,
@@ -72,15 +84,30 @@ fun PetalsAndWeedsScreen(
     val currencyFormat = rememberCurrencyFormat()
     val dateFormat = DateTimeFormatter.ofPattern("MMM d, yyyy")
     var billPendingDelete by remember { mutableStateOf<Bill?>(null) }
-    val sortedBills = remember(gardenBills) {
-        gardenBills.sortedWith(
-            compareBy<Bill> { bill -> resolveGardenBillState(bill).timelineOrder }
-                .thenBy { bill -> bill.dueDate }
-        )
-    }
     val listState = rememberLazyListState()
     val density = LocalDensity.current
-    val estimatedItemHeightPx = remember(density) { with(density) { 132.dp.toPx() } }
+    val estimatedItemHeightPx = remember(density) { with(density) { 148.dp.toPx() } }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> onStartParallaxSensor()
+                Lifecycle.Event.ON_PAUSE -> onStopParallaxSensor()
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            onStopParallaxSensor()
+        }
+    }
+
+    val (tiltX, tiltY) = parallaxOffset
+    val parallaxDistancePx = with(density) { 12.dp.toPx() }
+    val backgroundTranslationX = tiltX * 0.5f * parallaxDistancePx
+    val backgroundTranslationY = tiltY * 0.5f * parallaxDistancePx
 
     billPendingDelete?.let { bill ->
         AlertDialog(
@@ -122,7 +149,14 @@ fun PetalsAndWeedsScreen(
             painter = painterResource(id = R.drawable.bg_greenhouse),
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    translationX = backgroundTranslationX
+                    translationY = backgroundTranslationY
+                    scaleX = 1.10f
+                    scaleY = 1.10f
+                }
         )
 
         MeadowHubScaffold(
@@ -137,16 +171,32 @@ fun PetalsAndWeedsScreen(
                 GardenPathAddBillFab(onClick = onShowManualBillEntry)
             }
         ) { innerPadding ->
-            if (sortedBills.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.petals_and_weeds_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MeadowWhite,
+            if (gardenBills.isEmpty()) {
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(24.dp)
-                )
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.petals_and_weeds_header),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MeadowWhite.copy(alpha = 0.9f),
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        text = stringResource(R.string.petals_and_weeds_empty),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MeadowWhite,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
             } else {
                 LazyColumn(
                     state = listState,
@@ -155,17 +205,31 @@ fun PetalsAndWeedsScreen(
                         .padding(innerPadding)
                         .gardenPathVineBackground(
                             listState = listState,
-                            itemCount = sortedBills.size,
+                            itemCount = gardenBills.size,
                             estimatedItemHeightPx = estimatedItemHeightPx
                         ),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
+                    item(key = "garden_path_header") {
+                        Text(
+                            text = stringResource(R.string.petals_and_weeds_header),
+                            color = MeadowWhite.copy(alpha = 0.92f),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.8.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+
                     itemsIndexed(
-                        items = sortedBills,
+                        items = gardenBills,
                         key = { _, bill -> "petal_bill_${bill.id}" }
                     ) { index, bill ->
-                        SwipeableGardenPathBillCard(
+                        GardenPathTimelineRow(
                             bill = bill,
                             index = index,
                             currencyFormat = currencyFormat,
@@ -177,6 +241,36 @@ fun PetalsAndWeedsScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun GardenPathTimelineRow(
+    bill: Bill,
+    index: Int,
+    currencyFormat: NumberFormat,
+    dateFormat: DateTimeFormatter,
+    onSelectBillForEdit: (Bill) -> Unit,
+    onRequestDelete: (Bill) -> Unit
+) {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
+        GardenPathDateMarker(
+            dueDate = bill.dueDate,
+            modifier = Modifier.align(Alignment.Center)
+        )
+
+        SwipeableGardenPathBillCard(
+            bill = bill,
+            index = index,
+            currencyFormat = currencyFormat,
+            dateFormat = dateFormat,
+            onSelectBillForEdit = onSelectBillForEdit,
+            onRequestDelete = onRequestDelete,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
@@ -238,7 +332,8 @@ private fun SwipeableGardenPathBillCard(
     currencyFormat: NumberFormat,
     dateFormat: DateTimeFormatter,
     onSelectBillForEdit: (Bill) -> Unit,
-    onRequestDelete: (Bill) -> Unit
+    onRequestDelete: (Bill) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val gardenState = resolveGardenBillState(bill)
     val leafShape = leafShapeForIndex(index)
@@ -254,6 +349,7 @@ private fun SwipeableGardenPathBillCard(
     )
 
     SwipeToDismissBox(
+        modifier = modifier,
         state = dismissState,
         enableDismissFromStartToEnd = false,
         backgroundContent = {
