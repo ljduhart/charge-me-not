@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -45,6 +47,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -54,7 +57,10 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
+import com.artie.chargemenot.ui.components.BloomedRoseAnchor
+import com.artie.chargemenot.ui.components.GardenBillState
 import com.artie.chargemenot.ui.components.GardenPathDateMarker
+import com.artie.chargemenot.ui.components.GardenPathStemConnector
 import com.artie.chargemenot.ui.components.GlasshouseForestGreen
 import com.artie.chargemenot.ui.components.LeafBillCard
 import com.artie.chargemenot.ui.components.MeadowHubScaffold
@@ -84,7 +90,7 @@ fun PetalsAndWeedsScreen(
     var billPendingDelete by remember { mutableStateOf<Bill?>(null) }
     val listState = rememberLazyListState()
     val density = LocalDensity.current
-    val estimatedItemHeightPx = remember(density) { with(density) { 148.dp.toPx() } }
+    val estimatedItemHeightPx = remember(density) { with(density) { 168.dp.toPx() } }
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner, onStartParallaxSensor, onStopParallaxSensor) {
@@ -181,12 +187,23 @@ fun PetalsAndWeedsScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
+                        text = stringResource(R.string.petals_and_weeds_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MeadowWhite,
+                        fontWeight = FontWeight.Bold,
+                        fontStyle = FontStyle.Italic,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
                         text = stringResource(R.string.petals_and_weeds_header),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MeadowWhite.copy(alpha = 0.9f),
                         fontWeight = FontWeight.SemiBold,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
                     )
                     Text(
                         text = stringResource(R.string.petals_and_weeds_empty),
@@ -209,21 +226,34 @@ fun PetalsAndWeedsScreen(
                             itemCount = gardenBills.size + 1,
                             estimatedItemHeightPx = estimatedItemHeightPx
                         ),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    item(key = "garden_path_header") {
-                        Text(
-                            text = stringResource(R.string.petals_and_weeds_header),
-                            color = MeadowWhite.copy(alpha = 0.92f),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 0.8.sp,
-                            textAlign = TextAlign.Center,
+                    item(key = "garden_path_title") {
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = stringResource(R.string.petals_and_weeds_title),
+                                color = MeadowWhite,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontStyle = FontStyle.Italic,
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                text = stringResource(R.string.petals_and_weeds_header),
+                                color = MeadowWhite.copy(alpha = 0.88f),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 0.6.sp,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(top = 6.dp)
+                            )
+                        }
                     }
 
                     itemsIndexed(
@@ -252,23 +282,92 @@ private fun GardenPathTimelineRow(
     onSelectBillForEdit: (Bill) -> Unit,
     onRequestDelete: (Bill) -> Unit
 ) {
+    val gardenState = resolveGardenBillState(bill)
+    val isLeftLeaf = index % 2 == 0
+    val isPaid = gardenState == GardenBillState.Paid
+    val rowMinHeight = if (isPaid) 148.dp else 128.dp
+
     Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = rowMinHeight)
     ) {
         GardenPathDateMarker(
             dueDate = bill.dueDate,
-            modifier = Modifier.align(Alignment.Center)
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 2.dp)
         )
 
-        SwipeableGardenPathBillCard(
-            bill = bill,
-            index = index,
-            currencyFormat = currencyFormat,
-            onSelectBillForEdit = onSelectBillForEdit,
-            onRequestDelete = onRequestDelete,
-            modifier = Modifier.fillMaxWidth()
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 22.dp)
+                .align(Alignment.Center),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (isLeftLeaf) {
+                Box(
+                    modifier = Modifier
+                        .weight(0.42f)
+                        .padding(end = 4.dp)
+                ) {
+                    SwipeableGardenPathBillCard(
+                        bill = bill,
+                        index = index,
+                        gardenState = gardenState,
+                        currencyFormat = currencyFormat,
+                        onSelectBillForEdit = onSelectBillForEdit,
+                        onRequestDelete = onRequestDelete
+                    )
+                }
+                Box(
+                    modifier = Modifier.width(52.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isPaid) {
+                        BloomedRoseAnchor(large = index == 0)
+                    } else {
+                        GardenPathStemConnector(
+                            gardenState = gardenState,
+                            isLeftLeaf = true,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                }
+                Box(modifier = Modifier.weight(0.42f))
+            } else {
+                Box(modifier = Modifier.weight(0.42f))
+                Box(
+                    modifier = Modifier.width(52.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isPaid) {
+                        BloomedRoseAnchor(large = false)
+                    } else {
+                        GardenPathStemConnector(
+                            gardenState = gardenState,
+                            isLeftLeaf = false,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .weight(0.42f)
+                        .padding(start = 4.dp)
+                ) {
+                    SwipeableGardenPathBillCard(
+                        bill = bill,
+                        index = index,
+                        gardenState = gardenState,
+                        currencyFormat = currencyFormat,
+                        onSelectBillForEdit = onSelectBillForEdit,
+                        onRequestDelete = onRequestDelete
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -327,12 +426,11 @@ private fun GardenPathAddBillFab(
 private fun SwipeableGardenPathBillCard(
     bill: Bill,
     index: Int,
+    gardenState: GardenBillState,
     currencyFormat: NumberFormat,
     onSelectBillForEdit: (Bill) -> Unit,
-    onRequestDelete: (Bill) -> Unit,
-    modifier: Modifier = Modifier
+    onRequestDelete: (Bill) -> Unit
 ) {
-    val gardenState = resolveGardenBillState(bill)
     val leafShape = leafShapeForIndex(index)
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { direction ->
@@ -346,7 +444,6 @@ private fun SwipeableGardenPathBillCard(
     )
 
     SwipeToDismissBox(
-        modifier = modifier,
         state = dismissState,
         enableDismissFromStartToEnd = false,
         backgroundContent = {

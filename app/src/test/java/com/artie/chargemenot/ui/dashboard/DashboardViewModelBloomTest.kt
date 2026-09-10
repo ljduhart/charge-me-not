@@ -246,7 +246,11 @@ class DashboardViewModelBloomTest {
 
         assertEquals(3, gardenPathBills.size)
         assertEquals("Maple Street Apartment", gardenPathBills.first().name)
-        assertTrue(gardenPathBills.zipWithNext().all { (left, right) -> left.dueDate <= right.dueDate })
+        assertTrue(
+            gardenPathBills.zipWithNext().all { (earlier, later) ->
+                earlier.dueDate <= later.dueDate
+            }
+        )
     }
 
     @Test
