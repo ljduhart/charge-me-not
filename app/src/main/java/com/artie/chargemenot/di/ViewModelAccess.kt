@@ -35,8 +35,7 @@ inline fun <reified VM : ViewModel> NavController.destinationViewModelOrNull(
         val entry = getBackStackEntry(route)
         ViewModelProvider(
             entry,
-            AppViewModelProvider.Factory,
-            entry.defaultViewModelCreationExtras
+            AppViewModelProvider.Factory
         )[VM::class.java]
     }.getOrNull()
 }
