@@ -1,27 +1,26 @@
 package com.artie.chargemenot.ui.dashboard
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import com.artie.chargemenot.data.repository.BillRepository
+import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.data.sensors.DeviceTiltSensor
 import com.artie.chargemenot.data.sensors.StationaryDeviceTiltSensor
-import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.Bill
-import com.artie.chargemenot.domain.model.ForecastResult
 import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.model.SupportedCurrency
 import com.artie.chargemenot.domain.model.UserSettings
+import com.artie.chargemenot.domain.usecase.ForecastUseCase
 import com.artie.chargemenot.ui.components.BloomCategoryDefinitions
 import com.artie.chargemenot.ui.components.sortGardenPathBills
-import com.artie.chargemenot.domain.usecase.ForecastUseCase
 import com.artie.chargemenot.util.CurrencyParser
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -34,42 +33,21 @@ import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModel(
     private val billRepository: BillRepository,
     private val userSettingsRepository: UserSettingsRepository,
     private val forecastUseCase: ForecastUseCase,
-    private val deviceTiltSensor: DeviceTiltSensor = StationaryDeviceTiltSensor(),
-    private val coroutineScope: CoroutineScope,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) {
+    private val deviceTiltSensor: DeviceTiltSensor = StationaryDeviceTiltSensor()
+) : ViewModel() {
 
-    private val _parallaxOffset = MutableStateFlow(0f to 0f)
-    val parallaxOffset: StateFlow<Pair<Float, Float>> = _parallaxOffset.asStateFlow()
-
+    private val overlayState = MutableStateFlow(DashboardOverlayState())
+    private val parallaxOffsetState = MutableStateFlow(0f to 0f)
     private var parallaxSensorJob: Job? = null
 
-    private val _uiState = MutableStateFlow(DashboardUiState())
-    val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
-
-    private val _selectedBillForEdit = MutableStateFlow<Bill?>(null)
-    val selectedBillForEdit: StateFlow<Bill?> = _selectedBillForEdit.asStateFlow()
-
-    private val _selectedCategoryForEdit = MutableStateFlow<String?>(null)
-    val selectedCategoryForEdit: StateFlow<String?> = _selectedCategoryForEdit.asStateFlow()
-
-    private val _isProfileEditVisible = MutableStateFlow(false)
-    val isProfileEditVisible: StateFlow<Boolean> = _isProfileEditVisible.asStateFlow()
-
-    private val _isManualBillVisible = MutableStateFlow(false)
-    val isManualBillVisible: StateFlow<Boolean> = _isManualBillVisible.asStateFlow()
-
-    private val _manualBillEntrySession = MutableStateFlow(0)
-    val manualBillEntrySession: StateFlow<Int> = _manualBillEntrySession.asStateFlow()
-
-    private val _manualBillPrefillDate = MutableStateFlow<LocalDate?>(null)
-    val manualBillPrefillDate: StateFlow<LocalDate?> = _manualBillPrefillDate.asStateFlow()
-
-    val categoryBills: StateFlow<List<Bill>> = _selectedCategoryForEdit
+    private val categoryBillsFlow = overlayState
+        .map { overlays -> overlays.selectedCategoryForEdit }
+        .distinctUntilChanged()
         .flatMapLatest { categoryName ->
             if (categoryName == null) {
                 flowOf(emptyList())
@@ -82,76 +60,34 @@ class DashboardViewModel(
                 }
             }
         }
-        .stateIn(
-            scope = coroutineScope,
-            started = SharingStarted.Eagerly,
-            initialValue = emptyList()
-        )
 
-    val forecastResult: StateFlow<ForecastResult?> = uiState
-        .map { state -> state.forecastResult }
-        .stateIn(
-            scope = coroutineScope,
-            started = SharingStarted.Eagerly,
-            initialValue = null
-        )
-
-    init {
-        observeDashboard()
-    }
-
-    private fun observeDashboard() {
-        coroutineScope.launch(ioDispatcher) {
-            combine(
-                billRepository.getUpcomingBills(),
-                billRepository.getAllBills(),
-                userSettingsRepository.observeUserSettings()
-            ) { upcoming, all, settings ->
-                val today = LocalDate.now()
-                val subscriptions = all.filter {
-                    it.parentCategory == MeadowCategories.VINES && !it.isPaid
-                }
-                val parentCategoryTotals = upcoming
-                    .groupBy { it.parentCategory }
-                    .mapValues { (_, bills) -> bills.sumOf { bill -> bill.amount } }
-                val forecast = forecastUseCase.calculateForecastFromDomainBills(
-                    bills = all,
-                    today = LocalDate.now()
-                )
-
-                val billsByDueDate = all
-                    .filter { bill -> !bill.isPaid }
-                    .groupBy { bill -> bill.dueDate }
-
-                DashboardUiState(
-                    userDisplayName = settings.displayName,
-                    formattedDate = formatDisplayDate(LocalDate.now()),
-                    greeting = resolveGreeting(),
-                    totalUpcoming = upcoming.sumOf { it.amount },
-                    upcomingBillCount = upcoming.size,
-                    monthlyBudget = settings.monthlyBudget,
-                    upcomingBills = upcoming,
-                    subscriptionBills = subscriptions,
-                    allBills = all,
-                    gardenPathBills = sortGardenPathBills(all),
-                    parentCategoryTotals = parentCategoryTotals,
-                    forecastResult = forecast,
-                    highlightedBloomParent = _uiState.value.highlightedBloomParent,
-                    selectedCurrency = SupportedCurrency.fromCode(settings.selectedCurrency),
-                    isBillCalendarExpanded = _uiState.value.isBillCalendarExpanded,
-                    calendarVisibleMonth = _uiState.value.calendarVisibleMonth,
-                    billsByDueDate = billsByDueDate,
-                    selectedCalendarDate = _uiState.value.selectedCalendarDate,
-                    isLoading = false
-                )
-            }.collect { state ->
-                _uiState.value = state
-            }
-        }
-    }
+    val uiState: StateFlow<DashboardUiState> = combine(
+        combine(
+            billRepository.getUpcomingBills(),
+            billRepository.getAllBills(),
+            userSettingsRepository.observeUserSettings(),
+            overlayState,
+            categoryBillsFlow
+        ) { upcoming, all, settings, overlays, categoryBills ->
+            DashboardSnapshot(
+                upcomingBills = upcoming,
+                allBills = all,
+                settings = settings,
+                overlays = overlays,
+                categoryBills = categoryBills
+            )
+        },
+        parallaxOffsetState
+    ) { snapshot, parallaxOffset ->
+        snapshot.toUiState(parallaxOffset)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = DashboardUiState()
+    )
 
     fun keepSubscription(bill: Bill) {
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             billRepository.updateBill(bill.copy(isPaid = true))
         }
     }
@@ -161,18 +97,23 @@ class DashboardViewModel(
     }
 
     fun deleteBill(bill: Bill) {
-        if (_selectedBillForEdit.value?.id == bill.id) {
-            _selectedBillForEdit.value = null
+        overlayState.update { overlays ->
+            if (overlays.selectedBillForEdit?.id == bill.id) {
+                overlays.copy(selectedBillForEdit = null)
+            } else {
+                overlays
+            }
         }
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             billRepository.deleteBill(bill)
         }
     }
 
     fun linkBillToParent(childBillId: Long, parentBillId: Long?) {
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             billRepository.linkBillToParent(childBillId, parentBillId)
         }
+        overlayState.update { overlays -> overlays.copy(billToLink = null) }
     }
 
     fun updateMonthlyBudget(rawBudgetInput: String): Boolean {
@@ -181,105 +122,119 @@ class DashboardViewModel(
             return false
         }
 
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             userSettingsRepository.updateMonthlyBudget(parsedBudget)
         }
         return true
     }
 
     fun updateDisplayName(displayName: String) {
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             userSettingsRepository.updateDisplayName(displayName)
-            _isProfileEditVisible.value = false
+            overlayState.update { overlays -> overlays.copy(isProfileEditVisible = false) }
         }
     }
 
     fun insertManualBill(bill: Bill) {
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             billRepository.insertBill(bill)
-            _isManualBillVisible.value = false
-            _manualBillPrefillDate.value = null
-            _uiState.update { current -> current.copy(selectedCalendarDate = null) }
+            overlayState.update { overlays ->
+                overlays.copy(
+                    isManualBillVisible = false,
+                    manualBillPrefillDate = null,
+                    selectedCalendarDate = null
+                )
+            }
         }
     }
 
     fun showProfileEdit() {
-        dismissDashboardOverlays()
-        clearBillAndCategorySelection()
-        _isProfileEditVisible.value = true
+        overlayState.update { overlays ->
+            overlays.clearedSelections().copy(isProfileEditVisible = true)
+        }
     }
 
     fun dismissProfileEdit() {
-        _isProfileEditVisible.value = false
+        overlayState.update { overlays -> overlays.copy(isProfileEditVisible = false) }
     }
 
     fun showManualBillEntry(prefillDate: LocalDate? = null) {
-        dismissDashboardOverlays()
-        clearBillAndCategorySelection()
-        _manualBillPrefillDate.value = prefillDate
-        _manualBillEntrySession.update { session -> session + 1 }
-        _isManualBillVisible.value = true
+        overlayState.update { overlays ->
+            overlays.clearedSelections().copy(
+                isManualBillVisible = true,
+                manualBillPrefillDate = prefillDate,
+                manualBillEntrySession = overlays.manualBillEntrySession + 1
+            )
+        }
     }
 
     fun dismissManualBillEntry() {
-        _isManualBillVisible.value = false
-        _manualBillPrefillDate.value = null
-        _uiState.update { current -> current.copy(selectedCalendarDate = null) }
+        overlayState.update { overlays ->
+            overlays.copy(
+                isManualBillVisible = false,
+                manualBillPrefillDate = null,
+                selectedCalendarDate = null
+            )
+        }
     }
 
     fun selectBillForEdit(bill: Bill) {
-        dismissDashboardOverlays()
-        clearBillAndCategorySelection()
-        _selectedBillForEdit.value = bill
+        overlayState.update { overlays ->
+            overlays.clearedSelections().copy(selectedBillForEdit = bill)
+        }
     }
 
     fun clearEditSelection() {
-        _selectedBillForEdit.value = null
+        overlayState.update { overlays -> overlays.copy(selectedBillForEdit = null) }
     }
 
     fun onPetalTapped(category: String) {
-        dismissDashboardOverlays()
-        clearBillAndCategorySelection()
         val highlightParent = BloomCategoryDefinitions.fromDisplayName(category)?.parentName
-        _uiState.update { current ->
-            current.copy(highlightedBloomParent = highlightParent)
+        overlayState.update { overlays ->
+            overlays.clearedSelections().copy(
+                selectedCategoryForEdit = category,
+                highlightedBloomParent = highlightParent
+            )
         }
-        _selectedCategoryForEdit.value = category
     }
 
     fun clearCategorySelection() {
-        _selectedCategoryForEdit.value = null
-        _uiState.update { current -> current.copy(highlightedBloomParent = null) }
+        overlayState.update { overlays ->
+            overlays.copy(
+                selectedCategoryForEdit = null,
+                highlightedBloomParent = null
+            )
+        }
     }
 
     fun saveBillEdits(updatedBill: Bill) {
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             billRepository.updateBill(updatedBill)
             clearEditSelection()
         }
     }
 
     fun toggleBillCalendarExpanded() {
-        _uiState.update { current ->
-            current.copy(isBillCalendarExpanded = !current.isBillCalendarExpanded)
+        overlayState.update { overlays ->
+            overlays.copy(isBillCalendarExpanded = !overlays.isBillCalendarExpanded)
         }
     }
 
     fun showPreviousCalendarMonth() {
-        _uiState.update { current ->
-            current.copy(calendarVisibleMonth = current.calendarVisibleMonth.minusMonths(1))
+        overlayState.update { overlays ->
+            overlays.copy(calendarVisibleMonth = overlays.calendarVisibleMonth.minusMonths(1))
         }
     }
 
     fun showNextCalendarMonth() {
-        _uiState.update { current ->
-            current.copy(calendarVisibleMonth = current.calendarVisibleMonth.plusMonths(1))
+        overlayState.update { overlays ->
+            overlays.copy(calendarVisibleMonth = overlays.calendarVisibleMonth.plusMonths(1))
         }
     }
 
     fun onCalendarDayTapped(date: LocalDate) {
-        _uiState.update { current ->
-            current.copy(
+        overlayState.update { overlays ->
+            overlays.copy(
                 selectedCalendarDate = date,
                 calendarVisibleMonth = YearMonth.from(date)
             )
@@ -288,36 +243,59 @@ class DashboardViewModel(
     }
 
     fun onCalendarBillTapped(bill: Bill) {
-        _uiState.update { current ->
-            current.copy(selectedCalendarDate = bill.dueDate)
+        overlayState.update { overlays ->
+            overlays.copy(selectedCalendarDate = bill.dueDate)
         }
         selectBillForEdit(bill)
     }
 
-    fun clearDashboardTransientState() {
-        dismissDashboardOverlays()
-        clearBillAndCategorySelection()
-        _uiState.update { current ->
-            current.copy(
-                selectedCalendarDate = null,
-                highlightedBloomParent = null
+    fun toggleSearchActive() {
+        overlayState.update { overlays ->
+            val nextActive = !overlays.isSearchActive
+            overlays.copy(
+                isSearchActive = nextActive,
+                searchQuery = if (nextActive) overlays.searchQuery else ""
             )
         }
     }
 
-    private fun dismissDashboardOverlays() {
-        _isProfileEditVisible.value = false
-        _isManualBillVisible.value = false
+    fun onSearchQueryChanged(query: String) {
+        overlayState.update { overlays -> overlays.copy(searchQuery = query) }
     }
 
-    private fun clearBillAndCategorySelection() {
-        _selectedBillForEdit.value = null
-        _selectedCategoryForEdit.value = null
+    fun shareBill(bill: Bill) {
+        overlayState.update { overlays -> overlays.copy(billToShare = bill) }
+    }
+
+    fun dismissShareBill() {
+        overlayState.update { overlays -> overlays.copy(billToShare = null) }
+    }
+
+    fun linkBill(bill: Bill) {
+        overlayState.update { overlays -> overlays.copy(billToLink = bill) }
+    }
+
+    fun dismissLinkBill() {
+        overlayState.update { overlays -> overlays.copy(billToLink = null) }
+    }
+
+    fun clearDashboardTransientState() {
+        overlayState.update { overlays ->
+            overlays.clearedSelections().copy(
+                selectedCalendarDate = null,
+                highlightedBloomParent = null,
+                isSearchActive = false,
+                searchQuery = "",
+                billToShare = null,
+                billToLink = null
+            )
+        }
     }
 
     fun openBloomSettingsEdit() {
-        val subscription = _uiState.value.subscriptionBills.firstOrNull()
-            ?: _uiState.value.upcomingBills.firstOrNull()
+        val state = uiState.value
+        val subscription = state.subscriptionBills.firstOrNull()
+            ?: state.upcomingBills.firstOrNull()
         if (subscription != null) {
             selectBillForEdit(subscription)
         }
@@ -327,9 +305,9 @@ class DashboardViewModel(
         if (parallaxSensorJob?.isActive == true) {
             return
         }
-        parallaxSensorJob = coroutineScope.launch(Dispatchers.Main.immediate) {
+        parallaxSensorJob = viewModelScope.launch {
             deviceTiltSensor.tiltOffsets().collect { offset ->
-                _parallaxOffset.value = offset
+                parallaxOffsetState.value = offset
             }
         }
     }
@@ -337,11 +315,64 @@ class DashboardViewModel(
     fun stopParallaxSensor() {
         parallaxSensorJob?.cancel()
         parallaxSensorJob = null
-        _parallaxOffset.value = 0f to 0f
+        parallaxOffsetState.value = 0f to 0f
     }
 
-    fun onCleared() {
+    override fun onCleared() {
         stopParallaxSensor()
+        super.onCleared()
+    }
+
+    private fun DashboardSnapshot.toUiState(
+        parallaxOffset: Pair<Float, Float>
+    ): DashboardUiState {
+        val subscriptions = allBills.filter { bill ->
+            bill.parentCategory == MeadowCategories.VINES && !bill.isPaid
+        }
+        val parentCategoryTotals = upcomingBills
+            .groupBy { bill -> bill.parentCategory }
+            .mapValues { (_, bills) -> bills.sumOf { bill -> bill.amount } }
+        val forecast = forecastUseCase.calculateForecastFromDomainBills(
+            bills = allBills,
+            today = LocalDate.now()
+        )
+        val billsByDueDate = allBills
+            .filter { bill -> !bill.isPaid }
+            .groupBy { bill -> bill.dueDate }
+
+        return DashboardUiState(
+            userDisplayName = settings.displayName,
+            formattedDate = formatDisplayDate(LocalDate.now()),
+            greeting = resolveGreeting(),
+            totalUpcoming = upcomingBills.sumOf { bill -> bill.amount },
+            upcomingBillCount = upcomingBills.size,
+            monthlyBudget = settings.monthlyBudget,
+            upcomingBills = upcomingBills,
+            subscriptionBills = subscriptions,
+            allBills = allBills,
+            gardenPathBills = sortGardenPathBills(allBills),
+            parentCategoryTotals = parentCategoryTotals,
+            forecastResult = forecast,
+            highlightedBloomParent = overlays.highlightedBloomParent,
+            selectedCurrency = SupportedCurrency.fromCode(settings.selectedCurrency),
+            isBillCalendarExpanded = overlays.isBillCalendarExpanded,
+            calendarVisibleMonth = overlays.calendarVisibleMonth,
+            billsByDueDate = billsByDueDate,
+            selectedCalendarDate = overlays.selectedCalendarDate,
+            isLoading = false,
+            selectedBillForEdit = overlays.selectedBillForEdit,
+            selectedCategoryForEdit = overlays.selectedCategoryForEdit,
+            categoryBills = categoryBills,
+            isProfileEditVisible = overlays.isProfileEditVisible,
+            isManualBillVisible = overlays.isManualBillVisible,
+            manualBillEntrySession = overlays.manualBillEntrySession,
+            manualBillPrefillDate = overlays.manualBillPrefillDate,
+            isSearchActive = overlays.isSearchActive,
+            searchQuery = overlays.searchQuery,
+            billToShare = overlays.billToShare,
+            billToLink = overlays.billToLink,
+            parallaxOffset = parallaxOffset
+        )
     }
 
     private fun formatDisplayDate(date: LocalDate): String {
@@ -358,4 +389,36 @@ class DashboardViewModel(
             else -> "Good evening"
         }
     }
+
+    private data class DashboardOverlayState(
+        val highlightedBloomParent: String? = null,
+        val isBillCalendarExpanded: Boolean = false,
+        val calendarVisibleMonth: YearMonth = YearMonth.now(),
+        val selectedCalendarDate: LocalDate? = null,
+        val selectedBillForEdit: Bill? = null,
+        val selectedCategoryForEdit: String? = null,
+        val isProfileEditVisible: Boolean = false,
+        val isManualBillVisible: Boolean = false,
+        val manualBillEntrySession: Int = 0,
+        val manualBillPrefillDate: LocalDate? = null,
+        val isSearchActive: Boolean = false,
+        val searchQuery: String = "",
+        val billToShare: Bill? = null,
+        val billToLink: Bill? = null
+    ) {
+        fun clearedSelections(): DashboardOverlayState = copy(
+            selectedBillForEdit = null,
+            selectedCategoryForEdit = null,
+            isProfileEditVisible = false,
+            isManualBillVisible = false
+        )
+    }
+
+    private data class DashboardSnapshot(
+        val upcomingBills: List<Bill>,
+        val allBills: List<Bill>,
+        val settings: UserSettings,
+        val overlays: DashboardOverlayState,
+        val categoryBills: List<Bill>
+    )
 }

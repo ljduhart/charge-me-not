@@ -1,9 +1,9 @@
 package com.artie.chargemenot.ui.viewmodels
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.artie.chargemenot.data.repository.BillRepository
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,12 +13,10 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-@OptIn(FlowPreview::class)
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class CompostBinViewModel(
-    private val billRepository: BillRepository,
-    private val coroutineScope: CoroutineScope,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) {
+    private val billRepository: BillRepository
+) : ViewModel() {
 
     private val searchQuery = MutableStateFlow("")
 
@@ -26,7 +24,7 @@ class CompostBinViewModel(
     val uiState: StateFlow<CompostBinUiState> = _uiState.asStateFlow()
 
     init {
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             searchQuery
                 .debounce(SEARCH_DEBOUNCE_MS)
                 .flatMapLatest { query ->

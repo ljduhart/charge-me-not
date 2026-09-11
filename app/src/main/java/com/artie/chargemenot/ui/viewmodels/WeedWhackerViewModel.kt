@@ -1,12 +1,11 @@
 package com.artie.chargemenot.ui.viewmodels
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.artie.chargemenot.data.local.BillDao
 import com.artie.chargemenot.data.local.BillEntity
 import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.SupportedCurrency
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,10 +15,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class WeedWhackerViewModel(
     private val billDao: BillDao,
-    private val userSettingsRepository: UserSettingsRepository,
-    private val coroutineScope: CoroutineScope,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) {
+    private val userSettingsRepository: UserSettingsRepository
+) : ViewModel() {
 
     private val subscriptionsState = MutableStateFlow<List<BillEntity>>(emptyList())
     private val currentAuditIndex = MutableStateFlow(0)
@@ -33,14 +30,14 @@ class WeedWhackerViewModel(
 
     init {
         observeSubscriptions()
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             billDao.getActiveSubscriptions().collect { subscriptions ->
                 subscriptionsState.value = subscriptions
                 hasLoadedSubscriptions.value = true
                 reconcileAuditIndex(subscriptions)
             }
         }
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             userSettingsRepository.observeUserSettings().collect { settings ->
                 selectedCurrencyState.value = SupportedCurrency.fromCode(settings.selectedCurrency)
             }
@@ -58,7 +55,7 @@ class WeedWhackerViewModel(
     }
 
     private fun observeSubscriptions() {
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             combine(
                 subscriptionsState,
                 currentAuditIndex,
@@ -84,7 +81,7 @@ class WeedWhackerViewModel(
             return
         }
 
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             try {
                 val bill = billDao.getBillByIdOnce(billId) ?: return@launch
 

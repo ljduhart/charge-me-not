@@ -1,14 +1,13 @@
 package com.artie.chargemenot.ui.viewmodels
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.artie.chargemenot.data.local.BillDao
 import com.artie.chargemenot.data.local.BillEntity
 import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.model.SupportedCurrency
 import com.artie.chargemenot.domain.model.UserSettings
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,10 +18,8 @@ import kotlinx.coroutines.launch
 
 class PruningViewModel(
     private val billDao: BillDao,
-    private val userSettingsRepository: UserSettingsRepository,
-    private val coroutineScope: CoroutineScope,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) {
+    private val userSettingsRepository: UserSettingsRepository
+) : ViewModel() {
 
     private val sandboxState = MutableStateFlow<List<BillEntity>>(emptyList())
     private val pruneStates = MutableStateFlow<Map<Long, SandboxPruneState>>(emptyMap())
@@ -36,7 +33,7 @@ class PruningViewModel(
 
     init {
         observeSandboxState()
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             loadSnapshotFromRoom()
             userSettingsRepository.observeUserSettings().collect { settings ->
                 monthlyBudgetState.value = settings.monthlyBudget
@@ -46,7 +43,7 @@ class PruningViewModel(
     }
 
     private fun observeSandboxState() {
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             combine(
                 sandboxState,
                 pruneStates,
@@ -123,7 +120,7 @@ class PruningViewModel(
     }
 
     fun resetSandbox() {
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             hasLoadedSnapshot.value = false
             expandedRootBillId.value = null
             loadSnapshotFromRoom()

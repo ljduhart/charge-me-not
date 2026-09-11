@@ -1,19 +1,16 @@
 package com.artie.chargemenot.ui.viewmodels
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.artie.chargemenot.data.repository.CategoryRepository
 import com.artie.chargemenot.domain.model.MeadowCategories
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class CategoryViewModel(
-    private val categoryRepository: CategoryRepository,
-    private val coroutineScope: CoroutineScope,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) {
+    private val categoryRepository: CategoryRepository
+) : ViewModel() {
     val parentCategories: Flow<List<String>> = categoryRepository
         .getDistinctParentNames()
         .map { parents -> orderParentCategories(parents) }
@@ -28,7 +25,7 @@ class CategoryViewModel(
         }
 
     fun addCustomSubcategory(parent: String, subCategory: String) {
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             categoryRepository.addCustomSubcategory(parent, subCategory)
         }
     }

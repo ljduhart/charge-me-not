@@ -1,12 +1,11 @@
 package com.artie.chargemenot.ui.viewmodels
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.repository.NagModeScheduler
 import com.artie.chargemenot.domain.repository.NotificationPermissionGateway
 import com.artie.chargemenot.domain.repository.WeedWhackerScheduler
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,10 +16,8 @@ class SettingsViewModel(
     private val userSettingsRepository: UserSettingsRepository,
     private val nagModeScheduler: NagModeScheduler,
     private val weedWhackerScheduler: WeedWhackerScheduler,
-    private val notificationPermissionGateway: NotificationPermissionGateway,
-    private val coroutineScope: CoroutineScope,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) {
+    private val notificationPermissionGateway: NotificationPermissionGateway
+) : ViewModel() {
 
     private val permissionGrantedState = MutableStateFlow(
         notificationPermissionGateway.isNotificationPermissionGranted()
@@ -39,7 +36,7 @@ class SettingsViewModel(
     }
 
     private fun observeSettings() {
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             combine(
                 userSettingsRepository.observeNagModeEnabled(),
                 permissionGrantedState,
@@ -59,7 +56,7 @@ class SettingsViewModel(
     }
 
     fun scheduleWeedWhackerAudits() {
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             weedWhackerScheduler.enablePeriodicAudits()
         }
     }
@@ -108,7 +105,7 @@ class SettingsViewModel(
     }
 
     fun toggleNagMode(isEnabled: Boolean) {
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             userSettingsRepository.updateNagModeEnabled(isEnabled)
             if (isEnabled) {
                 nagModeScheduler.enableNagMode()
@@ -120,7 +117,7 @@ class SettingsViewModel(
     }
 
     fun restoreNagModeWorkIfEnabled() {
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             if (userSettingsRepository.getNagModeEnabled()) {
                 nagModeScheduler.enableNagMode()
             }

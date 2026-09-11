@@ -9,25 +9,21 @@ import com.artie.chargemenot.domain.model.SupportedCurrency
 import com.artie.chargemenot.domain.model.UserSettings
 import com.artie.chargemenot.scanner.OcrScanResult
 import com.artie.chargemenot.util.CurrencyFormatter
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicBoolean
 
 class ScannerViewModel(
     private val billRepository: BillRepository,
-    private val userSettingsRepository: UserSettingsRepository,
-    private val coroutineScope: CoroutineScope,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) {
+    private val userSettingsRepository: UserSettingsRepository
+) : ViewModel() {
 
     private val dateFormat = DateTimeFormatter.ofPattern("MMM d, yyyy")
 
@@ -43,7 +39,7 @@ class ScannerViewModel(
     }
 
     private fun observeScannerData() {
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             combine(
                 billRepository.getUpcomingBills(),
                 userSettingsRepository.observeUserSettings()
@@ -103,7 +99,7 @@ class ScannerViewModel(
             previousReceiptPath != null &&
             receiptImagePath != previousReceiptPath
         ) {
-            coroutineScope.launch(ioDispatcher) {
+            viewModelScope.launch {
                 billRepository.deleteOrphanReceiptImage(previousReceiptPath)
             }
         }
@@ -200,7 +196,7 @@ class ScannerViewModel(
             return
         }
 
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             try {
                 billRepository.insertBill(
                     Bill(
@@ -212,9 +208,7 @@ class ScannerViewModel(
                     )
                 )
                 resetScanSession()
-                withContext(Dispatchers.Main) {
-                    onAccepted()
-                }
+                onAccepted()
             } finally {
                 isAcceptingPollen.set(false)
             }
@@ -231,7 +225,7 @@ class ScannerViewModel(
             return
         }
 
-        coroutineScope.launch(ioDispatcher) {
+        viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isSavingScannedBill = true) }
                 billRepository.insertScannedBill(
@@ -249,9 +243,7 @@ class ScannerViewModel(
                     rawText = scanned.rawText
                 )
                 resetScanSession()
-                withContext(Dispatchers.Main) {
-                    onSaved()
-                }
+                onSaved()
             } finally {
                 isSavingScannedBill.set(false)
                 _uiState.update { it.copy(isSavingScannedBill = false) }
@@ -276,7 +268,7 @@ class ScannerViewModel(
             )
         }
         if (orphanReceiptPath != null) {
-            coroutineScope.launch(ioDispatcher) {
+            viewModelScope.launch {
                 billRepository.deleteOrphanReceiptImage(orphanReceiptPath)
             }
         }

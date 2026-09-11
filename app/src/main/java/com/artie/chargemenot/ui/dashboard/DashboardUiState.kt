@@ -26,5 +26,17 @@ data class DashboardUiState(
     val calendarVisibleMonth: YearMonth = YearMonth.now(),
     val billsByDueDate: Map<LocalDate, List<Bill>> = emptyMap(),
     val selectedCalendarDate: LocalDate? = null,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val selectedBillForEdit: Bill? = null,
+    val selectedCategoryForEdit: String? = null,
+    val categoryBills: List<Bill> = emptyList(),
+    val isProfileEditVisible: Boolean = false,
+    val isManualBillVisible: Boolean = false,
+    val manualBillEntrySession: Int = 0,
+    val manualBillPrefillDate: LocalDate? = null,
+    val isSearchActive: Boolean = false,
+    val searchQuery: String = "",
+    val billToShare: Bill? = null,
+    val billToLink: Bill? = null,
+    val parallaxOffset: Pair<Float, Float> = 0f to 0f
 )
