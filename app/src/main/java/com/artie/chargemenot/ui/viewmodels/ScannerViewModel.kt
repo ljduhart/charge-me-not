@@ -73,8 +73,8 @@ class ScannerViewModel(
                         monthlyBudget = monthlyBudget,
                         selectedCurrency = selectedCurrency,
                         predictiveImpact = recalculatedImpact,
-                        scanStatusMessage = buildScanStatusMessage(
-                            scannedBill = current.scannedBill,
+                        scanStatusMessage = observedScanStatusMessage(
+                            current = current,
                             currency = selectedCurrency
                         ),
                         budgetSummary = buildBudgetSummary(
@@ -331,6 +331,21 @@ class ScannerViewModel(
             MeadowCategories.POLLINATORS -> "Scanned Healthcare Bill"
             MeadowCategories.WILDFLOWERS -> "Scanned Entertainment Bill"
             else -> "Scanned Utility Bill"
+        }
+    }
+
+    private fun observedScanStatusMessage(
+        current: ScannerUiState,
+        currency: SupportedCurrency
+    ): String {
+        if (current.pollenReceived != null) {
+            return current.scanStatusMessage
+        }
+        val scannedBill = current.scannedBill
+        return if (scannedBill.amount != null || scannedBill.dueDate != null) {
+            buildScanStatusMessage(scannedBill, currency)
+        } else {
+            current.scanStatusMessage
         }
     }
 

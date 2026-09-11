@@ -12,6 +12,9 @@ import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.model.UserSettings
 import com.artie.chargemenot.data.model.CrossPollinationPayload
+import com.artie.chargemenot.scanner.OcrScanResult
+import com.artie.chargemenot.util.CurrencyFormatter
+import com.artie.chargemenot.domain.model.SupportedCurrency
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -214,6 +217,105 @@ class ScannerViewModelTest {
     assertNull(viewModel.uiState.value.pollenReceived)
   }
 
+  @Test
+  fun observeScannerData_keepsIdleStatusAfterSettingsRefresh() {
+    val settingsDao = MutableFakeUserSettingsDao()
+    val viewModel = ScannerViewModel(
+      billRepository = BillRepository(FakeBillDao(), FakeCompostDao()),
+      userSettingsRepository = UserSettingsRepository(settingsDao),
+      coroutineScope = testScope,
+      ioDispatcher = testDispatcher
+    )
+    testScope.advanceUntilIdle()
+
+    assertEquals("Point camera at your bill to scan", viewModel.uiState.value.scanStatusMessage)
+
+    settingsDao.emit(
+      UserSettingsEntity(
+        monthlyBudget = 300_000L,
+        selectedCurrency = "USD"
+      )
+    )
+    testScope.advanceUntilIdle()
+
+    assertEquals("Point camera at your bill to scan", viewModel.uiState.value.scanStatusMessage)
+  }
+
+  @Test
+  fun observeScannerData_preservesPollenStatusAfterSettingsRefresh() {
+    val settingsDao = MutableFakeUserSettingsDao()
+    val viewModel = ScannerViewModel(
+      billRepository = BillRepository(FakeBillDao(), FakeCompostDao()),
+      userSettingsRepository = UserSettingsRepository(settingsDao),
+      coroutineScope = testScope,
+      ioDispatcher = testDispatcher
+    )
+    testScope.advanceUntilIdle()
+
+    viewModel.onQrPayloadDetected(
+      CrossPollinationPayload(
+        name = "Shared Electric",
+        amount = 8_450L,
+        dueDate = "2026-10-01",
+        parentCategory = MeadowCategories.ROOT_SYSTEM,
+        subCategory = "Utilities"
+      )
+    )
+    val pollenStatus = viewModel.uiState.value.scanStatusMessage
+    assertEquals("Partner QR detected: Shared Electric", pollenStatus)
+
+    settingsDao.emit(
+      UserSettingsEntity(
+        monthlyBudget = 180_000L,
+        selectedCurrency = "CAD"
+      )
+    )
+    testScope.advanceUntilIdle()
+
+    assertEquals(pollenStatus, viewModel.uiState.value.scanStatusMessage)
+    assertNotNull(viewModel.uiState.value.pollenReceived)
+  }
+
+  @Test
+  fun observeScannerData_reformatsCapturedAmountWhenCurrencyChanges() {
+    val settingsDao = MutableFakeUserSettingsDao()
+    val viewModel = ScannerViewModel(
+      billRepository = BillRepository(FakeBillDao(), FakeCompostDao()),
+      userSettingsRepository = UserSettingsRepository(settingsDao),
+      coroutineScope = testScope,
+      ioDispatcher = testDispatcher
+    )
+    testScope.advanceUntilIdle()
+
+    viewModel.onScanResult(
+      OcrScanResult(
+        amount = 1_599L,
+        dueDate = LocalDate.of(2026, 10, 1),
+        rawText = "Utility bill"
+      )
+    )
+    assertTrue(
+      viewModel.uiState.value.scanStatusMessage.contains(
+        CurrencyFormatter.format(1_599L, SupportedCurrency.USD)
+      )
+    )
+
+    settingsDao.emit(
+      UserSettingsEntity(
+        monthlyBudget = UserSettings.DEFAULT_MONTHLY_BUDGET,
+        selectedCurrency = "EUR"
+      )
+    )
+    testScope.advanceUntilIdle()
+
+    assertTrue(
+      viewModel.uiState.value.scanStatusMessage.contains(
+        CurrencyFormatter.format(1_599L, SupportedCurrency.EUR)
+      )
+    )
+    assertEquals(SupportedCurrency.EUR, viewModel.uiState.value.selectedCurrency)
+  }
+
   private fun createViewModel(): ScannerViewModel {
     return ScannerViewModel(
       billRepository = BillRepository(FakeBillDao(), FakeCompostDao()),
@@ -302,6 +404,28 @@ class ScannerViewModelTest {
 
     override fun searchCompost(query: String): Flow<List<BillWithCompost>> =
       flowOf(emptyList())
+  }
+
+  private class MutableFakeUserSettingsDao(
+    initial: UserSettingsEntity = UserSettingsEntity(
+      monthlyBudget = UserSettings.DEFAULT_MONTHLY_BUDGET
+    )
+  ) : UserSettingsDao {
+    private val settings = MutableStateFlow<UserSettingsEntity?>(initial)
+
+    fun emit(entity: UserSettingsEntity) {
+      settings.value = entity
+    }
+
+    override fun observeSettings(settingsId: Int): Flow<UserSettingsEntity?> = settings
+
+    override suspend fun upsertSettings(settings: UserSettingsEntity) {
+      this.settings.value = settings
+    }
+
+    override suspend fun getSettings(settingsId: Int): UserSettingsEntity? = settings.value
+
+    override suspend fun getSettingsCount(settingsId: Int): Int = if (settings.value == null) 0 else 1
   }
 
   private class FakeUserSettingsDao : UserSettingsDao {
