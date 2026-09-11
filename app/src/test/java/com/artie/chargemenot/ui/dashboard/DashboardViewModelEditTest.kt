@@ -57,7 +57,7 @@ class DashboardViewModelEditTest {
 
         viewModel.selectBillForEdit(bill)
 
-        assertEquals(bill, viewModel.selectedBillForEdit.value)
+        assertEquals(bill, viewModel.uiState.value.selectedBillForEdit)
     }
 
     @Test
@@ -66,7 +66,7 @@ class DashboardViewModelEditTest {
         viewModel.selectBillForEdit(sampleBill(id = 4L, name = "Netflix"))
         viewModel.clearEditSelection()
 
-        assertNull(viewModel.selectedBillForEdit.value)
+        assertNull(viewModel.uiState.value.selectedBillForEdit)
     }
 
     @Test
@@ -84,7 +84,7 @@ class DashboardViewModelEditTest {
         assertEquals(1, trackingBillDao.updatedBills.size)
         assertEquals("Netflix Premium", trackingBillDao.updatedBills.first().name)
         assertEquals(1_799L, trackingBillDao.updatedBills.first().amount)
-        assertNull(viewModel.selectedBillForEdit.value)
+        assertNull(viewModel.uiState.value.selectedBillForEdit)
     }
 
     @Test
@@ -120,7 +120,7 @@ class DashboardViewModelEditTest {
         viewModel.deleteBill(bill)
         testScope.advanceUntilIdle()
 
-        assertNull(viewModel.selectedBillForEdit.value)
+        assertNull(viewModel.uiState.value.selectedBillForEdit)
         assertEquals(1, trackingBillDao.deletedBills.size)
     }
 
@@ -134,8 +134,6 @@ class DashboardViewModelEditTest {
             ),
             userSettingsRepository = UserSettingsRepository(settingsDao),
             forecastUseCase = ForecastUseCase(trackingBillDao),
-            coroutineScope = testScope,
-            ioDispatcher = testDispatcher
         )
 
         assertFalse(viewModel.updateMonthlyBudget(""))
@@ -153,8 +151,6 @@ class DashboardViewModelEditTest {
             ),
             userSettingsRepository = UserSettingsRepository(settingsDao),
             forecastUseCase = ForecastUseCase(trackingBillDao),
-            coroutineScope = testScope,
-            ioDispatcher = testDispatcher
         )
         testScope.advanceUntilIdle()
 
@@ -173,8 +169,6 @@ class DashboardViewModelEditTest {
             ),
             userSettingsRepository = UserSettingsRepository(FakeSettingsDao()),
             forecastUseCase = ForecastUseCase(trackingBillDao),
-            coroutineScope = testScope,
-            ioDispatcher = testDispatcher
         )
     }
 

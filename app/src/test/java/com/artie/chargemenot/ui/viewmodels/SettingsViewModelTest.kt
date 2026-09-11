@@ -6,19 +6,37 @@ import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.repository.NagModeScheduler
 import com.artie.chargemenot.domain.repository.NotificationPermissionGateway
 import com.artie.chargemenot.domain.repository.WeedWhackerScheduler
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class SettingsViewModelTest {
 
   private val testDispatcher = UnconfinedTestDispatcher()
   private val testScope = TestScope(testDispatcher)
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Before
+  fun setUp() {
+    Dispatchers.setMain(testDispatcher)
+  }
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @After
+  fun tearDown() {
+    Dispatchers.resetMain()
+  }
 
   @Test
   fun init_schedulesWeedWhackerAudits() {
@@ -165,8 +183,6 @@ class SettingsViewModelTest {
       nagModeScheduler = scheduler,
       weedWhackerScheduler = weedWhackerScheduler,
       notificationPermissionGateway = permissionGateway,
-      coroutineScope = testScope,
-      ioDispatcher = testDispatcher
     )
   }
 

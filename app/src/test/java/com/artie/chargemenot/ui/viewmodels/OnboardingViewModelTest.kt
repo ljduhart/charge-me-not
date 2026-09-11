@@ -76,8 +76,6 @@ class OnboardingViewModelTest {
             userSettingsRepository = UserSettingsRepository(blockingDao),
             nagModeScheduler = nagModeScheduler,
             notificationPermissionGateway = FakeNotificationPermissionGateway(),
-            coroutineScope = testScope,
-            ioDispatcher = testDispatcher
         )
         testScope.advanceUntilIdle()
 
@@ -129,8 +127,6 @@ class OnboardingViewModelTest {
             userSettingsRepository = UserSettingsRepository(settingsDao),
             nagModeScheduler = nagModeScheduler,
             notificationPermissionGateway = FakeNotificationPermissionGateway(),
-            coroutineScope = testScope,
-            ioDispatcher = testDispatcher
         )
     }
 

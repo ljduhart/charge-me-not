@@ -61,7 +61,7 @@ class DashboardViewModelBloomTest {
 
         viewModel.onPetalTapped("Roots")
 
-        assertEquals("Roots", viewModel.selectedCategoryForEdit.value)
+        assertEquals("Roots", viewModel.uiState.value.selectedCategoryForEdit)
     }
 
     @Test
@@ -70,7 +70,7 @@ class DashboardViewModelBloomTest {
         viewModel.onPetalTapped("Fertilizer")
         viewModel.clearCategorySelection()
 
-        assertNull(viewModel.selectedCategoryForEdit.value)
+        assertNull(viewModel.uiState.value.selectedCategoryForEdit)
     }
 
     @Test
@@ -89,7 +89,7 @@ class DashboardViewModelBloomTest {
             )
         )
 
-        assertNull(viewModel.selectedCategoryForEdit.value)
+        assertNull(viewModel.uiState.value.selectedCategoryForEdit)
     }
 
     @Test
@@ -106,8 +106,8 @@ class DashboardViewModelBloomTest {
         viewModel.selectBillForEdit(bill)
         viewModel.onPetalTapped("Roots")
 
-        assertNull(viewModel.selectedBillForEdit.value)
-        assertEquals("Roots", viewModel.selectedCategoryForEdit.value)
+        assertNull(viewModel.uiState.value.selectedBillForEdit)
+        assertEquals("Roots", viewModel.uiState.value.selectedCategoryForEdit)
     }
 
     @Test
@@ -127,8 +127,8 @@ class DashboardViewModelBloomTest {
 
         viewModel.onCalendarDayTapped(dueDate)
 
-        assertEquals(dueDate, viewModel.manualBillPrefillDate.value)
-        assertTrue(viewModel.isManualBillVisible.value)
+        assertEquals(dueDate, viewModel.uiState.value.manualBillPrefillDate)
+        assertTrue(viewModel.uiState.value.isManualBillVisible)
         assertEquals(dueDate, viewModel.uiState.value.selectedCalendarDate)
     }
 
@@ -151,7 +151,7 @@ class DashboardViewModelBloomTest {
         viewModel.onPetalTapped("Canopy")
         testScope.advanceUntilIdle()
 
-        val bills = viewModel.categoryBills.value
+        val bills = viewModel.uiState.value.categoryBills
         assertEquals(1, bills.size)
         assertEquals("Maple Street Apartment", bills.first().name)
         assertEquals(MeadowCategories.CANOPY, bills.first().parentCategory)
@@ -164,8 +164,8 @@ class DashboardViewModelBloomTest {
 
         viewModel.showManualBillEntry()
 
-        assertNull(viewModel.selectedCategoryForEdit.value)
-        assertTrue(viewModel.isManualBillVisible.value)
+        assertNull(viewModel.uiState.value.selectedCategoryForEdit)
+        assertTrue(viewModel.uiState.value.isManualBillVisible)
     }
 
     @Test
@@ -175,8 +175,8 @@ class DashboardViewModelBloomTest {
 
         viewModel.showProfileEdit()
 
-        assertNull(viewModel.selectedCategoryForEdit.value)
-        assertTrue(viewModel.isProfileEditVisible.value)
+        assertNull(viewModel.uiState.value.selectedCategoryForEdit)
+        assertTrue(viewModel.uiState.value.isProfileEditVisible)
     }
 
     @Test
@@ -196,9 +196,9 @@ class DashboardViewModelBloomTest {
             )
         )
 
-        assertFalse(viewModel.isProfileEditVisible.value)
-        assertFalse(viewModel.isManualBillVisible.value)
-        assertEquals("Netflix", viewModel.selectedBillForEdit.value?.name)
+        assertFalse(viewModel.uiState.value.isProfileEditVisible)
+        assertFalse(viewModel.uiState.value.isManualBillVisible)
+        assertEquals("Netflix", viewModel.uiState.value.selectedBillForEdit?.name)
     }
 
     @Test
@@ -206,11 +206,27 @@ class DashboardViewModelBloomTest {
         val viewModel = createViewModel()
 
         viewModel.showManualBillEntry()
-        val firstSession = viewModel.manualBillEntrySession.value
+        val firstSession = viewModel.uiState.value.manualBillEntrySession
         viewModel.dismissManualBillEntry()
         viewModel.showManualBillEntry()
 
-        assertEquals(firstSession + 1, viewModel.manualBillEntrySession.value)
+        assertEquals(firstSession + 1, viewModel.uiState.value.manualBillEntrySession)
+    }
+
+    @Test
+    fun toggleSearchActive_livesInConsolidatedUiState() {
+        val viewModel = createViewModel()
+
+        viewModel.toggleSearchActive()
+        viewModel.onSearchQueryChanged("net")
+
+        assertTrue(viewModel.uiState.value.isSearchActive)
+        assertEquals("net", viewModel.uiState.value.searchQuery)
+
+        viewModel.toggleSearchActive()
+
+        assertFalse(viewModel.uiState.value.isSearchActive)
+        assertEquals("", viewModel.uiState.value.searchQuery)
     }
 
     @Test
@@ -222,7 +238,7 @@ class DashboardViewModelBloomTest {
         viewModel.dismissManualBillEntry()
 
         assertNull(viewModel.uiState.value.selectedCalendarDate)
-        assertFalse(viewModel.isManualBillVisible.value)
+        assertFalse(viewModel.uiState.value.isManualBillVisible)
     }
 
     @Test
@@ -234,7 +250,7 @@ class DashboardViewModelBloomTest {
         viewModel.onCalendarBillTapped(bill)
 
         assertEquals(bill.dueDate, viewModel.uiState.value.selectedCalendarDate)
-        assertEquals(bill.id, viewModel.selectedBillForEdit.value?.id)
+        assertEquals(bill.id, viewModel.uiState.value.selectedBillForEdit?.id)
     }
 
     @Test
@@ -271,10 +287,10 @@ class DashboardViewModelBloomTest {
 
         viewModel.clearDashboardTransientState()
 
-        assertFalse(viewModel.isProfileEditVisible.value)
-        assertFalse(viewModel.isManualBillVisible.value)
-        assertNull(viewModel.selectedBillForEdit.value)
-        assertNull(viewModel.selectedCategoryForEdit.value)
+        assertFalse(viewModel.uiState.value.isProfileEditVisible)
+        assertFalse(viewModel.uiState.value.isManualBillVisible)
+        assertNull(viewModel.uiState.value.selectedBillForEdit)
+        assertNull(viewModel.uiState.value.selectedCategoryForEdit)
         assertNull(viewModel.uiState.value.highlightedBloomParent)
     }
 
@@ -301,8 +317,6 @@ class DashboardViewModelBloomTest {
             ),
             userSettingsRepository = UserSettingsRepository(settingsDao),
             forecastUseCase = ForecastUseCase(CategoryTrackingBillDao()),
-            coroutineScope = testScope,
-            ioDispatcher = testDispatcher
         )
         testScope.advanceUntilIdle()
 
@@ -336,7 +350,7 @@ class DashboardViewModelBloomTest {
         tiltSensor.emit(0.3f, 0.1f)
         testScope.advanceUntilIdle()
 
-        assertEquals(0.3f to 0.1f, viewModel.parallaxOffset.value)
+        assertEquals(0.3f to 0.1f, viewModel.uiState.value.parallaxOffset)
     }
 
     @Test
@@ -348,10 +362,10 @@ class DashboardViewModelBloomTest {
         viewModel.startParallaxSensor()
         tiltSensor.emit(0.4f, -0.2f)
         testScope.advanceUntilIdle()
-        assertEquals(0.4f to -0.2f, viewModel.parallaxOffset.value)
+        assertEquals(0.4f to -0.2f, viewModel.uiState.value.parallaxOffset)
 
         viewModel.stopParallaxSensor()
-        assertEquals(0f to 0f, viewModel.parallaxOffset.value)
+        assertEquals(0f to 0f, viewModel.uiState.value.parallaxOffset)
     }
 
     @Test
@@ -381,8 +395,8 @@ class DashboardViewModelBloomTest {
         tiltSensor.emit(0.2f, 0.1f)
         testScope.advanceUntilIdle()
 
-        viewModel.onCleared()
-        assertEquals(0f to 0f, viewModel.parallaxOffset.value)
+        viewModel.stopParallaxSensor()
+        assertEquals(0f to 0f, viewModel.uiState.value.parallaxOffset)
     }
 
     private fun createViewModel(
@@ -396,8 +410,6 @@ class DashboardViewModelBloomTest {
             userSettingsRepository = UserSettingsRepository(FakeSettingsDao()),
             forecastUseCase = ForecastUseCase(billDao),
             deviceTiltSensor = deviceTiltSensor,
-            coroutineScope = testScope,
-            ioDispatcher = testDispatcher
         )
     }
 

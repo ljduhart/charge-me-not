@@ -8,6 +8,8 @@ import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.model.UserSettings
 import com.artie.chargemenot.data.local.BillWithCompost
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,9 +17,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
 
@@ -25,6 +31,18 @@ class PruningViewModelTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = TestScope(testDispatcher)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
   @Test
   fun toggleBillStatus_excludesPrunedBillsFromProjectedTotals() {
@@ -175,8 +193,6 @@ class PruningViewModelTest {
     return PruningViewModel(
       billDao = billDao,
       userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
-      coroutineScope = testScope,
-      ioDispatcher = testDispatcher
     )
   }
 

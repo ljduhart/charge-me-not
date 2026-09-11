@@ -127,8 +127,6 @@ class ScannerViewModelTest {
     val viewModel = ScannerViewModel(
       billRepository = BillRepository(billDao, FakeCompostDao()),
       userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
-      coroutineScope = testScope,
-      ioDispatcher = testDispatcher
     )
     testScope.advanceUntilIdle()
 
@@ -176,8 +174,6 @@ class ScannerViewModelTest {
     val viewModel = ScannerViewModel(
       billRepository = BillRepository(billDao, FakeCompostDao()),
       userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
-      coroutineScope = testScope,
-      ioDispatcher = testDispatcher
     )
     testScope.advanceUntilIdle()
 
@@ -223,8 +219,6 @@ class ScannerViewModelTest {
     val viewModel = ScannerViewModel(
       billRepository = BillRepository(FakeBillDao(), FakeCompostDao()),
       userSettingsRepository = UserSettingsRepository(settingsDao),
-      coroutineScope = testScope,
-      ioDispatcher = testDispatcher
     )
     testScope.advanceUntilIdle()
 
@@ -247,8 +241,6 @@ class ScannerViewModelTest {
     val viewModel = ScannerViewModel(
       billRepository = BillRepository(FakeBillDao(), FakeCompostDao()),
       userSettingsRepository = UserSettingsRepository(settingsDao),
-      coroutineScope = testScope,
-      ioDispatcher = testDispatcher
     )
     testScope.advanceUntilIdle()
 
@@ -282,8 +274,6 @@ class ScannerViewModelTest {
     val viewModel = ScannerViewModel(
       billRepository = BillRepository(FakeBillDao(), FakeCompostDao()),
       userSettingsRepository = UserSettingsRepository(settingsDao),
-      coroutineScope = testScope,
-      ioDispatcher = testDispatcher
     )
     testScope.advanceUntilIdle()
 
@@ -320,8 +310,6 @@ class ScannerViewModelTest {
     return ScannerViewModel(
       billRepository = BillRepository(FakeBillDao(), FakeCompostDao()),
       userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
-      coroutineScope = testScope,
-      ioDispatcher = testDispatcher
     )
   }
 

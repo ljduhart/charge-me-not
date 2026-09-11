@@ -50,6 +50,11 @@ class MeadowRouteTest {
     }
 
     @Test
+    fun fromNavRouteOrNull_mapsMeadowHubGraphToGardenHub() {
+        assertEquals(MeadowRoute.GardenHub, MeadowRoute.fromNavRouteOrNull(AppRoutes.MEADOW_HUB))
+    }
+
+    @Test
     fun overlayPreservingRoutes_staySyncedWithGardenHubSurfaces() {
         assertEquals(
             setOf(
