@@ -96,7 +96,6 @@ import java.util.Locale
 @Composable
 fun DashboardScreen(
     uiState: DashboardUiState,
-    parallaxOffset: Pair<Float, Float>,
     onStartParallaxSensor: () -> Unit,
     onStopParallaxSensor: () -> Unit,
     onOpenDrawer: () -> Unit,
@@ -113,6 +112,12 @@ fun DashboardScreen(
     onCalendarDayTapped: (LocalDate) -> Unit,
     onCalendarBillTapped: (Bill) -> Unit,
     onBloomSettingsClick: () -> Unit,
+    onToggleSearchActive: () -> Unit,
+    onSearchQueryChanged: (String) -> Unit,
+    onShareBill: (Bill) -> Unit,
+    onDismissShareBill: () -> Unit,
+    onLinkBill: (Bill) -> Unit,
+    onDismissLinkBill: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -135,20 +140,16 @@ fun DashboardScreen(
     }
 
     val selectedCurrency = uiState.selectedCurrency
-    var isSearchVisible by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
-    var billToShare by remember { mutableStateOf<Bill?>(null) }
-    var billToLink by remember { mutableStateOf<Bill?>(null) }
 
-    billToShare?.let { bill ->
+    uiState.billToShare?.let { bill ->
         CrossPollinateShareDialog(
             bill = bill,
             currency = selectedCurrency,
-            onDismiss = { billToShare = null }
+            onDismiss = onDismissShareBill
         )
     }
 
-    billToLink?.let { bill ->
+    uiState.billToLink?.let { bill ->
         LinkRootBottomSheet(
             bill = bill,
             availableParents = eligibleParentBills(
@@ -158,21 +159,21 @@ fun DashboardScreen(
             onLinkToParent = { parentId ->
                 onLinkBillToParent(bill.id, parentId)
             },
-            onDismiss = { billToLink = null }
+            onDismiss = onDismissLinkBill
         )
     }
 
-    val filteredSubscriptions = remember(uiState.subscriptionBills, searchQuery) {
-        if (searchQuery.isBlank()) {
+    val filteredSubscriptions = remember(uiState.subscriptionBills, uiState.searchQuery) {
+        if (uiState.searchQuery.isBlank()) {
             uiState.subscriptionBills
         } else {
             uiState.subscriptionBills.filter { bill ->
-                bill.name.contains(searchQuery.trim(), ignoreCase = true)
+                bill.name.contains(uiState.searchQuery.trim(), ignoreCase = true)
             }
         }
     }
 
-    val (tiltX, tiltY) = parallaxOffset
+    val (tiltX, tiltY) = uiState.parallaxOffset
     val parallaxDistancePx = with(LocalDensity.current) { 12.dp.toPx() }
     val backgroundTranslationX = tiltX * 0.5f * parallaxDistancePx
     val backgroundTranslationY = tiltY * 0.5f * parallaxDistancePx
@@ -212,14 +213,7 @@ fun DashboardScreen(
                         }
                     },
                     actions = {
-                        IconButton(
-                            onClick = {
-                                isSearchVisible = !isSearchVisible
-                                if (!isSearchVisible) {
-                                    searchQuery = ""
-                                }
-                            }
-                        ) {
+                        IconButton(onClick = onToggleSearchActive) {
                             Icon(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = stringResource(R.string.dashboard_search)
@@ -249,11 +243,11 @@ fun DashboardScreen(
                     )
                 }
 
-                if (isSearchVisible) {
+                if (uiState.isSearchActive) {
                     item(key = "subscription_search") {
                         OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
+                            value = uiState.searchQuery,
+                            onValueChange = onSearchQueryChanged,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 12.dp),
@@ -284,7 +278,7 @@ fun DashboardScreen(
                         monthlyBudget = uiState.monthlyBudget,
                         currency = selectedCurrency,
                         highlightedBloomParent = uiState.highlightedBloomParent,
-                        parallaxOffset = parallaxOffset,
+                        parallaxOffset = uiState.parallaxOffset,
                         onBloomSettingsClick = onBloomSettingsClick,
                         onMonthlyBudgetChange = onMonthlyBudgetChange,
                         onPetalTapped = onPetalTapped,
@@ -315,8 +309,8 @@ fun DashboardScreen(
                             onRowClick = { onSelectBillForEdit(bill) },
                             onKeep = { onKeepSubscription(bill) },
                             onPull = { onPullSubscription(bill) },
-                            onShare = { billToShare = bill },
-                            onLinkRoots = { billToLink = bill },
+                            onShare = { onShareBill(bill) },
+                            onLinkRoots = { onLinkBill(bill) },
                             modifier = Modifier.padding(top = 10.dp)
                         )
                     }
@@ -696,7 +690,6 @@ private fun DashboardScreenPreview() {
                 ),
                 isLoading = false
             ),
-            parallaxOffset = 0f to 0f,
             onStartParallaxSensor = {},
             onStopParallaxSensor = {},
             onOpenDrawer = {},
@@ -712,7 +705,13 @@ private fun DashboardScreenPreview() {
             onNextCalendarMonth = {},
             onCalendarDayTapped = {},
             onCalendarBillTapped = {},
-            onBloomSettingsClick = {}
+            onBloomSettingsClick = {},
+            onToggleSearchActive = {},
+            onSearchQueryChanged = {},
+            onShareBill = {},
+            onDismissShareBill = {},
+            onLinkBill = {},
+            onDismissLinkBill = {}
         )
     }
 }

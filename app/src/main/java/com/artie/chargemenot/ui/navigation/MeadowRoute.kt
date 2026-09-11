@@ -87,6 +87,9 @@ enum class MeadowRoute(
         }
 
         fun fromNavRouteOrNull(route: String?): MeadowRoute? {
+            if (route == AppRoutes.MEADOW_HUB) {
+                return GardenHub
+            }
             return entries.firstOrNull { meadowRoute -> meadowRoute.route == route }
         }
     }

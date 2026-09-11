@@ -1,6 +1,7 @@
 package com.artie.chargemenot.ui.navigation
 
 object AppRoutes {
+    const val MEADOW_HUB = "meadow_hub"
     const val ONBOARDING = "onboarding"
     const val DASHBOARD = "dashboard"
     const val PETALS_AND_WEEDS = "petals_and_weeds"

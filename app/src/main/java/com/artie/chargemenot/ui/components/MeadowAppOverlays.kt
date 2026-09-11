@@ -3,8 +3,40 @@ package com.artie.chargemenot.ui.components
 import androidx.compose.runtime.Composable
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.SupportedCurrency
+import com.artie.chargemenot.ui.dashboard.DashboardUiState
+import com.artie.chargemenot.ui.dashboard.DashboardViewModel
 import com.artie.chargemenot.ui.viewmodels.CategoryViewModel
 import java.time.LocalDate
+
+@Composable
+fun MeadowAppOverlays(
+    uiState: DashboardUiState,
+    categoryViewModel: CategoryViewModel,
+    dashboardViewModel: DashboardViewModel,
+    onAddBillToCategory: (String) -> Unit
+) {
+    MeadowAppOverlays(
+        selectedBillForEdit = uiState.selectedBillForEdit,
+        categoryViewModel = categoryViewModel,
+        selectedCategoryForEdit = uiState.selectedCategoryForEdit,
+        categoryBills = uiState.categoryBills,
+        isProfileEditVisible = uiState.isProfileEditVisible,
+        isManualBillVisible = uiState.isManualBillVisible,
+        manualBillEntrySession = uiState.manualBillEntrySession,
+        manualBillPrefillDate = uiState.manualBillPrefillDate,
+        userDisplayName = uiState.userDisplayName,
+        currency = uiState.selectedCurrency,
+        onClearEditSelection = dashboardViewModel::clearEditSelection,
+        onSaveBillEdits = dashboardViewModel::saveBillEdits,
+        onClearCategorySelection = dashboardViewModel::clearCategorySelection,
+        onAddBillToCategory = onAddBillToCategory,
+        onSelectBillForEdit = dashboardViewModel::selectBillForEdit,
+        onDismissProfileEdit = dashboardViewModel::dismissProfileEdit,
+        onUpdateDisplayName = dashboardViewModel::updateDisplayName,
+        onDismissManualBillEntry = dashboardViewModel::dismissManualBillEntry,
+        onSaveManualBill = dashboardViewModel::insertManualBill
+    )
+}
 
 @Composable
 fun MeadowAppOverlays(
