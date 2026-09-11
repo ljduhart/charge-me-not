@@ -56,7 +56,7 @@ app/src/main/java/com/artie/chargemenot/
 
 ## Privacy
 
-All data stays on-device. No network permissions, no cloud sync, no external APIs.
+All data stays on-device. No `INTERNET` permission, no cloud sync, no Auto Backup of the financial database, and no runtime network image fetches. Garden artwork is bundled in `res/drawable-nodpi/`.
 
 ## License
 
