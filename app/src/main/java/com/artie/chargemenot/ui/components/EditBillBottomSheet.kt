@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.MeadowCategories
+import com.artie.chargemenot.util.CurrencyParser
 import com.artie.chargemenot.ui.theme.MeadowGreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowWhite
@@ -48,6 +49,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,7 +68,7 @@ fun EditBillBottomSheet(
 
     var nameInput by remember(selectedBill.id) { mutableStateOf(selectedBill.name) }
     var amountInput by remember(selectedBill.id) {
-        mutableStateOf(String.format("%.2f", selectedBill.amount))
+        mutableStateOf(String.format(Locale.US, "%.2f", selectedBill.amount / 100.0))
     }
     var selectedDueDate by remember(selectedBill.id) { mutableStateOf(selectedBill.dueDate) }
     var selectedParent by remember(selectedBill.id) { mutableStateOf(selectedBill.parentCategory) }
@@ -142,7 +144,6 @@ fun EditBillBottomSheet(
                 onValueChange = { amountInput = it },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(stringResource(R.string.edit_bill_amount_label)) },
-                prefix = { Text("$") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true
             )
@@ -205,17 +206,13 @@ fun EditBillBottomSheet(
 
                 Button(
                     onClick = {
-                        val parsedAmount = amountInput
-                            .replace(",", "")
-                            .replace("$", "")
-                            .trim()
-                            .toDoubleOrNull()
+                        val parsedAmount = CurrencyParser.parseStringToCents(amountInput)
 
                         when {
                             nameInput.isBlank() -> {
                                 validationError = "Bill name is required."
                             }
-                            parsedAmount == null || parsedAmount <= 0.0 -> {
+                            parsedAmount <= 0L -> {
                                 validationError = "Enter a valid amount."
                             }
                             selectedParent.isNullOrBlank() || selectedSubcategory.isNullOrBlank() -> {

@@ -12,6 +12,7 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.artie.chargemenot.util.CurrencyParser
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -119,7 +120,7 @@ class BillOcrAnalyzer(
         )
     }
 
-    private fun extractAmount(text: String): Double? {
+    private fun extractAmount(text: String): Long? {
         val labeledMatches = AMOUNT_WITH_LABEL_PATTERN
             .findAll(text)
             .mapNotNull { match -> parseCurrency(match.groupValues[1]) }
@@ -161,9 +162,9 @@ class BillOcrAnalyzer(
         return null
     }
 
-    private fun parseCurrency(value: String): Double? {
-        val sanitized = value.replace(",", "")
-        return sanitized.toDoubleOrNull()?.takeIf { it > 0.0 }
+    private fun parseCurrency(value: String): Long? {
+        val cents = CurrencyParser.parseStringToCents(value)
+        return cents.takeIf { it > 0L }
     }
 
     private fun parseDateToken(token: String): LocalDate? {

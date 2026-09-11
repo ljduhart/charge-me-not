@@ -38,6 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.R
+import com.artie.chargemenot.domain.model.SupportedCurrency
+import com.artie.chargemenot.domain.model.UserSettings
 import com.artie.chargemenot.ui.components.MeadowHubScaffold
 import com.artie.chargemenot.ui.theme.LeafGreen
 import com.artie.chargemenot.ui.theme.MeadowCream
@@ -46,28 +48,28 @@ import com.artie.chargemenot.ui.theme.MeadowGreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowSage
 import com.artie.chargemenot.ui.theme.MeadowWhite
-import java.text.NumberFormat
+import com.artie.chargemenot.util.CurrencyFormatter
 import java.util.Locale
 
 @Composable
 fun RichSoilScreen(
-    monthlyBudget: Double,
-    totalUpcoming: Double,
+    monthlyBudget: Long,
+    totalUpcoming: Long,
+    currency: SupportedCurrency,
     onOpenDrawer: () -> Unit,
     onNavigateBack: () -> Unit,
     onMonthlyBudgetChange: (String) -> Boolean,
     modifier: Modifier = Modifier
 ) {
-    val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
-    val nutrientsRemaining = (monthlyBudget - totalUpcoming).coerceAtLeast(0.0)
-    val soilRichnessPercent = if (monthlyBudget <= 0.0) {
+    val nutrientsRemaining = (monthlyBudget - totalUpcoming).coerceAtLeast(0L)
+    val soilRichnessPercent = if (monthlyBudget <= 0L) {
         0
     } else {
-        ((nutrientsRemaining / monthlyBudget) * 100).toInt().coerceIn(0, 100)
+        ((nutrientsRemaining.toDouble() / monthlyBudget.toDouble()) * 100).toInt().coerceIn(0, 100)
     }
     var isEditingBudget by remember { mutableStateOf(false) }
     var budgetInput by remember(monthlyBudget) {
-        mutableStateOf(monthlyBudget.toInt().toString())
+        mutableStateOf(String.format(Locale.US, "%.2f", monthlyBudget / 100.0))
     }
 
     MeadowHubScaffold(
@@ -103,7 +105,7 @@ fun RichSoilScreen(
                 EditableRichSoilMetricCard(
                     label = stringResource(R.string.rich_soil_monthly_budget),
                     monthlyBudget = monthlyBudget,
-                    currencyFormat = currencyFormat,
+                    currency = currency,
                     isEditingBudget = isEditingBudget,
                     budgetInput = budgetInput,
                     onBudgetInputChange = { budgetInput = it },
@@ -113,18 +115,18 @@ fun RichSoilScreen(
                                 isEditingBudget = false
                             }
                         } else {
-                            budgetInput = monthlyBudget.toInt().toString()
+                            budgetInput = String.format(Locale.US, "%.2f", monthlyBudget / 100.0)
                             isEditingBudget = true
                         }
                     }
                 )
                 RichSoilMetricCard(
                     label = stringResource(R.string.rich_soil_upcoming_outflow),
-                    value = currencyFormat.format(totalUpcoming)
+                    value = CurrencyFormatter.format(totalUpcoming, currency)
                 )
                 RichSoilMetricCard(
                     label = stringResource(R.string.rich_soil_nutrients_remaining),
-                    value = currencyFormat.format(nutrientsRemaining),
+                    value = CurrencyFormatter.format(nutrientsRemaining, currency),
                     highlight = true
                 )
 
@@ -168,8 +170,8 @@ fun RichSoilScreen(
 @Composable
 private fun EditableRichSoilMetricCard(
     label: String,
-    monthlyBudget: Double,
-    currencyFormat: NumberFormat,
+    monthlyBudget: Long,
+    currency: SupportedCurrency,
     isEditingBudget: Boolean,
     budgetInput: String,
     onBudgetInputChange: (String) -> Unit,
@@ -207,7 +209,7 @@ private fun EditableRichSoilMetricCard(
                     )
                 } else {
                     Text(
-                        text = currencyFormat.format(monthlyBudget),
+                        text = CurrencyFormatter.format(monthlyBudget, currency),
                         style = MaterialTheme.typography.titleLarge,
                         color = MeadowGreenDark,
                         fontWeight = FontWeight.Bold,

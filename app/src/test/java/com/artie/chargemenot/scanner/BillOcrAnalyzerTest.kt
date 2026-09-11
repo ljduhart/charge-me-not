@@ -23,7 +23,7 @@ class BillOcrAnalyzerTest {
       """.trimIndent()
     )
 
-    assertEquals(94.17, result.amount!!, 0.001)
+    assertEquals(9_417L, result.amount)
     assertEquals(LocalDate.of(2026, 9, 12), result.dueDate)
   }
 
@@ -33,7 +33,7 @@ class BillOcrAnalyzerTest {
       "Service fee $1.25 Amount Due: $1,450.00 Payment due 10/01/2026"
     )
 
-    assertEquals(1450.0, result.amount!!, 0.001)
+    assertEquals(145_000L, result.amount)
     assertEquals(LocalDate.of(2026, 10, 1), result.dueDate)
   }
 
@@ -43,7 +43,7 @@ class BillOcrAnalyzerTest {
       "Balance $54.99 Due Sep 15, 2026"
     )
 
-    assertEquals(54.99, result.amount!!, 0.001)
+    assertEquals(5_499L, result.amount)
     assertEquals(LocalDate.of(2026, 9, 15), result.dueDate)
   }
 

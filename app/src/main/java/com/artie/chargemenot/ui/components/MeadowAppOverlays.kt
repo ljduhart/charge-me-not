@@ -2,6 +2,7 @@ package com.artie.chargemenot.ui.components
 
 import androidx.compose.runtime.Composable
 import com.artie.chargemenot.domain.model.Bill
+import com.artie.chargemenot.domain.model.SupportedCurrency
 import com.artie.chargemenot.ui.viewmodels.CategoryViewModel
 import java.time.LocalDate
 
@@ -16,6 +17,7 @@ fun MeadowAppOverlays(
     manualBillEntrySession: Int,
     manualBillPrefillDate: LocalDate?,
     userDisplayName: String,
+    currency: SupportedCurrency,
     onClearEditSelection: () -> Unit,
     onSaveBillEdits: (Bill) -> Unit,
     onClearCategorySelection: () -> Unit,
@@ -37,6 +39,7 @@ fun MeadowAppOverlays(
         CategoryDetailBottomSheet(
             selectedCategory = selectedCategoryForEdit,
             bills = categoryBills,
+            currency = currency,
             onDismiss = onClearCategorySelection,
             onAddNewBill = onAddBillToCategory,
             onBillClick = onSelectBillForEdit

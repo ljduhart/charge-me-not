@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 data class UserSettingsEntity(
     @PrimaryKey
     val id: Int = SETTINGS_ID,
-    val monthlyBudget: Double,
+    val monthlyBudget: Long,
     val isNagModeEnabled: Boolean = false,
     val selectedCurrency: String = com.artie.chargemenot.domain.model.UserSettings.DEFAULT_CURRENCY,
     val isOnboardingComplete: Boolean = false,

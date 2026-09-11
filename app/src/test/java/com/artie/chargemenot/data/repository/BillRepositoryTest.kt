@@ -30,7 +30,7 @@ class BillRepositoryTest {
         val billId = repository.insertScannedBill(
             bill = Bill(
                 name = "Scanned Utility Bill",
-                amount = 84.50,
+                amount = 8_450L,
                 dueDate = LocalDate.of(2026, 9, 12),
                 parentCategory = MeadowCategories.ROOT_SYSTEM,
                 subCategory = "Utilities",
@@ -90,7 +90,7 @@ class BillRepositoryTest {
             Bill(
                 id = 1L,
                 name = "Car Payment",
-                amount = 450.0,
+                amount = 45_000L,
                 dueDate = LocalDate.of(2026, 9, 10),
                 parentCategory = MeadowCategories.ROOT_SYSTEM,
                 subCategory = "Transportation"
@@ -111,7 +111,7 @@ class BillRepositoryTest {
         return BillEntity(
             id = id,
             name = name,
-            amount = 100.0,
+            amount = 10_000L,
             dueDate = LocalDate.of(2026, 9, 10),
             parentCategory = MeadowCategories.VINES,
             subCategory = "Subscriptions",

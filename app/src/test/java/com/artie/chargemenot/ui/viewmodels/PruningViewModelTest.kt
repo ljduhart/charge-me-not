@@ -50,15 +50,15 @@ class PruningViewModelTest {
     testScope.advanceUntilIdle()
 
     val netflixId = 5L
-    viewModel.adjustBillAmount(billId = netflixId, newAmount = 5.0)
+    viewModel.adjustBillAmount(billId = netflixId, newAmount = 500L)
     testScope.advanceUntilIdle()
 
-    assertEquals(5.0, viewModel.uiState.value.bills.first { it.id == netflixId }.amount, 0.001)
+    assertEquals(500L, viewModel.uiState.value.bills.first { it.id == netflixId }.amount)
 
     viewModel.resetSandbox()
     testScope.advanceUntilIdle()
 
-    assertEquals(15.49, viewModel.uiState.value.bills.first { it.id == netflixId }.amount, 0.001)
+    assertEquals(1_549L, viewModel.uiState.value.bills.first { it.id == netflixId }.amount)
   }
 
   @Test
@@ -82,11 +82,11 @@ class PruningViewModelTest {
   fun toggleBillStatus_recursivelyPrunesChildBills() {
     val today = LocalDate.of(2026, 9, 5)
     val bills = listOf(
-      BillEntity(1, "Car Payment", 450.0, today.plusDays(5), MeadowCategories.ROOT_SYSTEM, "Transportation"),
+      BillEntity(1, "Car Payment", 45_000L, today.plusDays(5), MeadowCategories.ROOT_SYSTEM, "Transportation"),
       BillEntity(
         id = 2,
         name = "Car Insurance",
-        amount = 120.0,
+        amount = 12_000L,
         dueDate = today.plusDays(6),
         parentCategory = MeadowCategories.POLLINATORS,
         subCategory = "Healthcare",
@@ -95,7 +95,7 @@ class PruningViewModelTest {
       BillEntity(
         id = 3,
         name = "Roadside Assistance",
-        amount = 8.0,
+        amount = 800L,
         dueDate = today.plusDays(7),
         parentCategory = MeadowCategories.VINES,
         subCategory = "Subscriptions",
@@ -119,11 +119,11 @@ class PruningViewModelTest {
   fun childRelationships_mapsParentToChildren() {
     val today = LocalDate.of(2026, 9, 5)
     val bills = listOf(
-      BillEntity(1, "Car Payment", 450.0, today.plusDays(5), MeadowCategories.ROOT_SYSTEM, "Transportation"),
+      BillEntity(1, "Car Payment", 45_000L, today.plusDays(5), MeadowCategories.ROOT_SYSTEM, "Transportation"),
       BillEntity(
         id = 2,
         name = "Car Insurance",
-        amount = 120.0,
+        amount = 12_000L,
         dueDate = today.plusDays(6),
         parentCategory = MeadowCategories.POLLINATORS,
         subCategory = "Healthcare",
@@ -142,11 +142,11 @@ class PruningViewModelTest {
   fun unpruneParent_preservesManuallyPrunedChild() {
     val today = LocalDate.of(2026, 9, 5)
     val bills = listOf(
-      BillEntity(1, "Car Payment", 450.0, today.plusDays(5), MeadowCategories.ROOT_SYSTEM, "Transportation"),
+      BillEntity(1, "Car Payment", 45_000L, today.plusDays(5), MeadowCategories.ROOT_SYSTEM, "Transportation"),
       BillEntity(
         id = 2,
         name = "Car Insurance",
-        amount = 120.0,
+        amount = 12_000L,
         dueDate = today.plusDays(6),
         parentCategory = MeadowCategories.POLLINATORS,
         subCategory = "Healthcare",
@@ -183,11 +183,11 @@ class PruningViewModelTest {
   private fun seedBills(): List<BillEntity> {
     val today = LocalDate.of(2026, 9, 5)
     return listOf(
-      BillEntity(1, "Maple Street Apartment", 1_450.00, today.plusDays(3), MeadowCategories.CANOPY, "Rent"),
-      BillEntity(2, "Whole Foods Groceries", 186.42, today.plusDays(5), MeadowCategories.FERTILIZER, "Groceries"),
-      BillEntity(3, "Pacific Gas & Electric", 94.17, today.plusDays(8), MeadowCategories.ROOT_SYSTEM, "Utilities"),
-      BillEntity(4, "Spotify Premium", 11.99, today.plusDays(12), MeadowCategories.VINES, "Subscriptions"),
-      BillEntity(5, "Netflix", 15.49, today.plusDays(12), MeadowCategories.VINES, "Subscriptions")
+      BillEntity(1, "Maple Street Apartment", 145_000L, today.plusDays(3), MeadowCategories.CANOPY, "Rent"),
+      BillEntity(2, "Whole Foods Groceries", 18_642L, today.plusDays(5), MeadowCategories.FERTILIZER, "Groceries"),
+      BillEntity(3, "Pacific Gas & Electric", 9_417L, today.plusDays(8), MeadowCategories.ROOT_SYSTEM, "Utilities"),
+      BillEntity(4, "Spotify Premium", 1_199L, today.plusDays(12), MeadowCategories.VINES, "Subscriptions"),
+      BillEntity(5, "Netflix", 1_549L, today.plusDays(12), MeadowCategories.VINES, "Subscriptions")
     )
   }
 

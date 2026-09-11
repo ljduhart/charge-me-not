@@ -22,22 +22,24 @@ import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.ForecastResult
 import com.artie.chargemenot.domain.model.ForecastTimelinePoint
 import com.artie.chargemenot.domain.model.WeatherStatus
+import com.artie.chargemenot.domain.model.SupportedCurrency
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowSage
 import com.artie.chargemenot.ui.theme.MeadowSky
 import com.artie.chargemenot.ui.theme.MeadowSunflower
 import com.artie.chargemenot.ui.theme.MeadowWhite
-import java.text.NumberFormat
+import com.artie.chargemenot.util.CurrencyFormatter
 import java.util.Locale
 import kotlin.math.abs
 
 @Composable
 fun WeatherForecastCard(
     forecastResult: ForecastResult,
+    currency: SupportedCurrency,
     modifier: Modifier = Modifier
 ) {
-    val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
+    val predictedTotal = CurrencyFormatter.format(forecastResult.predictedAmount, currency)
     val varianceMagnitude = abs(forecastResult.percentageVariance).let { value ->
         String.format(Locale.US, "%.1f", value)
     }
@@ -87,7 +89,7 @@ fun WeatherForecastCard(
                 text = stringResource(
                     R.string.weather_forecast_predicted_total,
                     forecastResult.targetMonthLabel,
-                    currencyFormat.format(forecastResult.predictedAmount)
+                    predictedTotal
                 ),
                 style = MaterialTheme.typography.labelLarge,
                 color = MeadowGreenDark,
@@ -147,17 +149,18 @@ private fun WeatherForecastCardPreview() {
     ChargeMeNotTheme {
         WeatherForecastCard(
             forecastResult = ForecastResult(
-                predictedAmount = 312.40,
+                predictedAmount = 31_240L,
                 percentageVariance = 18.6,
                 weatherStatus = WeatherStatus.DROUGHT,
                 targetMonthLabel = "Oct",
                 timelinePoints = listOf(
-                    ForecastTimelinePoint("Jul", 210.0, false, WeatherStatus.SUNNY),
-                    ForecastTimelinePoint("Aug", 245.0, false, WeatherStatus.CLOUDY),
-                    ForecastTimelinePoint("Sep", 263.5, false, WeatherStatus.CLOUDY),
-                    ForecastTimelinePoint("Oct", 312.4, true, WeatherStatus.DROUGHT)
+                    ForecastTimelinePoint("Jul", 21_000L, false, WeatherStatus.SUNNY),
+                    ForecastTimelinePoint("Aug", 24_500L, false, WeatherStatus.CLOUDY),
+                    ForecastTimelinePoint("Sep", 26_350L, false, WeatherStatus.CLOUDY),
+                    ForecastTimelinePoint("Oct", 31_240L, true, WeatherStatus.DROUGHT)
                 )
-            )
+            ),
+            currency = SupportedCurrency.USD
         )
     }
 }

@@ -103,6 +103,7 @@ class ChargeMeNotApplication : Application() {
     val weedWhackerViewModel: WeedWhackerViewModel by lazy {
         WeedWhackerViewModel(
             billDao = database.billDao(),
+            userSettingsRepository = userSettingsRepository,
             coroutineScope = applicationScope
         )
     }

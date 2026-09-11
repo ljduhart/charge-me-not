@@ -57,6 +57,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
+import com.artie.chargemenot.domain.model.SupportedCurrency
 import com.artie.chargemenot.ui.components.GardenBillState
 import com.artie.chargemenot.ui.components.GardenPathDateMarker
 import com.artie.chargemenot.ui.components.GardenPathStemConnector
@@ -69,12 +70,11 @@ import com.artie.chargemenot.ui.components.gardenPathVineBackground
 import com.artie.chargemenot.ui.components.resolveGardenBillState
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import com.artie.chargemenot.ui.theme.WeedRed
-import java.text.NumberFormat
-import java.util.Locale
 
 @Composable
 fun PetalsAndWeedsScreen(
     gardenBills: List<Bill>,
+    currency: SupportedCurrency,
     parallaxOffset: Pair<Float, Float>,
     onStartParallaxSensor: () -> Unit,
     onStopParallaxSensor: () -> Unit,
@@ -85,7 +85,6 @@ fun PetalsAndWeedsScreen(
     onDeleteBill: (Bill) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val currencyFormat = rememberCurrencyFormat()
     val featuredPaidBillId = remember(gardenBills) {
         gardenBills.firstOrNull { bill ->
             resolveGardenBillState(bill) == GardenBillState.Paid
@@ -267,7 +266,7 @@ fun PetalsAndWeedsScreen(
                         GardenPathTimelineRow(
                             bill = bill,
                             index = index,
-                            currencyFormat = currencyFormat,
+                            currency = currency,
                             isFeaturedPaidRose = bill.id == featuredPaidBillId,
                             onSelectBillForEdit = onSelectBillForEdit,
                             onRequestDelete = { billPendingDelete = it }
@@ -283,7 +282,7 @@ fun PetalsAndWeedsScreen(
 private fun GardenPathTimelineRow(
     bill: Bill,
     index: Int,
-    currencyFormat: NumberFormat,
+    currency: SupportedCurrency,
     isFeaturedPaidRose: Boolean,
     onSelectBillForEdit: (Bill) -> Unit,
     onRequestDelete: (Bill) -> Unit
@@ -328,7 +327,7 @@ private fun GardenPathTimelineRow(
                         bill = bill,
                         index = index,
                         gardenState = gardenState,
-                        currencyFormat = currencyFormat,
+                        currency = currency,
                         isFeaturedPaidRose = isFeaturedPaidRose,
                         onSelectBillForEdit = onSelectBillForEdit,
                         onRequestDelete = onRequestDelete
@@ -366,7 +365,7 @@ private fun GardenPathTimelineRow(
                         bill = bill,
                         index = index,
                         gardenState = gardenState,
-                        currencyFormat = currencyFormat,
+                        currency = currency,
                         isFeaturedPaidRose = isFeaturedPaidRose,
                         onSelectBillForEdit = onSelectBillForEdit,
                         onRequestDelete = onRequestDelete
@@ -433,7 +432,7 @@ private fun SwipeableGardenPathBillCard(
     bill: Bill,
     index: Int,
     gardenState: GardenBillState,
-    currencyFormat: NumberFormat,
+    currency: SupportedCurrency,
     isFeaturedPaidRose: Boolean,
     onSelectBillForEdit: (Bill) -> Unit,
     onRequestDelete: (Bill) -> Unit
@@ -476,18 +475,11 @@ private fun SwipeableGardenPathBillCard(
             bill = bill,
             index = index,
             gardenState = gardenState,
-            currencyFormat = currencyFormat,
+            currency = currency,
             isFeaturedPaidRose = isFeaturedPaidRose,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onSelectBillForEdit(bill) }
         )
-    }
-}
-
-@Composable
-private fun rememberCurrencyFormat(): NumberFormat {
-    return androidx.compose.runtime.remember {
-        NumberFormat.getCurrencyInstance(Locale.US)
     }
 }

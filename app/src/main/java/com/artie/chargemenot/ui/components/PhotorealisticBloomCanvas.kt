@@ -42,8 +42,8 @@ private const val FOREGROUND_PARALLAX_FACTOR = 1.5f
 
 @Composable
 fun PhotorealisticBloomCanvas(
-    parentCategoryTotals: Map<String, Double>,
-    monthlyBudget: Double,
+    parentCategoryTotals: Map<String, Long>,
+    monthlyBudget: Long,
     highlightedParent: String?,
     onPetalTapped: (String) -> Unit,
     parallaxOffset: Pair<Float, Float> = 0f to 0f,
@@ -154,11 +154,13 @@ fun PhotorealisticBloomCanvas(
         )
 
         BloomCategoryDefinitions.categories.forEachIndexed { index, definition ->
-                val amount = parentCategoryTotals[definition.parentName] ?: 0.0
-                val spendIntensity = if (amount <= 0.0 || monthlyBudget <= 0.0) {
+                val amount = parentCategoryTotals[definition.parentName] ?: 0L
+                val spendIntensity = if (amount <= 0L || monthlyBudget <= 0L) {
                     0.72f
                 } else {
-                    (amount / monthlyBudget.coerceAtLeast(1.0)).toFloat().coerceIn(0.72f, 1f)
+                    (amount.toDouble() / monthlyBudget.coerceAtLeast(1L).toDouble())
+                        .toFloat()
+                        .coerceIn(0.72f, 1f)
                 }
                 val sliceAngle = -90f + index * BloomCategoryDefinitions.SLICE_DEGREES
                 val isHighlighted = highlightedParent == null || highlightedParent == definition.parentName

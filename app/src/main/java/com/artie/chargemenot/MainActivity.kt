@@ -169,6 +169,7 @@ class MainActivity : ComponentActivity() {
                             manualBillEntrySession = manualBillEntrySession,
                             manualBillPrefillDate = manualBillPrefillDate,
                             userDisplayName = dashboardUiState.userDisplayName,
+                            currency = dashboardUiState.selectedCurrency,
                             onClearEditSelection = dashboardViewModel::clearEditSelection,
                             onSaveBillEdits = dashboardViewModel::saveBillEdits,
                             onClearCategorySelection = dashboardViewModel::clearCategorySelection,

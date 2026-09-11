@@ -16,7 +16,7 @@ class CrossPollinationPayloadTest {
         val entity = BillEntity(
             id = 1L,
             name = "Netflix",
-            amount = 15.49,
+            amount = 1_549L,
             dueDate = LocalDate.of(2026, 9, 12),
             parentCategory = MeadowCategories.VINES,
             subCategory = "Subscriptions"
@@ -29,7 +29,7 @@ class CrossPollinationPayloadTest {
         val restored = decoded!!.toBillEntity()
         assertNotNull(restored)
         assertEquals(entity.name, restored!!.name)
-        assertEquals(entity.amount, restored.amount, 0.001)
+        assertEquals(entity.amount, restored.amount)
         assertEquals(entity.dueDate, restored.dueDate)
         assertEquals(entity.parentCategory, restored.parentCategory)
         assertEquals(entity.subCategory, restored.subCategory)
@@ -39,7 +39,7 @@ class CrossPollinationPayloadTest {
     fun fromJson_rejectsInvalidAmount() {
         val json = CrossPollinationPayload(
             name = "Test Bill",
-            amount = -5.0,
+            amount = -500L,
             dueDate = "2026-09-12",
             parentCategory = MeadowCategories.FERTILIZER,
             subCategory = "Groceries"
@@ -70,7 +70,7 @@ class CrossPollinationPayloadTest {
     fun toBillEntity_rejectsBlankName() {
         val payload = CrossPollinationPayload(
             name = "   ",
-            amount = 12.0,
+            amount = 1_200L,
             dueDate = "2026-09-12",
             parentCategory = MeadowCategories.FERTILIZER,
             subCategory = "Groceries"
@@ -83,15 +83,27 @@ class CrossPollinationPayloadTest {
     fun toJson_containsSchemaMetadata() {
         val json = CrossPollinationPayload(
             name = "PG&E",
-            amount = 94.17,
+            amount = 9_417L,
             dueDate = "2026-09-08",
             parentCategory = MeadowCategories.ROOT_SYSTEM,
             subCategory = "Utilities"
         ).toJson()
 
         assertTrue(json.contains("\"app\":\"charge-me-not\""))
-        assertTrue(json.contains("\"v\":2"))
+        assertTrue(json.contains("\"v\":3"))
         assertTrue(json.contains("\"parentCategory\":\"The Root System\""))
         assertTrue(json.contains("\"subCategory\":\"Utilities\""))
+    }
+
+    @Test
+    fun fromJson_convertsLegacyDollarAmountsToCents() {
+        val v2 = """
+            {"app":"charge-me-not","v":2,"name":"Netflix","amount":15.49,"dueDate":"2026-09-12","parentCategory":"The Vines","subCategory":"Subscriptions"}
+        """.trimIndent()
+
+        val decoded = CrossPollinationPayload.fromJson(v2)
+        assertNotNull(decoded)
+        assertEquals(1_549L, decoded!!.amount)
+        assertEquals("Netflix", decoded.name)
     }
 }

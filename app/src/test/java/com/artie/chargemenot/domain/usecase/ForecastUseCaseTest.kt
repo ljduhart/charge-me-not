@@ -18,7 +18,7 @@ class ForecastUseCaseTest {
         val today = LocalDate.of(2026, 9, 5)
         val bills = listOf(
             bill(
-                amount = 90.0,
+                amount = 9_000L,
                 dueDate = today.minusMonths(1).withDayOfMonth(10),
                 parentCategory = MeadowCategories.ROOT_SYSTEM,
                 subCategory = "Utilities"
@@ -35,13 +35,13 @@ class ForecastUseCaseTest {
         val today = LocalDate.of(2026, 9, 5)
         val bills = listOf(
             bill(
-                amount = 230.0,
+                amount = 23_000L,
                 dueDate = today.minusMonths(2).withDayOfMonth(10),
                 parentCategory = MeadowCategories.ROOT_SYSTEM,
                 subCategory = "Utilities"
             ),
             bill(
-                amount = 250.0,
+                amount = 25_000L,
                 dueDate = today.minusMonths(1).withDayOfMonth(10),
                 parentCategory = MeadowCategories.ROOT_SYSTEM,
                 subCategory = "Utilities"
@@ -51,7 +51,7 @@ class ForecastUseCaseTest {
         val result = useCase.calculateForecast(bills, today)
 
         assertNotNull(result)
-        assertEquals(270.0, result!!.predictedAmount, 0.001)
+        assertEquals(27_000L, result!!.predictedAmount)
         assertEquals(8.0, result.percentageVariance, 0.001)
         assertEquals(WeatherStatus.CLOUDY, result.weatherStatus)
         assertEquals(3, result.timelinePoints.size)
@@ -63,13 +63,13 @@ class ForecastUseCaseTest {
         val today = LocalDate.of(2026, 9, 5)
         val bills = listOf(
             bill(
-                amount = 100.0,
+                amount = 10_000L,
                 dueDate = today.minusMonths(2).withDayOfMonth(8),
                 parentCategory = MeadowCategories.FERTILIZER,
                 subCategory = "Groceries"
             ),
             bill(
-                amount = 120.0,
+                amount = 12_000L,
                 dueDate = today.minusMonths(1).withDayOfMonth(8),
                 parentCategory = MeadowCategories.FERTILIZER,
                 subCategory = "Groceries"
@@ -87,13 +87,13 @@ class ForecastUseCaseTest {
         val today = LocalDate.of(2026, 9, 5)
         val bills = listOf(
             bill(
-                amount = 1_450.0,
+                amount = 145_000L,
                 dueDate = today.minusMonths(2).withDayOfMonth(1),
                 parentCategory = MeadowCategories.CANOPY,
                 subCategory = "Rent"
             ),
             bill(
-                amount = 1_450.0,
+                amount = 145_000L,
                 dueDate = today.minusMonths(1).withDayOfMonth(1),
                 parentCategory = MeadowCategories.CANOPY,
                 subCategory = "Rent"
@@ -110,19 +110,19 @@ class ForecastUseCaseTest {
         val today = LocalDate.of(2026, 9, 5)
         val bills = listOf(
             bill(
-                amount = 200.0,
+                amount = 20_000L,
                 dueDate = today.minusMonths(2).withDayOfMonth(10),
                 parentCategory = MeadowCategories.ROOT_SYSTEM,
                 subCategory = "Utilities"
             ),
             bill(
-                amount = 220.0,
+                amount = 22_000L,
                 dueDate = today.minusMonths(1).withDayOfMonth(10),
                 parentCategory = MeadowCategories.ROOT_SYSTEM,
                 subCategory = "Utilities"
             ),
             bill(
-                amount = 500.0,
+                amount = 50_000L,
                 dueDate = today.withDayOfMonth(15),
                 parentCategory = MeadowCategories.ROOT_SYSTEM,
                 subCategory = "Utilities"
@@ -132,7 +132,7 @@ class ForecastUseCaseTest {
         val result = useCase.calculateForecast(bills, today)
 
         assertNotNull(result)
-        assertEquals(240.0, result!!.predictedAmount, 0.001)
+        assertEquals(24_000L, result!!.predictedAmount)
         assertEquals(3, result.timelinePoints.size)
         assertEquals("Oct", result.targetMonthLabel)
     }
@@ -142,13 +142,13 @@ class ForecastUseCaseTest {
         val today = LocalDate.of(2026, 9, 5)
         val bills = listOf(
             bill(
-                amount = 180.0,
+                amount = 18_000L,
                 dueDate = today.withDayOfMonth(12),
                 parentCategory = MeadowCategories.FERTILIZER,
                 subCategory = "Groceries"
             ),
             bill(
-                amount = 95.0,
+                amount = 9_500L,
                 dueDate = today.withDayOfMonth(20),
                 parentCategory = MeadowCategories.ROOT_SYSTEM,
                 subCategory = "Utilities"
@@ -165,13 +165,13 @@ class ForecastUseCaseTest {
         val today = LocalDate.of(2026, 9, 5)
         val bills = listOf(
             bill(
-                amount = 450.0,
+                amount = 45_000L,
                 dueDate = today.minusMonths(2).withDayOfMonth(5),
                 parentCategory = MeadowCategories.ROOT_SYSTEM,
                 subCategory = "Transportation"
             ),
             bill(
-                amount = 450.0,
+                amount = 45_000L,
                 dueDate = today.minusMonths(1).withDayOfMonth(5),
                 parentCategory = MeadowCategories.ROOT_SYSTEM,
                 subCategory = "Transportation"
@@ -185,8 +185,8 @@ class ForecastUseCaseTest {
 
     @Test
     fun predictNextMonthLinearRegression_returnsAverageWhenDenominatorIsZero() {
-        val predicted = useCase.predictNextMonthLinearRegression(listOf(100.0, 100.0, 100.0))
-        assertEquals(100.0, predicted, 0.001)
+        val predicted = useCase.predictNextMonthLinearRegression(listOf(10_000L, 10_000L, 10_000L))
+        assertEquals(10_000L, predicted)
     }
 
     @Test
@@ -197,7 +197,7 @@ class ForecastUseCaseTest {
     }
 
     private fun bill(
-        amount: Double,
+        amount: Long,
         dueDate: LocalDate,
         parentCategory: String,
         subCategory: String

@@ -35,11 +35,11 @@ private val meadowPetalSpring = spring<Float>(
 
 @Composable
 fun FinancialBloomCanvas(
-    parentCategoryTotals: Map<String, Double>,
+    parentCategoryTotals: Map<String, Long>,
     modifier: Modifier = Modifier,
     highlightedParent: String? = null,
-    projectedParentCategoryTotals: Map<String, Double> = parentCategoryTotals,
-    monthlyBudget: Double = 2_500.0,
+    projectedParentCategoryTotals: Map<String, Long> = parentCategoryTotals,
+    monthlyBudget: Long = 250_000L,
     sizeByMonthlyBudget: Boolean = false,
     parentCategoryAlphas: Map<String, Float> = emptyMap()
 ) {
@@ -70,7 +70,7 @@ fun FinancialBloomCanvas(
         }
 
     val totalAmount = entries.sumOf { it.value.toDouble() }.coerceAtLeast(1.0)
-    val safeBudget = monthlyBudget.coerceAtLeast(1.0)
+    val safeBudget = monthlyBudget.coerceAtLeast(1L).toDouble()
 
     Canvas(modifier = modifier) {
         val center = Offset(size.width / 2f, size.height / 2f)
@@ -132,12 +132,12 @@ fun FinancialBloomCanvas(
 
 @Composable
 private fun rememberAnimatedPetalAmounts(
-    targetTotals: Map<String, Double>
+    targetTotals: Map<String, Long>
 ): Map<String, Float> {
     val amounts = remember { mutableStateMapOf<String, Float>() }
     MeadowCategories.parentNames.forEach { parent ->
         key(parent) {
-            val target = (targetTotals[parent] ?: 0.0).toFloat()
+            val target = (targetTotals[parent] ?: 0L).toFloat()
             val animated by animateFloatAsState(
                 targetValue = target,
                 animationSpec = meadowPetalSpring,
@@ -148,7 +148,7 @@ private fun rememberAnimatedPetalAmounts(
     }
     targetTotals.keys.filter { it !in MeadowCategories.parentNames }.forEach { parent ->
         key(parent) {
-            val target = (targetTotals[parent] ?: 0.0).toFloat()
+            val target = (targetTotals[parent] ?: 0L).toFloat()
             val animated by animateFloatAsState(
                 targetValue = target,
                 animationSpec = meadowPetalSpring,

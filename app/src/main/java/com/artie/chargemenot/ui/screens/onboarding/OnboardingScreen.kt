@@ -77,9 +77,9 @@ import com.artie.chargemenot.ui.theme.MeadowSage
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import com.artie.chargemenot.ui.viewmodels.OnboardingUiState
 import kotlinx.coroutines.launch
-import java.text.NumberFormat
-import java.util.Locale
+import com.artie.chargemenot.util.CurrencyFormatter
 import kotlin.math.min
+import kotlin.math.roundToLong
 
 private const val ONBOARDING_PAGE_COUNT = 5
 
@@ -98,7 +98,6 @@ fun OnboardingScreen(
 ) {
     val pagerState = rememberPagerState(pageCount = { ONBOARDING_PAGE_COUNT })
     val scope = rememberCoroutineScope()
-    val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
     val isLastPage = pagerState.currentPage == ONBOARDING_PAGE_COUNT - 1
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -138,7 +137,7 @@ fun OnboardingScreen(
                 1 -> SoilBoundaryPage(
                     budgetEnabled = uiState.budgetEnabled,
                     budgetAmount = uiState.budgetAmount,
-                    currencyFormat = currencyFormat,
+                    currency = uiState.selectedCurrency,
                     onBudgetEnabledChange = onBudgetEnabledChange,
                     onBudgetAmountChange = onBudgetAmountChange
                 )
@@ -247,7 +246,7 @@ private fun SeedWelcomePage() {
 private fun SoilBoundaryPage(
     budgetEnabled: Boolean,
     budgetAmount: Float,
-    currencyFormat: NumberFormat,
+    currency: SupportedCurrency,
     onBudgetEnabledChange: (Boolean) -> Unit,
     onBudgetAmountChange: (Float) -> Unit
 ) {
@@ -304,7 +303,7 @@ private fun SoilBoundaryPage(
         if (budgetEnabled) {
             Spacer(modifier = Modifier.height(20.dp))
             Text(
-                text = currencyFormat.format(budgetAmount.toDouble()),
+                text = CurrencyFormatter.format((budgetAmount * 100f).roundToLong(), currency),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MeadowGreenDark,
                 fontWeight = FontWeight.Bold
@@ -312,7 +311,7 @@ private fun SoilBoundaryPage(
             Slider(
                 value = budgetAmount,
                 onValueChange = onBudgetAmountChange,
-                valueRange = UserSettings.MIN_MONTHLY_BUDGET.toFloat()..10_000f,
+                valueRange = 1f..10_000f,
                 steps = 38,
                 colors = SliderDefaults.colors(
                     thumbColor = MeadowGreen,
@@ -324,8 +323,8 @@ private fun SoilBoundaryPage(
             Text(
                 text = stringResource(
                     R.string.onboarding_budget_range,
-                    currencyFormat.format(UserSettings.MIN_MONTHLY_BUDGET),
-                    currencyFormat.format(10_000.0)
+                    CurrencyFormatter.format(UserSettings.MIN_MONTHLY_BUDGET, currency),
+                    CurrencyFormatter.format(1_000_000L, currency)
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -404,13 +403,13 @@ private fun CurrencySelectionRow(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = currency.displayName,
+                text = currency.code,
                 style = MaterialTheme.typography.titleMedium,
                 color = MeadowGreenDark,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = "${currency.symbol} · ${currency.code}",
+                text = currency.locale.displayCountry,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

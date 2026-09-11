@@ -17,7 +17,7 @@ class GardenBillStateTest {
         return Bill(
             id = 1L,
             name = "Electric",
-            amount = 85.0,
+            amount = 8_500L,
             dueDate = dueDate,
             parentCategory = "Utilities",
             subCategory = "Power",

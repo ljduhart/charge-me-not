@@ -44,6 +44,7 @@ import com.artie.chargemenot.ui.theme.MeadowGreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import com.artie.chargemenot.ui.viewmodels.CategoryViewModel
+import com.artie.chargemenot.util.CurrencyParser
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -152,7 +153,6 @@ fun ManualBillBottomSheet(
                 onValueChange = { amountInput = it },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(stringResource(R.string.edit_bill_amount_label)) },
-                prefix = { Text("$") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true
             )
@@ -215,17 +215,13 @@ fun ManualBillBottomSheet(
 
                 Button(
                     onClick = {
-                        val parsedAmount = amountInput
-                            .replace(",", "")
-                            .replace("$", "")
-                            .trim()
-                            .toDoubleOrNull()
+                        val parsedAmount = CurrencyParser.parseStringToCents(amountInput)
 
                         when {
                             nameInput.isBlank() -> {
                                 validationError = "Bill name is required."
                             }
-                            parsedAmount == null || parsedAmount <= 0.0 -> {
+                            parsedAmount <= 0L -> {
                                 validationError = "Enter a valid amount."
                             }
                             selectedParent.isBlank() || selectedSubcategory.isBlank() -> {

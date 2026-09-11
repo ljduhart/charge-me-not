@@ -2,8 +2,12 @@ package com.artie.chargemenot.ui.viewmodels
 
 import com.artie.chargemenot.data.local.BillDao
 import com.artie.chargemenot.data.local.BillEntity
-import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.data.local.BillWithCompost
+import com.artie.chargemenot.data.local.UserSettingsDao
+import com.artie.chargemenot.data.local.UserSettingsEntity
+import com.artie.chargemenot.data.repository.UserSettingsRepository
+import com.artie.chargemenot.domain.model.MeadowCategories
+import com.artie.chargemenot.domain.model.UserSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +37,7 @@ class WeedWhackerViewModelTest {
         )
         val viewModel = WeedWhackerViewModel(
             billDao = billDao,
+            userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
             coroutineScope = testScope,
             ioDispatcher = testDispatcher
         )
@@ -56,6 +61,7 @@ class WeedWhackerViewModelTest {
         )
         val viewModel = WeedWhackerViewModel(
             billDao = billDao,
+            userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
             coroutineScope = testScope,
             ioDispatcher = testDispatcher
         )
@@ -83,6 +89,7 @@ class WeedWhackerViewModelTest {
         )
         val viewModel = WeedWhackerViewModel(
             billDao = billDao,
+            userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
             coroutineScope = testScope,
             ioDispatcher = testDispatcher
         )
@@ -92,7 +99,7 @@ class WeedWhackerViewModelTest {
         assertTrue(state.primeWeedBillIds.contains(1L))
         val reportRow = state.costPerUseReport.first()
         assertTrue(reportRow.isPrimeWeed)
-        assertEquals(13.99, reportRow.costPerUse, 0.001)
+        assertEquals(1_399L, reportRow.costPerUse)
     }
 
     @Test
@@ -102,7 +109,7 @@ class WeedWhackerViewModelTest {
                 subscriptionBill(
                     id = 2L,
                     name = "Adobe Creative Cloud",
-                    amount = 54.99,
+                    amount = 5_499L,
                     usageCount = 0,
                     auditPromptCount = 0
                 )
@@ -110,13 +117,14 @@ class WeedWhackerViewModelTest {
         )
         val viewModel = WeedWhackerViewModel(
             billDao = billDao,
+            userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
             coroutineScope = testScope,
             ioDispatcher = testDispatcher
         )
         testScope.advanceUntilIdle()
 
         val reportRow = viewModel.uiState.value.costPerUseReport.first()
-        assertEquals(54.99, reportRow.costPerUse, 0.001)
+        assertEquals(5_499L, reportRow.costPerUse)
         assertFalse(reportRow.isPrimeWeed)
     }
 
@@ -131,6 +139,7 @@ class WeedWhackerViewModelTest {
         )
         val viewModel = WeedWhackerViewModel(
             billDao = billDao,
+            userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
             coroutineScope = testScope,
             ioDispatcher = testDispatcher
         )
@@ -156,6 +165,7 @@ class WeedWhackerViewModelTest {
         )
         val viewModel = WeedWhackerViewModel(
             billDao = billDao,
+            userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
             coroutineScope = testScope,
             ioDispatcher = testDispatcher
         )
@@ -182,6 +192,7 @@ class WeedWhackerViewModelTest {
         )
         val viewModel = WeedWhackerViewModel(
             billDao = billDao,
+            userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
             coroutineScope = testScope,
             ioDispatcher = testDispatcher
         )
@@ -202,7 +213,7 @@ class WeedWhackerViewModelTest {
     private fun subscriptionBill(
         id: Long,
         name: String,
-        amount: Double = 13.99,
+        amount: Long = 1_399L,
         usageCount: Int = 0,
         auditPromptCount: Int = 0
     ): BillEntity {
@@ -286,5 +297,24 @@ class WeedWhackerViewModelTest {
 
         override fun searchCompost(query: String): Flow<List<BillWithCompost>> =
             flowOf(emptyList())
+    }
+
+    private class FakeUserSettingsDao : UserSettingsDao {
+        private val settings = MutableStateFlow(
+            UserSettingsEntity(
+                monthlyBudget = UserSettings.DEFAULT_MONTHLY_BUDGET,
+                isOnboardingComplete = true
+            )
+        )
+
+        override fun observeSettings(settingsId: Int): Flow<UserSettingsEntity?> = settings
+
+        override suspend fun upsertSettings(settings: UserSettingsEntity) {
+            this.settings.value = settings
+        }
+
+        override suspend fun getSettings(settingsId: Int): UserSettingsEntity? = settings.value
+
+        override suspend fun getSettingsCount(settingsId: Int): Int = 1
     }
 }

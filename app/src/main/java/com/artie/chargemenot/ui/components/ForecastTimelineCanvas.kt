@@ -45,8 +45,8 @@ fun ForecastTimelineCanvas(
         val chartHeight = size.height - topPadding - bottomPadding
         val chartBottom = size.height - bottomPadding
 
-        val maxAmount = timelinePoints.maxOf { point -> point.amount }.coerceAtLeast(1.0)
-        val minAmount = timelinePoints.minOf { point -> point.amount }
+        val maxAmount = timelinePoints.maxOf { point -> point.amount }.coerceAtLeast(1L).toDouble()
+        val minAmount = timelinePoints.minOf { point -> point.amount }.toDouble()
         val amountRange = max(maxAmount - minAmount, 1.0)
 
         val pointCount = timelinePoints.size

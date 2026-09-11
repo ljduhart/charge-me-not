@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.ForecastResult
+import com.artie.chargemenot.domain.model.SupportedCurrency
 import com.artie.chargemenot.ui.components.MeadowHubScaffold
 import com.artie.chargemenot.ui.components.WeatherForecastCard
 import com.artie.chargemenot.ui.theme.MeadowCream
@@ -20,6 +21,7 @@ import com.artie.chargemenot.ui.theme.MeadowCream
 @Composable
 fun HarvestReportScreen(
     forecastResult: ForecastResult?,
+    currency: SupportedCurrency,
     onOpenDrawer: () -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
@@ -49,7 +51,10 @@ fun HarvestReportScreen(
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp)
             ) {
                 item(key = "harvest_forecast_card") {
-                    WeatherForecastCard(forecastResult = forecastResult)
+                    WeatherForecastCard(
+                        forecastResult = forecastResult,
+                        currency = currency
+                    )
                 }
             }
         }

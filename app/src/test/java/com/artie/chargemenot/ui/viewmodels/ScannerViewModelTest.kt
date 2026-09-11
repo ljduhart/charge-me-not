@@ -55,13 +55,13 @@ class ScannerViewModelTest {
 
     val impact = viewModel.calculatePredictiveImpact(
       parentCategory = MeadowCategories.ROOT_SYSTEM,
-      scannedAmount = 100.0,
-      parentCategoryTotals = mapOf(MeadowCategories.ROOT_SYSTEM to 200.0),
-      monthlyBudget = 1_000.0
+      scannedAmount = 10_000L,
+      parentCategoryTotals = mapOf(MeadowCategories.ROOT_SYSTEM to 20_000L),
+      monthlyBudget = 100_000L
     )
 
     assertEquals(30.0, impact.newPetalSizePercent, 0.001)
-    assertEquals(100.0, impact.scannedAmount, 0.001)
+    assertEquals(10_000L, impact.scannedAmount)
     assertTrue(impact.withinBudget)
   }
 
@@ -71,16 +71,16 @@ class ScannerViewModelTest {
 
     val impact = viewModel.calculatePredictiveImpact(
       parentCategory = MeadowCategories.CANOPY,
-      scannedAmount = 250.0,
+      scannedAmount = 25_000L,
       parentCategoryTotals = mapOf(
-        MeadowCategories.CANOPY to 1_450.0,
-        MeadowCategories.FERTILIZER to 400.0
+        MeadowCategories.CANOPY to 145_000L,
+        MeadowCategories.FERTILIZER to 40_000L
       ),
-      monthlyBudget = 1_500.0
+      monthlyBudget = 150_000L
     )
 
     assertFalse(impact.withinBudget)
-    assertEquals(2_100.0, impact.totalProjectedSpend, 0.001)
+    assertEquals(210_000L, impact.totalProjectedSpend)
   }
 
   @Test
@@ -89,9 +89,9 @@ class ScannerViewModelTest {
 
     val impact = viewModel.calculatePredictiveImpact(
       parentCategory = MeadowCategories.FERTILIZER,
-      scannedAmount = 50.0,
-      parentCategoryTotals = mapOf(MeadowCategories.FERTILIZER to 25.0),
-      monthlyBudget = 0.0
+      scannedAmount = 5_000L,
+      parentCategoryTotals = mapOf(MeadowCategories.FERTILIZER to 2_500L),
+      monthlyBudget = 0L
     )
 
     assertEquals(7_500.0, impact.newPetalSizePercent, 0.001)
@@ -102,7 +102,7 @@ class ScannerViewModelTest {
     val viewModel = createViewModel()
     val payload = CrossPollinationPayload(
       name = "Shared Electric",
-      amount = 84.50,
+      amount = 8_450L,
       dueDate = "2026-10-01",
       parentCategory = MeadowCategories.ROOT_SYSTEM,
       subCategory = "Utilities"
@@ -113,7 +113,7 @@ class ScannerViewModelTest {
     val pollen = viewModel.uiState.value.pollenReceived
     assertNotNull(pollen)
     assertEquals("Shared Electric", pollen!!.name)
-    assertEquals(84.50, pollen.amount, 0.001)
+    assertEquals(8_450L, pollen.amount)
     assertEquals(MeadowCategories.ROOT_SYSTEM, pollen.parentCategory)
     assertEquals("Utilities", pollen.subCategory)
   }
@@ -132,7 +132,7 @@ class ScannerViewModelTest {
     viewModel.onQrPayloadDetected(
       CrossPollinationPayload(
         name = "Roommate Rent Split",
-        amount = 725.0,
+        amount = 72_500L,
         dueDate = "2026-09-15",
         parentCategory = MeadowCategories.CANOPY,
         subCategory = "Rent"
@@ -154,7 +154,7 @@ class ScannerViewModelTest {
     val viewModel = createViewModel()
     val payload = CrossPollinationPayload(
       name = "Spotify Premium",
-      amount = 11.99,
+      amount = 1_199L,
       dueDate = "2026-09-12",
       parentCategory = MeadowCategories.VINES,
       subCategory = "Subscriptions"
@@ -181,7 +181,7 @@ class ScannerViewModelTest {
     viewModel.onQrPayloadDetected(
       CrossPollinationPayload(
         name = "Roommate Rent Split",
-        amount = 725.0,
+        amount = 72_500L,
         dueDate = "2026-09-15",
         parentCategory = MeadowCategories.CANOPY,
         subCategory = "Rent"
@@ -203,7 +203,7 @@ class ScannerViewModelTest {
     viewModel.onQrPayloadDetected(
       CrossPollinationPayload(
         name = "Spotify Premium",
-        amount = 11.99,
+        amount = 1_199L,
         dueDate = "2026-09-12",
         parentCategory = MeadowCategories.VINES,
         subCategory = "Subscriptions"

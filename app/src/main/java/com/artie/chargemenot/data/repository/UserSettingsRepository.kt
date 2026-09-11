@@ -17,7 +17,7 @@ class UserSettingsRepository(
             entity?.toDomain() ?: UserSettings()
         }
 
-    fun observeMonthlyBudget(): Flow<Double> =
+    fun observeMonthlyBudget(): Flow<Long> =
         observeUserSettings().map { settings -> settings.monthlyBudget }
 
     fun observeNagModeEnabled(): Flow<Boolean> =
@@ -31,7 +31,7 @@ class UserSettingsRepository(
     }
 
     suspend fun saveOnboardingPreferences(
-        monthlyBudget: Double,
+        monthlyBudget: Long,
         selectedCurrency: String,
         isNagModeEnabled: Boolean
     ) {
@@ -55,7 +55,7 @@ class UserSettingsRepository(
         )
     }
 
-    suspend fun updateMonthlyBudget(monthlyBudget: Double) {
+    suspend fun updateMonthlyBudget(monthlyBudget: Long) {
         val current = userSettingsDao.getSettings()?.toDomain() ?: UserSettings()
         val sanitizedBudget = monthlyBudget.coerceAtLeast(UserSettings.MIN_MONTHLY_BUDGET)
         userSettingsDao.upsertSettings(

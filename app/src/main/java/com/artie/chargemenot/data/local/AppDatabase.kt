@@ -10,7 +10,7 @@ import com.artie.chargemenot.domain.model.MeadowCategories
 
 @Database(
     entities = [BillEntity::class, UserSettingsEntity::class, CompostEntity::class, CategoryEntity::class],
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -47,6 +47,7 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_7_8,
                         MIGRATION_8_9
                     )
+                    .fallbackToDestructiveMigration()
                     .addCallback(CategorySeedCallback())
                     .build().also { INSTANCE = it }
             }

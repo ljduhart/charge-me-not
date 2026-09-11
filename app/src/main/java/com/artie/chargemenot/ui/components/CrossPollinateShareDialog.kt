@@ -34,16 +34,16 @@ import com.artie.chargemenot.ui.theme.MeadowGreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowSage
 import com.artie.chargemenot.ui.theme.MeadowWhite
+import com.artie.chargemenot.domain.model.SupportedCurrency
+import com.artie.chargemenot.util.CurrencyFormatter
 import com.artie.chargemenot.util.generateQrBitmap
-import java.text.NumberFormat
-import java.util.Locale
 
 @Composable
 fun CrossPollinateShareDialog(
     bill: Bill,
+    currency: SupportedCurrency,
     onDismiss: () -> Unit
 ) {
-    val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
     val payloadJson = remember(bill) {
         CrossPollinationPayload.fromBill(bill).toJson()
     }
@@ -111,7 +111,7 @@ fun CrossPollinateShareDialog(
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = "${categoryDisplayName(bill.parentCategory, bill.subCategory)} · ${currencyFormat.format(bill.amount)}",
+                        text = "${categoryDisplayName(bill.parentCategory, bill.subCategory)} · ${CurrencyFormatter.format(bill.amount, currency)}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,

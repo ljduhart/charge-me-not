@@ -190,6 +190,7 @@ fun ChargeMeNotNavHost(
         ) {
             PetalsAndWeedsScreen(
                 gardenBills = dashboardUiState.gardenPathBills,
+                currency = dashboardUiState.selectedCurrency,
                 parallaxOffset = parallaxOffset,
                 onStartParallaxSensor = onStartParallaxSensor,
                 onStopParallaxSensor = onStopParallaxSensor,
@@ -211,6 +212,7 @@ fun ChargeMeNotNavHost(
             RichSoilScreen(
                 monthlyBudget = dashboardUiState.monthlyBudget,
                 totalUpcoming = dashboardUiState.totalUpcoming,
+                currency = dashboardUiState.selectedCurrency,
                 onOpenDrawer = onOpenDrawer,
                 onNavigateBack = onMeadowHubNavigateBack,
                 onMonthlyBudgetChange = onMonthlyBudgetChange
@@ -226,6 +228,7 @@ fun ChargeMeNotNavHost(
         ) {
             HarvestReportScreen(
                 forecastResult = dashboardUiState.forecastResult,
+                currency = dashboardUiState.selectedCurrency,
                 onOpenDrawer = onOpenDrawer,
                 onNavigateBack = onMeadowHubNavigateBack
             )
@@ -240,7 +243,7 @@ fun ChargeMeNotNavHost(
         ) {
             GreenhouseSettingsScreen(
                 userDisplayName = dashboardUiState.userDisplayName,
-                selectedCurrencyCode = dashboardUiState.selectedCurrency,
+                selectedCurrencyCode = dashboardUiState.selectedCurrency.code,
                 settingsUiState = settingsUiState,
                 onOpenDrawer = onOpenDrawer,
                 onNavigateBack = onMeadowHubNavigateBack,

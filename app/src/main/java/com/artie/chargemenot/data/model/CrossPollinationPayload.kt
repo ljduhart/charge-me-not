@@ -8,10 +8,11 @@ import org.json.JSONObject
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
+import kotlin.math.roundToLong
 
 data class CrossPollinationPayload(
     val name: String,
-    val amount: Double,
+    val amount: Long,
     val dueDate: String,
     val parentCategory: String,
     val subCategory: String
@@ -35,7 +36,7 @@ data class CrossPollinationPayload(
             return null
         }
 
-        if (amount <= 0.0 || amount > MAX_AMOUNT) {
+        if (amount <= 0L || amount > MAX_AMOUNT_CENTS) {
             return null
         }
 
@@ -61,9 +62,9 @@ data class CrossPollinationPayload(
 
     companion object {
         private const val APP_IDENTIFIER = "charge-me-not"
-        private const val SCHEMA_VERSION = 2
+        private const val SCHEMA_VERSION = 3
         private const val MAX_NAME_LENGTH = 120
-        private const val MAX_AMOUNT = 1_000_000.0
+        private const val MAX_AMOUNT_CENTS = 100_000_000L
 
         private const val KEY_APP = "app"
         private const val KEY_VERSION = "v"
@@ -105,7 +106,7 @@ data class CrossPollinationPayload(
                 }
 
                 val version = json.optInt(KEY_VERSION, SCHEMA_VERSION)
-                if (version != SCHEMA_VERSION && version != 1) {
+                if (version !in 1..SCHEMA_VERSION) {
                     return null
                 }
 
@@ -118,15 +119,15 @@ data class CrossPollinationPayload(
                     return null
                 }
 
-                val amount = json.getDouble(KEY_AMOUNT)
-                if (amount <= 0.0 || amount > MAX_AMOUNT) {
+                val amount = parseAmountCents(json, version)
+                if (amount <= 0L || amount > MAX_AMOUNT_CENTS) {
                     return null
                 }
 
                 val dueDate = json.getString(KEY_DUE_DATE).trim()
                 validateDueDate(dueDate)
 
-                if (version == SCHEMA_VERSION) {
+                if (version >= 2) {
                     if (!json.has(KEY_PARENT_CATEGORY) || !json.has(KEY_SUB_CATEGORY)) {
                         return null
                     }
@@ -156,6 +157,19 @@ data class CrossPollinationPayload(
                     )
                 }
             }.getOrNull()
+        }
+
+        private fun parseAmountCents(json: JSONObject, version: Int): Long {
+            return if (version >= SCHEMA_VERSION) {
+                json.getLong(KEY_AMOUNT)
+            } else {
+                val dollars = json.getDouble(KEY_AMOUNT)
+                if (!dollars.isFinite()) {
+                    0L
+                } else {
+                    (dollars * 100.0).roundToLong()
+                }
+            }
         }
 
         private fun validateDueDate(dueDate: String) {

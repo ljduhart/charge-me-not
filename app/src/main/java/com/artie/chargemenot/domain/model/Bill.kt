@@ -5,7 +5,7 @@ import java.time.LocalDate
 data class Bill(
     val id: Long = 0L,
     val name: String,
-    val amount: Double,
+    val amount: Long,
     val dueDate: LocalDate,
     val parentCategory: String,
     val subCategory: String,

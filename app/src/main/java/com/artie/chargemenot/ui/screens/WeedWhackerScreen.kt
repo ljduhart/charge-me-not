@@ -56,8 +56,8 @@ import com.artie.chargemenot.ui.theme.WeedRed
 import com.artie.chargemenot.ui.viewmodels.CostPerUseReportRow
 import com.artie.chargemenot.ui.viewmodels.SubscriptionAuditCard
 import com.artie.chargemenot.ui.viewmodels.WeedWhackerUiState
-import java.text.NumberFormat
-import java.util.Locale
+import com.artie.chargemenot.domain.model.SupportedCurrency
+import com.artie.chargemenot.util.CurrencyFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +69,7 @@ fun WeedWhackerScreen(
     onOpenDrawer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
+    val currency = uiState.selectedCurrency
 
     BackHandler(onBack = onNavigateBack)
 
@@ -114,7 +114,7 @@ fun WeedWhackerScreen(
         ) {
             AuditPromptSection(
                 uiState = uiState,
-                currencyFormat = currencyFormat,
+                currency = currency,
                 onRecordAuditResponse = onRecordAuditResponse,
                 onRestartAuditSession = onRestartAuditSession,
                 modifier = Modifier
@@ -126,7 +126,7 @@ fun WeedWhackerScreen(
 
             GardenHealthReportSection(
                 reportRows = uiState.costPerUseReport,
-                currencyFormat = currencyFormat,
+                currency = currency,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(0.52f)
@@ -138,7 +138,7 @@ fun WeedWhackerScreen(
 @Composable
 private fun AuditPromptSection(
     uiState: WeedWhackerUiState,
-    currencyFormat: NumberFormat,
+    currency: SupportedCurrency,
     onRecordAuditResponse: (Long, Boolean) -> Unit,
     onRestartAuditSession: () -> Unit,
     modifier: Modifier = Modifier
@@ -197,7 +197,7 @@ private fun AuditPromptSection(
                 uiState.currentAuditCard != null -> {
                     SubscriptionAuditCardContent(
                         card = uiState.currentAuditCard,
-                        currencyFormat = currencyFormat,
+                        currency = currency,
                         pendingAuditCount = uiState.pendingAuditCount,
                         onRecordAuditResponse = onRecordAuditResponse
                     )
@@ -210,7 +210,7 @@ private fun AuditPromptSection(
 @Composable
 private fun SubscriptionAuditCardContent(
     card: SubscriptionAuditCard,
-    currencyFormat: NumberFormat,
+    currency: SupportedCurrency,
     pendingAuditCount: Int,
     onRecordAuditResponse: (Long, Boolean) -> Unit
 ) {
@@ -236,7 +236,7 @@ private fun SubscriptionAuditCardContent(
             Text(
                 text = stringResource(
                     R.string.weed_whacker_audit_amount,
-                    currencyFormat.format(card.amount)
+                    CurrencyFormatter.format(card.amount, currency)
                 ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -298,7 +298,7 @@ private fun SubscriptionAuditCardContent(
 @Composable
 private fun GardenHealthReportSection(
     reportRows: List<CostPerUseReportRow>,
-    currencyFormat: NumberFormat,
+    currency: SupportedCurrency,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -344,7 +344,7 @@ private fun GardenHealthReportSection(
             ) { row ->
                 CostPerUseReportCard(
                     row = row,
-                    currencyFormat = currencyFormat
+                    currency = currency
                 )
             }
         }
@@ -354,7 +354,7 @@ private fun GardenHealthReportSection(
 @Composable
 private fun CostPerUseReportCard(
     row: CostPerUseReportRow,
-    currencyFormat: NumberFormat
+    currency: SupportedCurrency
 ) {
     val containerColor = if (row.isPrimeWeed) {
         WeedRed.copy(alpha = 0.12f)
@@ -409,7 +409,7 @@ private fun CostPerUseReportCard(
                 Text(
                     text = stringResource(
                         R.string.weed_whacker_cost_per_use,
-                        currencyFormat.format(row.costPerUse)
+                        CurrencyFormatter.format(row.costPerUse, currency)
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = costColor,
@@ -436,7 +436,7 @@ private fun CostPerUseReportCard(
             }
 
             Text(
-                text = currencyFormat.format(row.amount),
+                text = CurrencyFormatter.format(row.amount, currency),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium
@@ -454,26 +454,26 @@ private fun WeedWhackerScreenPreview() {
                 currentAuditCard = SubscriptionAuditCard(
                     billId = 1L,
                     name = "Netflix",
-                    amount = 15.49
+                    amount = 1_549L
                 ),
                 pendingAuditCount = 2,
                 costPerUseReport = listOf(
                     CostPerUseReportRow(
                         billId = 1L,
                         name = "Netflix",
-                        amount = 15.49,
+                        amount = 1_549L,
                         usageCount = 0,
                         auditPromptCount = 3,
-                        costPerUse = 15.49,
+                        costPerUse = 1_549L,
                         isPrimeWeed = true
                     ),
                     CostPerUseReportRow(
                         billId = 2L,
                         name = "Spotify Premium",
-                        amount = 11.99,
+                        amount = 1_199L,
                         usageCount = 4,
                         auditPromptCount = 2,
-                        costPerUse = 2.9975,
+                        costPerUse = 299L,
                         isPrimeWeed = false
                     )
                 ),

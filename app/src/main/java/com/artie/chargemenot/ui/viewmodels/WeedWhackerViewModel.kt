@@ -2,6 +2,8 @@ package com.artie.chargemenot.ui.viewmodels
 
 import com.artie.chargemenot.data.local.BillDao
 import com.artie.chargemenot.data.local.BillEntity
+import com.artie.chargemenot.data.repository.UserSettingsRepository
+import com.artie.chargemenot.domain.model.SupportedCurrency
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class WeedWhackerViewModel(
     private val billDao: BillDao,
+    private val userSettingsRepository: UserSettingsRepository,
     private val coroutineScope: CoroutineScope,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
@@ -22,6 +25,7 @@ class WeedWhackerViewModel(
     private val currentAuditIndex = MutableStateFlow(0)
     private val auditSessionComplete = MutableStateFlow(false)
     private val hasLoadedSubscriptions = MutableStateFlow(false)
+    private val selectedCurrencyState = MutableStateFlow(SupportedCurrency.USD)
     private val isRecordingAuditResponse = AtomicBoolean(false)
 
     private val _uiState = MutableStateFlow(WeedWhackerUiState())
@@ -34,6 +38,11 @@ class WeedWhackerViewModel(
                 subscriptionsState.value = subscriptions
                 hasLoadedSubscriptions.value = true
                 reconcileAuditIndex(subscriptions)
+            }
+        }
+        coroutineScope.launch(ioDispatcher) {
+            userSettingsRepository.observeUserSettings().collect { settings ->
+                selectedCurrencyState.value = SupportedCurrency.fromCode(settings.selectedCurrency)
             }
         }
     }
@@ -54,13 +63,15 @@ class WeedWhackerViewModel(
                 subscriptionsState,
                 currentAuditIndex,
                 auditSessionComplete,
-                hasLoadedSubscriptions
-            ) { subscriptions, auditIndex, sessionComplete, hasLoaded ->
+                hasLoadedSubscriptions,
+                selectedCurrencyState
+            ) { subscriptions, auditIndex, sessionComplete, hasLoaded, selectedCurrency ->
                 buildUiState(
                     subscriptions = subscriptions,
                     auditIndex = auditIndex,
                     sessionComplete = sessionComplete,
-                    isLoading = !hasLoaded
+                    isLoading = !hasLoaded,
+                    selectedCurrency = selectedCurrency
                 )
             }.collect { state ->
                 _uiState.value = state
@@ -111,7 +122,8 @@ class WeedWhackerViewModel(
         subscriptions: List<BillEntity>,
         auditIndex: Int,
         sessionComplete: Boolean,
-        isLoading: Boolean
+        isLoading: Boolean,
+        selectedCurrency: SupportedCurrency
     ): WeedWhackerUiState {
         val reportRows = subscriptions.map { bill -> bill.toCostPerUseReportRow() }
         val primeWeedIds = reportRows
@@ -146,7 +158,8 @@ class WeedWhackerViewModel(
             primeWeedBillIds = primeWeedIds,
             isLoading = isLoading,
             auditSessionComplete = sessionComplete || subscriptions.isEmpty(),
-            hasSubscriptions = subscriptions.isNotEmpty()
+            hasSubscriptions = subscriptions.isNotEmpty(),
+            selectedCurrency = selectedCurrency
         )
     }
 

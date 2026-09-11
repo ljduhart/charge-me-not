@@ -4,6 +4,7 @@ import com.artie.chargemenot.data.local.BillDao
 import com.artie.chargemenot.data.local.BillEntity
 import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.MeadowCategories
+import com.artie.chargemenot.domain.model.SupportedCurrency
 import com.artie.chargemenot.domain.model.UserSettings
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -27,6 +28,7 @@ class PruningViewModel(
     private val pruneStates = MutableStateFlow<Map<Long, SandboxPruneState>>(emptyMap())
     private val expandedRootBillId = MutableStateFlow<Long?>(null)
     private val monthlyBudgetState = MutableStateFlow(UserSettings.DEFAULT_MONTHLY_BUDGET)
+    private val selectedCurrencyState = MutableStateFlow(SupportedCurrency.USD)
     private val hasLoadedSnapshot = MutableStateFlow(false)
 
     private val _uiState = MutableStateFlow(PruningUiState())
@@ -36,8 +38,9 @@ class PruningViewModel(
         observeSandboxState()
         coroutineScope.launch(ioDispatcher) {
             loadSnapshotFromRoom()
-            userSettingsRepository.observeMonthlyBudget().collect { budget ->
-                monthlyBudgetState.value = budget
+            userSettingsRepository.observeUserSettings().collect { settings ->
+                monthlyBudgetState.value = settings.monthlyBudget
+                selectedCurrencyState.value = SupportedCurrency.fromCode(settings.selectedCurrency)
             }
         }
     }
@@ -48,9 +51,9 @@ class PruningViewModel(
                 sandboxState,
                 pruneStates,
                 expandedRootBillId,
-                monthlyBudgetState,
+                combine(monthlyBudgetState, selectedCurrencyState, ::Pair),
                 hasLoadedSnapshot
-            ) { bills, pruneStateMap, expandedRootId, monthlyBudget, hasLoaded ->
+            ) { bills, pruneStateMap, expandedRootId, budgetAndCurrency, hasLoaded ->
                 val prunedIds = pruneStateMap
                     .filter { (_, state) -> state.isPruned }
                     .keys
@@ -59,7 +62,8 @@ class PruningViewModel(
                     bills = bills,
                     prunedIds = prunedIds,
                     expandedRootBillId = expandedRootId,
-                    monthlyBudget = monthlyBudget,
+                    monthlyBudget = budgetAndCurrency.first,
+                    selectedCurrency = budgetAndCurrency.second,
                     isLoading = !hasLoaded
                 )
             }.collect { state ->
@@ -105,8 +109,8 @@ class PruningViewModel(
         expandedRootBillId.value = null
     }
 
-    fun adjustBillAmount(billId: Long, newAmount: Double) {
-        val sanitizedAmount = newAmount.coerceAtLeast(0.0)
+    fun adjustBillAmount(billId: Long, newAmount: Long) {
+        val sanitizedAmount = newAmount.coerceAtLeast(0L)
         sandboxState.update { bills ->
             bills.map { bill ->
                 if (bill.id == billId) {
@@ -149,7 +153,8 @@ class PruningViewModel(
         bills: List<BillEntity>,
         prunedIds: Set<Long>,
         expandedRootBillId: Long?,
-        monthlyBudget: Double,
+        monthlyBudget: Long,
+        selectedCurrency: SupportedCurrency,
         isLoading: Boolean
     ): PruningUiState {
         val originalParentCategoryTotals = bills
@@ -162,12 +167,12 @@ class PruningViewModel(
             .mapValues { (_, categoryBills) -> categoryBills.sumOf { bill -> bill.amount } }
 
         val parentCategoryAlphas = MeadowCategories.parentNames.associateWith { parent ->
-            val originalAmount = originalParentCategoryTotals[parent] ?: 0.0
-            val projectedAmount = projectedParentCategoryTotals[parent] ?: 0.0
-            if (originalAmount <= 0.0) {
+            val originalAmount = originalParentCategoryTotals[parent] ?: 0L
+            val projectedAmount = projectedParentCategoryTotals[parent] ?: 0L
+            if (originalAmount <= 0L) {
                 1f
             } else {
-                (projectedAmount / originalAmount).toFloat().coerceIn(0.12f, 1f)
+                (projectedAmount.toDouble() / originalAmount.toDouble()).toFloat().coerceIn(0.12f, 1f)
             }
         }
 
@@ -185,6 +190,7 @@ class PruningViewModel(
             parentCategoryAlphas = parentCategoryAlphas,
             newMonthlyTotal = activeBills.sumOf { bill -> bill.amount },
             monthlyBudget = monthlyBudget,
+            selectedCurrency = selectedCurrency,
             isLoading = isLoading
         )
     }

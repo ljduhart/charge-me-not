@@ -14,6 +14,7 @@ import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.abs
+import kotlin.math.roundToLong
 
 class ForecastUseCase(
     private val billDao: BillDao
@@ -47,7 +48,7 @@ class ForecastUseCase(
             .filter { bill -> isVariableSpendBill(bill) }
             .groupBy { bill -> YearMonth.from(bill.dueDate) }
             .mapValues { (_, monthBills) -> monthBills.sumOf { bill -> bill.amount } }
-            .filterValues { total -> total > 0.0 }
+            .filterValues { total -> total > 0L }
 
         val historicalMonths = monthlyTotals.keys
             .filter { month -> month < currentMonth }
@@ -59,15 +60,16 @@ class ForecastUseCase(
 
         val historicalAmounts = historicalMonths.map { month -> monthlyTotals[month]!! }
         val predictedAmount = predictNextMonthLinearRegression(historicalAmounts)
-            .coerceAtLeast(0.0)
+            .coerceAtLeast(0L)
 
         val lastMonthAmount = historicalAmounts.last()
-        if (lastMonthAmount <= 0.0) {
+        if (lastMonthAmount <= 0L) {
             return null
         }
 
         val percentageVariance =
-            ((predictedAmount - lastMonthAmount) / lastMonthAmount) * PERCENT_SCALE
+            ((predictedAmount - lastMonthAmount).toDouble() / lastMonthAmount.toDouble()) *
+                PERCENT_SCALE
         val weatherStatus = resolveWeatherStatus(percentageVariance)
 
         val timelineHistoricalMonths = historicalMonths.takeLast(TIMELINE_HISTORICAL_MONTHS)
@@ -90,20 +92,21 @@ class ForecastUseCase(
 
     private fun buildTimelinePoints(
         historicalMonths: List<YearMonth>,
-        monthlyTotals: Map<YearMonth, Double>,
-        predictedAmount: Double,
+        monthlyTotals: Map<YearMonth, Long>,
+        predictedAmount: Long,
         predictionStatus: WeatherStatus,
         targetMonth: YearMonth
     ): List<ForecastTimelinePoint> {
         val points = mutableListOf<ForecastTimelinePoint>()
 
         historicalMonths.forEachIndexed { index, month ->
-            val amount = monthlyTotals[month] ?: 0.0
+            val amount = monthlyTotals[month] ?: 0L
             val previousMonth = historicalMonths.getOrNull(index - 1)
             val previousAmount = previousMonth?.let { prior -> monthlyTotals[prior] }
-            val status = if (previousAmount != null) {
+            val status = if (previousAmount != null && previousAmount > 0L) {
                 resolveWeatherStatus(
-                    ((amount - previousAmount) / previousAmount) * PERCENT_SCALE
+                    ((amount - previousAmount).toDouble() / previousAmount.toDouble()) *
+                        PERCENT_SCALE
                 )
             } else {
                 WeatherStatus.SUNNY
@@ -127,9 +130,9 @@ class ForecastUseCase(
         return points
     }
 
-    internal fun predictNextMonthLinearRegression(monthlyAmounts: List<Double>): Double {
+    internal fun predictNextMonthLinearRegression(monthlyAmounts: List<Long>): Long {
         if (monthlyAmounts.isEmpty()) {
-            return 0.0
+            return 0L
         }
         if (monthlyAmounts.size == 1) {
             return monthlyAmounts.first()
@@ -143,20 +146,21 @@ class ForecastUseCase(
 
         monthlyAmounts.forEachIndexed { index, amount ->
             val x = index.toDouble()
+            val y = amount.toDouble()
             sumX += x
-            sumY += amount
-            sumXY += x * amount
+            sumY += y
+            sumXY += x * y
             sumX2 += x * x
         }
 
         val denominator = (n * sumX2) - (sumX * sumX)
         if (abs(denominator) < EPSILON) {
-            return monthlyAmounts.average()
+            return monthlyAmounts.average().roundToLong()
         }
 
         val slope = ((n * sumXY) - (sumX * sumY)) / denominator
         val intercept = (sumY - (slope * sumX)) / n
-        return intercept + (slope * n)
+        return (intercept + (slope * n)).roundToLong()
     }
 
     internal fun resolveWeatherStatus(percentageVariance: Double): WeatherStatus {

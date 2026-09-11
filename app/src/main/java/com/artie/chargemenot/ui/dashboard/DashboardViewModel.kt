@@ -7,10 +7,12 @@ import com.artie.chargemenot.data.repository.UserSettingsRepository
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.ForecastResult
 import com.artie.chargemenot.domain.model.MeadowCategories
+import com.artie.chargemenot.domain.model.SupportedCurrency
 import com.artie.chargemenot.domain.model.UserSettings
 import com.artie.chargemenot.ui.components.BloomCategoryDefinitions
 import com.artie.chargemenot.ui.components.sortGardenPathBills
 import com.artie.chargemenot.domain.usecase.ForecastUseCase
+import com.artie.chargemenot.util.CurrencyParser
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -136,7 +138,7 @@ class DashboardViewModel(
                     parentCategoryTotals = parentCategoryTotals,
                     forecastResult = forecast,
                     highlightedBloomParent = _uiState.value.highlightedBloomParent,
-                    selectedCurrency = settings.selectedCurrency,
+                    selectedCurrency = SupportedCurrency.fromCode(settings.selectedCurrency),
                     isBillCalendarExpanded = _uiState.value.isBillCalendarExpanded,
                     calendarVisibleMonth = _uiState.value.calendarVisibleMonth,
                     billsByDueDate = billsByDueDate,
@@ -175,11 +177,10 @@ class DashboardViewModel(
     }
 
     fun updateMonthlyBudget(rawBudgetInput: String): Boolean {
-        val parsedBudget = rawBudgetInput
-            .replace(",", "")
-            .replace("$", "")
-            .trim()
-            .toDoubleOrNull() ?: return false
+        val parsedBudget = CurrencyParser.parseStringToCents(rawBudgetInput)
+        if (parsedBudget < UserSettings.MIN_MONTHLY_BUDGET) {
+            return false
+        }
 
         coroutineScope.launch(ioDispatcher) {
             userSettingsRepository.updateMonthlyBudget(parsedBudget)

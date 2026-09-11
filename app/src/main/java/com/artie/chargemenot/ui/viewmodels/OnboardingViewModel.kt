@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+import kotlin.math.roundToLong
+
 class OnboardingViewModel(
     private val userSettingsRepository: UserSettingsRepository,
     private val nagModeScheduler: NagModeScheduler,
@@ -98,7 +100,8 @@ class OnboardingViewModel(
 
         val state = _uiState.value
         val monthlyBudget = if (state.budgetEnabled) {
-            state.budgetAmount.toDouble()
+            (state.budgetAmount.toDouble() * 100.0).roundToLong()
+                .coerceAtLeast(UserSettings.MIN_MONTHLY_BUDGET)
         } else {
             UserSettings.DEFAULT_MONTHLY_BUDGET
         }

@@ -93,7 +93,8 @@ import java.time.format.DateTimeFormatter
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import java.text.NumberFormat
+import com.artie.chargemenot.domain.model.SupportedCurrency
+import com.artie.chargemenot.util.CurrencyFormatter
 import java.time.LocalDate
 import java.util.Locale
 import java.util.concurrent.Executors
@@ -203,6 +204,7 @@ fun ScannerScreen(
                     uiState.pollenReceived?.let { pollen ->
                         AcceptPollinatedBillCard(
                             pollen = pollen,
+                            currency = uiState.selectedCurrency,
                             onAccept = onAcceptPollinatedBill,
                             onDiscard = onDiscardPollen,
                             modifier = Modifier.fillMaxSize()
@@ -397,11 +399,11 @@ private fun ScanCaptureBanner(
 @Composable
 private fun AcceptPollinatedBillCard(
     pollen: PollenReceivedState,
+    currency: SupportedCurrency,
     onAccept: () -> Unit,
     onDiscard: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
     val dateFormat = remember { DateTimeFormatter.ofPattern("MMM d, yyyy") }
 
     Card(
@@ -465,7 +467,7 @@ private fun AcceptPollinatedBillCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = currencyFormat.format(pollen.amount),
+                        text = CurrencyFormatter.format(pollen.amount, currency),
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.SemiBold
@@ -519,7 +521,6 @@ private fun PredictiveImpactCard(
     onSaveScannedBill: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
     val projectedTotals = remember(
         uiState.parentCategoryTotals,
         uiState.selectedParentCategory,
@@ -571,7 +572,7 @@ private fun PredictiveImpactCard(
                 uiState.predictiveImpact?.let { impact ->
                     ImpactTooltip(
                         impact = impact,
-                        currencyFormat = currencyFormat,
+                        currency = uiState.selectedCurrency,
                         modifier = Modifier.align(Alignment.TopCenter)
                     )
                 }
@@ -609,7 +610,7 @@ private fun PredictiveImpactCard(
 @Composable
 private fun ImpactTooltip(
     impact: PredictiveImpact,
-    currencyFormat: NumberFormat,
+    currency: SupportedCurrency,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -622,7 +623,7 @@ private fun ImpactTooltip(
         Text(
             text = "${MeadowCategories.shortDisplayName(impact.parentCategory)}: New Petal Size: " +
                 "${"%.1f".format(Locale.US, impact.newPetalSizePercent)}% " +
-                "(+${currencyFormat.format(impact.scannedAmount)})",
+                "(+${CurrencyFormatter.format(impact.scannedAmount, currency)})",
             style = MaterialTheme.typography.bodySmall,
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
@@ -694,16 +695,16 @@ private fun CategorySelectionRow(
 }
 
 private fun buildProjectedParentCategoryTotals(
-    parentCategoryTotals: Map<String, Double>,
+    parentCategoryTotals: Map<String, Long>,
     selectedParentCategory: String,
-    scannedAmount: Double?
-): Map<String, Double> {
+    scannedAmount: Long?
+): Map<String, Long> {
     if (scannedAmount == null) {
         return parentCategoryTotals
     }
 
     val projected = parentCategoryTotals.toMutableMap()
-    projected[selectedParentCategory] = (projected[selectedParentCategory] ?: 0.0) + scannedAmount
+    projected[selectedParentCategory] = (projected[selectedParentCategory] ?: 0L) + scannedAmount
     return projected
 }
 
@@ -714,25 +715,25 @@ private fun ScannerScreenPreview() {
         ScannerScreen(
             uiState = ScannerUiState(
                 scannedBill = com.artie.chargemenot.ui.viewmodels.ScannedBillData(
-                    amount = 94.17,
+                    amount = 9_417L,
                     dueDate = LocalDate.of(2026, 9, 12)
                 ),
                 selectedParentCategory = MeadowCategories.ROOT_SYSTEM,
                 parentCategoryTotals = mapOf(
-                    MeadowCategories.CANOPY to 1_450.0,
-                    MeadowCategories.FERTILIZER to 258.72,
-                    MeadowCategories.ROOT_SYSTEM to 94.17
+                    MeadowCategories.CANOPY to 145_000L,
+                    MeadowCategories.FERTILIZER to 25_872L,
+                    MeadowCategories.ROOT_SYSTEM to 9_417L
                 ),
                 predictiveImpact = PredictiveImpact(
                     parentCategory = MeadowCategories.ROOT_SYSTEM,
                     newPetalSizePercent = 7.5,
-                    scannedAmount = 94.17,
+                    scannedAmount = 9_417L,
                     withinBudget = true,
-                    totalProjectedSpend = 1_897.06
+                    totalProjectedSpend = 189_706L
                 ),
-                scanStatusMessage = "Scanned Details Captured! Date: Sep 12, 2026, Amount: $94.17",
-                monthlyBudget = 3_000.0,
-                budgetSummary = "Adding this bill keeps you within your $3,000.00 monthly budget."
+                scanStatusMessage = "Scanned Details Captured! Date: Sep 12, 2026, Amount: 94.17",
+                monthlyBudget = 300_000L,
+                budgetSummary = "Adding this bill keeps you within your monthly budget."
             ),
             onScanResult = { _, _ -> },
             onQrPayloadDetected = {},

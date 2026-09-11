@@ -49,7 +49,8 @@ import androidx.compose.ui.unit.sp
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.MeadowCategories
-import java.text.NumberFormat
+import com.artie.chargemenot.domain.model.SupportedCurrency
+import com.artie.chargemenot.util.CurrencyFormatter
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -140,7 +141,7 @@ fun LeafBillCard(
     bill: Bill,
     index: Int,
     gardenState: GardenBillState,
-    currencyFormat: NumberFormat,
+    currency: SupportedCurrency,
     isFeaturedPaidRose: Boolean = false,
     modifier: Modifier = Modifier
 ) {
@@ -152,7 +153,7 @@ fun LeafBillCard(
         )
         GardenBillState.Overdue -> OverdueLeafBillCard(
             bill = bill,
-            currencyFormat = currencyFormat,
+            currency = currency,
             modifier = modifier
         )
         GardenBillState.Upcoming,
@@ -160,7 +161,7 @@ fun LeafBillCard(
             bill = bill,
             index = index,
             gardenState = gardenState,
-            currencyFormat = currencyFormat,
+            currency = currency,
             modifier = modifier
         )
     }
@@ -215,7 +216,7 @@ private fun PaidRoseBillCard(
 @Composable
 private fun OverdueLeafBillCard(
     bill: Bill,
-    currencyFormat: NumberFormat,
+    currency: SupportedCurrency,
     modifier: Modifier = Modifier
 ) {
     val statusDateFormat = DateTimeFormatter.ofPattern("MMM d", Locale.US)
@@ -263,7 +264,7 @@ private fun OverdueLeafBillCard(
                 modifier = Modifier.padding(top = 2.dp)
             )
             Text(
-                text = currencyFormat.format(bill.amount),
+                text = CurrencyFormatter.format(bill.amount, currency),
                 style = MaterialTheme.typography.titleLarge,
                 color = GardenForestGreen,
                 fontWeight = FontWeight.Bold,
@@ -295,7 +296,7 @@ private fun GlassLeafBillCard(
     bill: Bill,
     index: Int,
     gardenState: GardenBillState,
-    currencyFormat: NumberFormat,
+    currency: SupportedCurrency,
     modifier: Modifier = Modifier
 ) {
     val leafShape = leafShapeForIndex(index)
@@ -336,7 +337,7 @@ private fun GlassLeafBillCard(
         DefaultLeafBillContent(
             bill = bill,
             gardenState = gardenState,
-            currencyFormat = currencyFormat
+            currency = currency
         )
     }
 }
@@ -345,7 +346,7 @@ private fun GlassLeafBillCard(
 private fun DefaultLeafBillContent(
     bill: Bill,
     gardenState: GardenBillState,
-    currencyFormat: NumberFormat
+    currency: SupportedCurrency
 ) {
     val statusDateFormat = DateTimeFormatter.ofPattern("MMM d", Locale.US)
     val categoryLabel = BloomCategoryDefinitions.fromParentName(bill.parentCategory)?.displayName
@@ -392,7 +393,7 @@ private fun DefaultLeafBillContent(
                 modifier = Modifier.padding(top = 4.dp)
             )
             Text(
-                text = currencyFormat.format(bill.amount),
+                text = CurrencyFormatter.format(bill.amount, currency),
                 style = MaterialTheme.typography.titleLarge,
                 color = GardenForestGreen,
                 fontWeight = FontWeight.Bold,

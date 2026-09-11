@@ -74,8 +74,8 @@ class DashboardViewModelEditTest {
         val viewModel = createViewModel()
         testScope.advanceUntilIdle()
 
-        val original = sampleBill(id = 4L, name = "Netflix", amount = 15.49)
-        val updated = original.copy(name = "Netflix Premium", amount = 17.99)
+        val original = sampleBill(id = 4L, name = "Netflix", amount = 1_549L)
+        val updated = original.copy(name = "Netflix Premium", amount = 1_799L)
 
         viewModel.selectBillForEdit(original)
         viewModel.saveBillEdits(updated)
@@ -83,7 +83,7 @@ class DashboardViewModelEditTest {
 
         assertEquals(1, trackingBillDao.updatedBills.size)
         assertEquals("Netflix Premium", trackingBillDao.updatedBills.first().name)
-        assertEquals(17.99, trackingBillDao.updatedBills.first().amount, 0.001)
+        assertEquals(1_799L, trackingBillDao.updatedBills.first().amount)
         assertNull(viewModel.selectedBillForEdit.value)
     }
 
@@ -162,7 +162,7 @@ class DashboardViewModelEditTest {
         testScope.advanceUntilIdle()
 
         assertNotNull(settingsDao.lastSaved)
-        assertEquals(2_052.0, settingsDao.lastSaved!!.monthlyBudget, 0.001)
+        assertEquals(205_200L, settingsDao.lastSaved!!.monthlyBudget)
     }
 
     private fun createViewModel(): DashboardViewModel {
@@ -181,7 +181,7 @@ class DashboardViewModelEditTest {
     private fun sampleBill(
         id: Long,
         name: String,
-        amount: Double = 10.0
+        amount: Long = 1_000L
     ): Bill {
         return Bill(
             id = id,
@@ -226,12 +226,12 @@ class DashboardViewModelEditTest {
         var lastSaved: UserSettingsEntity? = null
 
         override fun observeSettings(settingsId: Int): Flow<UserSettingsEntity?> =
-            flowOf(UserSettingsEntity(monthlyBudget = 2_500.0))
+            flowOf(UserSettingsEntity(monthlyBudget = 250_000L))
         override suspend fun upsertSettings(settings: UserSettingsEntity) {
             lastSaved = settings
         }
         override suspend fun getSettings(settingsId: Int): UserSettingsEntity? =
-            UserSettingsEntity(monthlyBudget = 2_500.0)
+            UserSettingsEntity(monthlyBudget = 250_000L)
         override suspend fun getSettingsCount(settingsId: Int): Int = 1
     }
 }

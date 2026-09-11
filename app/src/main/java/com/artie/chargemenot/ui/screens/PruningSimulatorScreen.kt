@@ -70,10 +70,10 @@ import com.artie.chargemenot.ui.theme.MeadowSage
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import com.artie.chargemenot.ui.theme.WeedRed
 import com.artie.chargemenot.ui.viewmodels.PruningUiState
-import java.text.NumberFormat
+import com.artie.chargemenot.domain.model.SupportedCurrency
+import com.artie.chargemenot.util.CurrencyFormatter
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,7 +86,7 @@ fun PruningSimulatorScreen(
     onOpenDrawer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val currencyFormat = NumberFormat.getCurrencyInstance(Locale.US)
+    val currency = uiState.selectedCurrency
     val dateFormat = DateTimeFormatter.ofPattern("MMM d")
 
     BackHandler(onBack = onNavigateBack)
@@ -144,7 +144,7 @@ fun PruningSimulatorScreen(
 
             PruningSummarySection(
                 newMonthlyTotal = uiState.newMonthlyTotal,
-                currencyFormat = currencyFormat,
+                currency = currency,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 12.dp)
@@ -155,7 +155,7 @@ fun PruningSimulatorScreen(
                 prunedBillIds = uiState.prunedBillIds,
                 childRelationships = uiState.childRelationships,
                 expandedRootBillId = uiState.expandedRootBillId,
-                currencyFormat = currencyFormat,
+                currency = currency,
                 dateFormat = dateFormat,
                 onToggleBillStatus = onToggleBillStatus,
                 onToggleRootExpansion = onToggleRootExpansion,
@@ -208,8 +208,8 @@ private fun PruningBloomSection(
 
 @Composable
 private fun PruningSummarySection(
-    newMonthlyTotal: Double,
-    currencyFormat: NumberFormat,
+    newMonthlyTotal: Long,
+    currency: SupportedCurrency,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -234,7 +234,7 @@ private fun PruningSummarySection(
             )
             MeadowTickerCurrencyLine(
                 amount = newMonthlyTotal,
-                formatter = currencyFormat,
+                currency = currency,
                 prefix = "",
                 style = MaterialTheme.typography.titleLarge,
                 color = MeadowGreenDark,
@@ -251,7 +251,7 @@ private fun PruningBillsList(
     prunedBillIds: Set<Long>,
     childRelationships: Map<Long, List<BillEntity>>,
     expandedRootBillId: Long?,
-    currencyFormat: NumberFormat,
+    currency: SupportedCurrency,
     dateFormat: DateTimeFormatter,
     onToggleBillStatus: (Long, Boolean) -> Unit,
     onToggleRootExpansion: (Long) -> Unit,
@@ -294,7 +294,7 @@ private fun PruningBillsList(
                         isPruned = bill.id in prunedBillIds,
                         hasRootChildren = children.isNotEmpty(),
                         isRootExpanded = isExpanded,
-                        currencyFormat = currencyFormat,
+                        currency = currency,
                         dateFormat = dateFormat,
                         onToggleBillStatus = onToggleBillStatus,
                         onToggleRootExpansion = onToggleRootExpansion
@@ -322,7 +322,7 @@ private fun PruningBillRow(
     isPruned: Boolean,
     hasRootChildren: Boolean,
     isRootExpanded: Boolean,
-    currencyFormat: NumberFormat,
+    currency: SupportedCurrency,
     dateFormat: DateTimeFormatter,
     onToggleBillStatus: (Long, Boolean) -> Unit,
     onToggleRootExpansion: (Long) -> Unit,
@@ -389,7 +389,7 @@ private fun PruningBillRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = currencyFormat.format(bill.amount),
+                    text = CurrencyFormatter.format(bill.amount, currency),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Medium
@@ -472,9 +472,9 @@ private fun PruningActionRow(
 private fun PruningSimulatorScreenPreview() {
     val today = LocalDate.of(2026, 9, 5)
     val bills = listOf(
-        BillEntity(1, "Spotify Premium", 11.99, today.plusDays(12), MeadowCategories.VINES, "Subscriptions"),
-        BillEntity(2, "Netflix", 15.49, today.plusDays(12), MeadowCategories.VINES, "Subscriptions"),
-        BillEntity(3, "Pacific Gas & Electric", 94.17, today.plusDays(8), MeadowCategories.ROOT_SYSTEM, "Utilities")
+        BillEntity(1, "Spotify Premium", 1_199L, today.plusDays(12), MeadowCategories.VINES, "Subscriptions"),
+        BillEntity(2, "Netflix", 1_549L, today.plusDays(12), MeadowCategories.VINES, "Subscriptions"),
+        BillEntity(3, "Pacific Gas & Electric", 9_417L, today.plusDays(8), MeadowCategories.ROOT_SYSTEM, "Utilities")
     )
     val parentCategoryTotals = bills.groupBy { it.parentCategory }
         .mapValues { (_, items) -> items.sumOf { bill -> bill.amount } }
@@ -486,14 +486,14 @@ private fun PruningSimulatorScreenPreview() {
                 prunedBillIds = setOf(1L),
                 originalParentCategoryTotals = parentCategoryTotals,
                 projectedParentCategoryTotals = mapOf(
-                    MeadowCategories.VINES to 15.49,
-                    MeadowCategories.ROOT_SYSTEM to 94.17
+                    MeadowCategories.VINES to 1_549L,
+                    MeadowCategories.ROOT_SYSTEM to 9_417L
                 ),
                 parentCategoryAlphas = mapOf(
                     MeadowCategories.VINES to 0.56f,
                     MeadowCategories.ROOT_SYSTEM to 1f
                 ),
-                newMonthlyTotal = 109.66,
+                newMonthlyTotal = 10_966L,
                 isLoading = false
             ),
             onToggleBillStatus = { _, _ -> },

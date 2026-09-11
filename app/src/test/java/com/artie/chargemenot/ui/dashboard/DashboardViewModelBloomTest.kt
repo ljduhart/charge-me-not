@@ -82,7 +82,7 @@ class DashboardViewModelBloomTest {
             Bill(
                 id = 1L,
                 name = "Maple Street Apartment",
-                amount = 1_450.0,
+                amount = 145_000L,
                 dueDate = LocalDate.of(2026, 9, 12),
                 parentCategory = MeadowCategories.CANOPY,
                 subCategory = "Rent"
@@ -98,7 +98,7 @@ class DashboardViewModelBloomTest {
         val bill = Bill(
             id = 1L,
             name = "Maple Street Apartment",
-            amount = 1_450.0,
+            amount = 145_000L,
             dueDate = LocalDate.of(2026, 9, 12),
             parentCategory = MeadowCategories.CANOPY,
             subCategory = "Rent"
@@ -189,7 +189,7 @@ class DashboardViewModelBloomTest {
             Bill(
                 id = 1L,
                 name = "Netflix",
-                amount = 15.49,
+                amount = 1_549L,
                 dueDate = LocalDate.of(2026, 9, 12),
                 parentCategory = MeadowCategories.VINES,
                 subCategory = "Subscriptions"
@@ -262,7 +262,7 @@ class DashboardViewModelBloomTest {
             Bill(
                 id = 1L,
                 name = "Netflix",
-                amount = 15.49,
+                amount = 1_549L,
                 dueDate = LocalDate.of(2026, 9, 12),
                 parentCategory = MeadowCategories.VINES,
                 subCategory = "Subscriptions"
@@ -365,7 +365,7 @@ class DashboardViewModelBloomTest {
         assertTrue(state.upcomingBills.isEmpty())
         assertTrue(state.subscriptionBills.isEmpty())
         assertTrue(state.parentCategoryTotals.isEmpty())
-        assertEquals(0.0, state.totalUpcoming, 0.0)
+        assertEquals(0L, state.totalUpcoming)
         assertEquals(0, state.upcomingBillCount)
         assertNull(state.forecastResult)
         assertFalse(state.isLoading)
@@ -456,14 +456,14 @@ class DashboardViewModelBloomTest {
         var lastSaved: UserSettingsEntity? = null
 
         override fun observeSettings(settingsId: Int): Flow<UserSettingsEntity?> =
-            MutableStateFlow(UserSettingsEntity(monthlyBudget = 2_500.0, isOnboardingComplete = true))
+            MutableStateFlow(UserSettingsEntity(monthlyBudget = 250_000L, isOnboardingComplete = true))
 
         override suspend fun upsertSettings(settings: UserSettingsEntity) {
             lastSaved = settings
         }
 
         override suspend fun getSettings(settingsId: Int): UserSettingsEntity? =
-            UserSettingsEntity(monthlyBudget = 2_500.0, isOnboardingComplete = true)
+            UserSettingsEntity(monthlyBudget = 250_000L, isOnboardingComplete = true)
 
         override suspend fun getSettingsCount(settingsId: Int): Int = 1
     }
@@ -486,7 +486,7 @@ class DashboardViewModelBloomTest {
             BillEntity(
                 id = 1L,
                 name = "Maple Street Apartment",
-                amount = 1_450.0,
+                amount = 145_000L,
                 dueDate = LocalDate.of(2026, 9, 12),
                 parentCategory = MeadowCategories.CANOPY,
                 subCategory = "Rent"
@@ -494,7 +494,7 @@ class DashboardViewModelBloomTest {
             BillEntity(
                 id = 2L,
                 name = "Pacific Gas & Electric",
-                amount = 94.17,
+                amount = 9_417L,
                 dueDate = LocalDate.of(2026, 9, 15),
                 parentCategory = MeadowCategories.ROOT_SYSTEM,
                 subCategory = "Utilities"
@@ -502,7 +502,7 @@ class DashboardViewModelBloomTest {
             BillEntity(
                 id = 3L,
                 name = "Hulu",
-                amount = 7.99,
+                amount = 799L,
                 dueDate = LocalDate.of(2026, 9, 20),
                 parentCategory = MeadowCategories.VINES,
                 subCategory = "Streaming"

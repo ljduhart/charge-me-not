@@ -310,7 +310,7 @@ private fun CompostBinScreenPreview() {
     val sampleBill = BillEntity(
         id = 1L,
         name = "Pacific Gas & Electric",
-        amount = 94.17,
+        amount = 9_417L,
         dueDate = LocalDate.of(2026, 9, 12),
         parentCategory = MeadowCategories.ROOT_SYSTEM,
         subCategory = "Utilities",

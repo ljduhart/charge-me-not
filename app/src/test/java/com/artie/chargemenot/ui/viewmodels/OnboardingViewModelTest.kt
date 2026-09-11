@@ -61,7 +61,7 @@ class OnboardingViewModelTest {
 
         val saved = settingsDao.lastSaved
         requireNotNull(saved)
-        assertEquals(3_200.0, saved.monthlyBudget, 0.001)
+        assertEquals(320_000L, saved.monthlyBudget)
         assertEquals("EUR", saved.selectedCurrency)
         assertTrue(saved.isNagModeEnabled)
         assertTrue(saved.isOnboardingComplete)
@@ -113,14 +113,14 @@ class OnboardingViewModelTest {
         testScope.advanceUntilIdle()
 
         viewModel.setBudgetEnabled(false)
-        viewModel.selectCurrency(SupportedCurrency.GBP)
+        viewModel.selectCurrency(SupportedCurrency.CAD)
 
         viewModel.saveOnboardingData(onComplete = {})
         testScope.advanceUntilIdle()
 
         val saved = requireNotNull(settingsDao.lastSaved)
-        assertEquals(UserSettings.DEFAULT_MONTHLY_BUDGET, saved.monthlyBudget, 0.001)
-        assertEquals("GBP", saved.selectedCurrency)
+        assertEquals(UserSettings.DEFAULT_MONTHLY_BUDGET, saved.monthlyBudget)
+        assertEquals("CAD", saved.selectedCurrency)
         assertFalse(nagModeScheduler.isEnabled)
     }
 

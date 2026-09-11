@@ -87,7 +87,8 @@ import com.artie.chargemenot.ui.theme.MeadowSage
 import com.artie.chargemenot.ui.theme.MeadowSky
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import com.artie.chargemenot.ui.theme.WeedRed
-import java.text.NumberFormat
+import com.artie.chargemenot.domain.model.SupportedCurrency
+import com.artie.chargemenot.util.CurrencyFormatter
 import java.time.LocalDate
 import java.util.Locale
 
@@ -133,7 +134,7 @@ fun DashboardScreen(
         }
     }
 
-    val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
+    val selectedCurrency = uiState.selectedCurrency
     var isSearchVisible by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var billToShare by remember { mutableStateOf<Bill?>(null) }
@@ -142,6 +143,7 @@ fun DashboardScreen(
     billToShare?.let { bill ->
         CrossPollinateShareDialog(
             bill = bill,
+            currency = selectedCurrency,
             onDismiss = { billToShare = null }
         )
     }
@@ -271,7 +273,7 @@ fun DashboardScreen(
                     TotalUpcomingSummaryCard(
                         totalUpcoming = uiState.totalUpcoming,
                         billCount = uiState.upcomingBillCount,
-                        currencyFormat = currencyFormat,
+                        currency = selectedCurrency,
                         modifier = Modifier.padding(top = 16.dp)
                     )
                 }
@@ -280,6 +282,7 @@ fun DashboardScreen(
                     FinancialBloomCard(
                         parentCategoryTotals = uiState.parentCategoryTotals,
                         monthlyBudget = uiState.monthlyBudget,
+                        currency = selectedCurrency,
                         highlightedBloomParent = uiState.highlightedBloomParent,
                         parallaxOffset = parallaxOffset,
                         onBloomSettingsClick = onBloomSettingsClick,
@@ -338,6 +341,7 @@ fun DashboardScreen(
                     item(key = "weather_forecast") {
                         WeatherForecastCard(
                             forecastResult = forecast,
+                            currency = selectedCurrency,
                             modifier = Modifier.padding(top = 16.dp)
                         )
                     }
@@ -407,9 +411,9 @@ private fun DashboardGreetingRow(
 
 @Composable
 private fun TotalUpcomingSummaryCard(
-    totalUpcoming: Double,
+    totalUpcoming: Long,
     billCount: Int,
-    currencyFormat: NumberFormat,
+    currency: SupportedCurrency,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -432,7 +436,7 @@ private fun TotalUpcomingSummaryCard(
             Spacer(modifier = Modifier.height(6.dp))
             MeadowTickerAmount(
                 amount = totalUpcoming,
-                formatter = currencyFormat,
+                currency = currency,
                 style = MaterialTheme.typography.displaySmall,
                 color = Color(0xFF1F4E79),
                 fontWeight = FontWeight.Bold
@@ -449,8 +453,9 @@ private fun TotalUpcomingSummaryCard(
 
 @Composable
 private fun FinancialBloomCard(
-    parentCategoryTotals: Map<String, Double>,
-    monthlyBudget: Double,
+    parentCategoryTotals: Map<String, Long>,
+    monthlyBudget: Long,
+    currency: SupportedCurrency,
     highlightedBloomParent: String?,
     parallaxOffset: Pair<Float, Float>,
     onBloomSettingsClick: () -> Unit,
@@ -458,10 +463,9 @@ private fun FinancialBloomCard(
     onPetalTapped: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
     var isEditingBudget by remember { mutableStateOf(false) }
     var budgetInput by remember(monthlyBudget) {
-        mutableStateOf(monthlyBudget.toInt().toString())
+        mutableStateOf(String.format(Locale.US, "%.2f", monthlyBudget / 100.0))
     }
     GlasshouseCard(modifier = modifier.fillMaxWidth()) {
         Row(
@@ -508,7 +512,7 @@ private fun FinancialBloomCard(
                     )
                     if (!isEditingBudget) {
                         Text(
-                            text = currencyFormat.format(monthlyBudget),
+                            text = CurrencyFormatter.format(monthlyBudget, currency),
                             style = MaterialTheme.typography.titleMedium,
                             color = GlasshouseForestGreen,
                             fontWeight = FontWeight.SemiBold
@@ -522,7 +526,7 @@ private fun FinancialBloomCard(
                                 isEditingBudget = false
                             }
                         } else {
-                            budgetInput = monthlyBudget.toInt().toString()
+                            budgetInput = String.format(Locale.US, "%.2f", monthlyBudget / 100.0)
                             isEditingBudget = true
                         }
                     }
@@ -547,14 +551,13 @@ private fun FinancialBloomCard(
                     onValueChange = { budgetInput = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.dashboard_monthly_budget_label)) },
-                    prefix = { Text("$") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true
                 )
                 Text(
                     text = stringResource(
                         R.string.dashboard_monthly_budget_minimum,
-                        currencyFormat.format(UserSettings.MIN_MONTHLY_BUDGET)
+                        CurrencyFormatter.format(UserSettings.MIN_MONTHLY_BUDGET, currency)
                     ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -665,7 +668,7 @@ private fun DashboardScreenPreview() {
         Bill(
             id = 4,
             name = "Netflix",
-            amount = 15.49,
+            amount = 1_549L,
             dueDate = today.plusDays(12),
             parentCategory = MeadowCategories.VINES,
             subCategory = "Subscriptions"
@@ -673,7 +676,7 @@ private fun DashboardScreenPreview() {
         Bill(
             id = 5,
             name = "Spotify Premium",
-            amount = 11.99,
+            amount = 1_199L,
             dueDate = today.plusDays(12),
             parentCategory = MeadowCategories.VINES,
             subCategory = "Subscriptions"
@@ -684,12 +687,12 @@ private fun DashboardScreenPreview() {
             uiState = DashboardUiState(
                 userDisplayName = "Sarah",
                 formattedDate = "(Friday, September 4, 2026)",
-                totalUpcoming = 1_230.0,
+                totalUpcoming = 123_000L,
                 upcomingBillCount = 12,
                 subscriptionBills = bills,
                 parentCategoryTotals = mapOf(
-                    MeadowCategories.CANOPY to 1_450.0,
-                    MeadowCategories.VINES to 27.48
+                    MeadowCategories.CANOPY to 145_000L,
+                    MeadowCategories.VINES to 2_748L
                 ),
                 isLoading = false
             ),

@@ -32,19 +32,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
+import com.artie.chargemenot.domain.model.SupportedCurrency
 import com.artie.chargemenot.ui.theme.MeadowGreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowSage
 import com.artie.chargemenot.ui.theme.MeadowWhite
-import java.text.NumberFormat
+import com.artie.chargemenot.util.CurrencyFormatter
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryDetailBottomSheet(
     selectedCategory: String?,
     bills: List<Bill>,
+    currency: SupportedCurrency,
     onDismiss: () -> Unit,
     onAddNewBill: (String) -> Unit,
     onBillClick: (Bill) -> Unit
@@ -54,7 +55,6 @@ fun CategoryDetailBottomSheet(
     }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale.US) }
     val dateFormat = remember { DateTimeFormatter.ofPattern("MMM d, yyyy") }
     val categoryDefinition = remember(selectedCategory) {
         BloomCategoryDefinitions.fromDisplayName(selectedCategory)
@@ -135,7 +135,7 @@ fun CategoryDetailBottomSheet(
                     ) { bill ->
                         CategoryBillRow(
                             bill = bill,
-                            currencyFormat = currencyFormat,
+                            currency = currency,
                             dateFormat = dateFormat,
                             accentColor = categoryDefinition?.midColor ?: MeadowSage,
                             onClick = { onBillClick(bill) }
@@ -152,7 +152,7 @@ fun CategoryDetailBottomSheet(
 @Composable
 private fun CategoryBillRow(
     bill: Bill,
-    currencyFormat: NumberFormat,
+    currency: SupportedCurrency,
     dateFormat: DateTimeFormatter,
     accentColor: androidx.compose.ui.graphics.Color,
     onClick: () -> Unit
@@ -188,7 +188,7 @@ private fun CategoryBillRow(
                 )
             }
             Text(
-                text = currencyFormat.format(bill.amount),
+                text = CurrencyFormatter.format(bill.amount, currency),
                 style = MaterialTheme.typography.titleMedium,
                 color = accentColor,
                 fontWeight = FontWeight.Bold

@@ -19,14 +19,14 @@ class UserSettingsRepositoryOnboardingTest {
         val repository = UserSettingsRepository(dao)
 
         repository.saveOnboardingPreferences(
-            monthlyBudget = 3_100.0,
+            monthlyBudget = 310_000L,
             selectedCurrency = "EUR",
             isNagModeEnabled = true
         )
 
         val saved = dao.lastSaved
         requireNotNull(saved)
-        assertEquals(3_100.0, saved.monthlyBudget, 0.001)
+        assertEquals(310_000L, saved.monthlyBudget)
         assertEquals("EUR", saved.selectedCurrency)
         assertTrue(saved.isNagModeEnabled)
         assertTrue(saved.isOnboardingComplete)
@@ -44,11 +44,11 @@ class UserSettingsRepositoryOnboardingTest {
         )
         val repository = UserSettingsRepository(dao)
 
-        repository.updateMonthlyBudget(4_000.0)
+        repository.updateMonthlyBudget(400_000L)
 
         val saved = dao.lastSaved
         requireNotNull(saved)
-        assertEquals(4_000.0, saved.monthlyBudget, 0.001)
+        assertEquals(400_000L, saved.monthlyBudget)
         assertEquals("GBP", saved.selectedCurrency)
         assertTrue(saved.isOnboardingComplete)
     }

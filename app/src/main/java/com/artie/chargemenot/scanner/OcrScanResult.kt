@@ -4,7 +4,7 @@ import android.graphics.Bitmap
 import java.time.LocalDate
 
 data class OcrScanResult(
-    val amount: Double?,
+    val amount: Long?,
     val dueDate: LocalDate?,
     val rawText: String,
     val receiptBitmap: Bitmap? = null
