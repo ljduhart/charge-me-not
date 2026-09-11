@@ -27,6 +27,23 @@ class CurrencyParserTest {
     fun parseStringToCents_handlesNegativeInput() {
         assertEquals(-2599L, CurrencyParser.parseStringToCents("-25.99"))
     }
+
+    @Test
+    fun parseStringToCents_acceptsEuropeanDecimalComma() {
+        assertEquals(1599L, CurrencyParser.parseStringToCents("15,99"))
+        assertEquals(145000L, CurrencyParser.parseStringToCents("1.450,00"))
+        assertEquals(145000L, CurrencyParser.parseStringToCents("1 450,00"))
+    }
+
+    @Test
+    fun parseStringToCents_treatsThreeDigitGroupAsThousands() {
+        assertEquals(145000L, CurrencyParser.parseStringToCents("1,450"))
+    }
+
+    @Test
+    fun parseStringToCents_rejectsOverflowingInput() {
+        assertEquals(0L, CurrencyParser.parseStringToCents("92233720368547758.10"))
+    }
 }
 
 class CurrencyFormatterTest {
