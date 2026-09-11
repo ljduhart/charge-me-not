@@ -38,7 +38,6 @@ import com.artie.chargemenot.ui.navigation.AppRoutes
 import com.artie.chargemenot.ui.navigation.ChargeMeNotNavHost
 import com.artie.chargemenot.ui.navigation.MeadowRoute
 import com.artie.chargemenot.ui.navigation.SCANNER_PARENT_CATEGORY_KEY
-import com.artie.chargemenot.ui.navigation.SHOW_MANUAL_BILL_ENTRY_KEY
 import com.artie.chargemenot.ui.navigation.navigateMeadowRoute
 import com.artie.chargemenot.ui.navigation.navigatePendingNotificationRoute
 import com.artie.chargemenot.ui.screens.onboarding.OnboardingLoadingScreen
@@ -74,12 +73,13 @@ fun ChargeMeNotApp(
         }
     }
 
-    LaunchedEffect(pendingNavigationRoute, graphStartDestination) {
-        val route = pendingNavigationRoute
-        if (route != null && graphStartDestination != null && graphStartDestination != AppRoutes.ONBOARDING) {
-            navController.navigatePendingNotificationRoute(route)
-            onPendingNavigationConsumed()
+    LaunchedEffect(pendingNavigationRoute, currentRoute) {
+        val route = pendingNavigationRoute ?: return@LaunchedEffect
+        if (!AppRoutes.shouldConsumePendingNavigation(currentRoute)) {
+            return@LaunchedEffect
         }
+        navController.navigatePendingNotificationRoute(route)
+        onPendingNavigationConsumed()
     }
 
     val openDrawer: () -> Unit = {
@@ -169,16 +169,8 @@ private fun MeadowHubOverlays(
         factory = AppViewModelProvider.Factory
     )
     val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
-    val pendingManualBillEntry by meadowHubEntry.savedStateHandle
-        .getStateFlow(SHOW_MANUAL_BILL_ENTRY_KEY, false)
-        .collectAsStateWithLifecycle()
 
-    LaunchedEffect(currentRoute, pendingManualBillEntry) {
-        if (pendingManualBillEntry) {
-            dashboardViewModel.showManualBillEntry()
-            meadowHubEntry.savedStateHandle[SHOW_MANUAL_BILL_ENTRY_KEY] = false
-            return@LaunchedEffect
-        }
+    LaunchedEffect(currentRoute) {
         if (currentRoute != null && currentRoute !in AppRoutes.overlayPreservingRoutes) {
             dashboardViewModel.clearDashboardTransientState()
         }

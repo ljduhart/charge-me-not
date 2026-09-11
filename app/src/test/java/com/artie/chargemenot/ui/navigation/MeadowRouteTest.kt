@@ -142,4 +142,14 @@ class MeadowRouteTest {
         assertTrue(dashboardToCompost.saveState)
         assertFalse(dashboardToCompost.restoreState)
     }
+
+    @Test
+    fun shouldConsumePendingNavigation_waitsUntilOnboardingLeaves() {
+        assertFalse(AppRoutes.shouldConsumePendingNavigation(currentRoute = null))
+        assertFalse(AppRoutes.shouldConsumePendingNavigation(AppRoutes.ONBOARDING))
+        assertTrue(AppRoutes.shouldConsumePendingNavigation(AppRoutes.DASHBOARD))
+        assertTrue(AppRoutes.shouldConsumePendingNavigation(AppRoutes.MEADOW_HUB))
+        assertTrue(AppRoutes.shouldConsumePendingNavigation(AppRoutes.WEED_WHACKER))
+        assertTrue(AppRoutes.shouldConsumePendingNavigation(AppRoutes.SCANNER))
+    }
 }

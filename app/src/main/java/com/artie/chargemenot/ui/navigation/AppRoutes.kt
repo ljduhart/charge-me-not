@@ -23,6 +23,10 @@ object AppRoutes {
 
     fun shouldReturnToGardenHub(didPopBackStack: Boolean): Boolean = !didPopBackStack
 
+    fun shouldConsumePendingNavigation(currentRoute: String?): Boolean {
+        return currentRoute != null && currentRoute != ONBOARDING
+    }
+
     fun meadowRouteNavSpec(targetRoute: String, currentRoute: String?): MeadowRouteNavSpec {
         val goingToGardenHub = targetRoute == DASHBOARD
         return MeadowRouteNavSpec(

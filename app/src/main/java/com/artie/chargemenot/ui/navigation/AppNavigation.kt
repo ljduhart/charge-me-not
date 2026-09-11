@@ -359,10 +359,8 @@ fun NavController.navigatePendingNotificationRoute(route: String) {
 }
 
 fun NavController.requestManualBillEntryOnGardenHub() {
-    runCatching {
-        getBackStackEntry(AppRoutes.MEADOW_HUB)
-            .savedStateHandle[SHOW_MANUAL_BILL_ENTRY_KEY] = true
-    }
+    destinationViewModelOrNull<DashboardViewModel>(AppRoutes.MEADOW_HUB)
+        ?.showManualBillEntry()
 }
 
 fun NavController.navigateMeadowRoute(
@@ -407,4 +405,3 @@ fun NavController.navigateMeadowRoute(
 }
 
 const val SCANNER_PARENT_CATEGORY_KEY = "scanner_parent_category"
-const val SHOW_MANUAL_BILL_ENTRY_KEY = "show_manual_bill_entry"
