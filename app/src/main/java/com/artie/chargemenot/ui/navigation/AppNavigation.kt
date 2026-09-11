@@ -17,6 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.artie.chargemenot.di.destinationViewModel
+import com.artie.chargemenot.di.destinationViewModelOrNull
 import com.artie.chargemenot.di.meadowHubViewModel
 import com.artie.chargemenot.ui.dashboard.DashboardViewModel
 import com.artie.chargemenot.ui.screens.CompostBinScreen
@@ -282,7 +283,6 @@ fun ChargeMeNotNavHost(
         ) { entry ->
             val scannerViewModel: ScannerViewModel = destinationViewModel()
             val scannerUiState by scannerViewModel.uiState.collectAsStateWithLifecycle()
-            val dashboardViewModel: DashboardViewModel = entry.meadowHubViewModel(navController)
             val preselectedParent = entry.savedStateHandle.get<String>(SCANNER_PARENT_CATEGORY_KEY)
             LaunchedEffect(preselectedParent) {
                 if (preselectedParent != null) {
@@ -314,7 +314,7 @@ fun ChargeMeNotNavHost(
                 },
                 onEnterBillManually = {
                     scannerViewModel.resetScanSession()
-                    dashboardViewModel.showManualBillEntry()
+                    navController.requestManualBillEntryOnGardenHub()
                     navController.navigateBackOrGardenHub()
                 }
             )
@@ -348,6 +348,23 @@ fun NavController.navigateBackOrGardenHub() {
     }
 }
 
+fun NavController.navigatePendingNotificationRoute(route: String) {
+    navigate(route) {
+        launchSingleTop = true
+    }
+    if (route == AppRoutes.WEED_WHACKER) {
+        destinationViewModelOrNull<WeedWhackerViewModel>(AppRoutes.WEED_WHACKER)
+            ?.restartAuditSession()
+    }
+}
+
+fun NavController.requestManualBillEntryOnGardenHub() {
+    runCatching {
+        getBackStackEntry(AppRoutes.MEADOW_HUB)
+            .savedStateHandle[SHOW_MANUAL_BILL_ENTRY_KEY] = true
+    }
+}
+
 fun NavController.navigateMeadowRoute(
     meadowRoute: MeadowRoute,
     currentRoute: String?
@@ -355,14 +372,39 @@ fun NavController.navigateMeadowRoute(
     if (meadowRoute.route == currentRoute) {
         return
     }
+    if (currentRoute == AppRoutes.SCANNER) {
+        destinationViewModelOrNull<ScannerViewModel>(AppRoutes.SCANNER)?.resetScanSession()
+    }
+    val spec = AppRoutes.meadowRouteNavSpec(meadowRoute.route, currentRoute)
+    if (spec.usesPopBackStackToDashboard) {
+        val didPopToDashboard = popBackStack(AppRoutes.DASHBOARD, inclusive = false)
+        if (!didPopToDashboard) {
+            navigate(AppRoutes.MEADOW_HUB) {
+                launchSingleTop = true
+            }
+        }
+        return
+    }
     navigate(meadowRoute.route) {
         launchSingleTop = true
         popUpTo(AppRoutes.DASHBOARD) {
-            inclusive = meadowRoute.route == AppRoutes.DASHBOARD
-            saveState = currentRoute in AppRoutes.overlayPreservingRoutes
+            inclusive = spec.popDashboardInclusively
+            saveState = spec.saveState
         }
-        restoreState = meadowRoute.route in AppRoutes.overlayPreservingRoutes
+        restoreState = spec.restoreState
+    }
+    when (meadowRoute) {
+        MeadowRoute.PruningSkills -> {
+            destinationViewModelOrNull<PruningViewModel>(AppRoutes.PRUNING_SIMULATOR)
+                ?.resetSandbox()
+        }
+        MeadowRoute.WeedWhacker -> {
+            destinationViewModelOrNull<WeedWhackerViewModel>(AppRoutes.WEED_WHACKER)
+                ?.restartAuditSession()
+        }
+        else -> Unit
     }
 }
 
 const val SCANNER_PARENT_CATEGORY_KEY = "scanner_parent_category"
+const val SHOW_MANUAL_BILL_ENTRY_KEY = "show_manual_bill_entry"

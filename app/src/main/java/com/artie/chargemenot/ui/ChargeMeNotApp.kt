@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -37,7 +38,9 @@ import com.artie.chargemenot.ui.navigation.AppRoutes
 import com.artie.chargemenot.ui.navigation.ChargeMeNotNavHost
 import com.artie.chargemenot.ui.navigation.MeadowRoute
 import com.artie.chargemenot.ui.navigation.SCANNER_PARENT_CATEGORY_KEY
+import com.artie.chargemenot.ui.navigation.SHOW_MANUAL_BILL_ENTRY_KEY
 import com.artie.chargemenot.ui.navigation.navigateMeadowRoute
+import com.artie.chargemenot.ui.navigation.navigatePendingNotificationRoute
 import com.artie.chargemenot.ui.screens.onboarding.OnboardingLoadingScreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowSky
@@ -74,9 +77,7 @@ fun ChargeMeNotApp(
     LaunchedEffect(pendingNavigationRoute, graphStartDestination) {
         val route = pendingNavigationRoute
         if (route != null && graphStartDestination != null && graphStartDestination != AppRoutes.ONBOARDING) {
-            navController.navigate(route) {
-                launchSingleTop = true
-            }
+            navController.navigatePendingNotificationRoute(route)
             onPendingNavigationConsumed()
         }
     }
@@ -113,7 +114,8 @@ fun ChargeMeNotApp(
         if (meadowHubEntry != null) {
             MeadowHubOverlays(
                 navController = navController,
-                currentRoute = currentRoute
+                currentRoute = currentRoute,
+                meadowHubEntry = meadowHubEntry
             )
         }
 
@@ -155,11 +157,9 @@ fun ChargeMeNotApp(
 @Composable
 private fun MeadowHubOverlays(
     navController: NavHostController,
-    currentRoute: String?
+    currentRoute: String?,
+    meadowHubEntry: NavBackStackEntry
 ) {
-    val meadowHubEntry = remember(currentRoute) {
-        navController.getBackStackEntry(AppRoutes.MEADOW_HUB)
-    }
     val dashboardViewModel: DashboardViewModel = viewModel(
         viewModelStoreOwner = meadowHubEntry,
         factory = AppViewModelProvider.Factory
@@ -169,8 +169,16 @@ private fun MeadowHubOverlays(
         factory = AppViewModelProvider.Factory
     )
     val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
+    val pendingManualBillEntry by meadowHubEntry.savedStateHandle
+        .getStateFlow(SHOW_MANUAL_BILL_ENTRY_KEY, false)
+        .collectAsStateWithLifecycle()
 
-    LaunchedEffect(currentRoute) {
+    LaunchedEffect(currentRoute, pendingManualBillEntry) {
+        if (pendingManualBillEntry) {
+            dashboardViewModel.showManualBillEntry()
+            meadowHubEntry.savedStateHandle[SHOW_MANUAL_BILL_ENTRY_KEY] = false
+            return@LaunchedEffect
+        }
         if (currentRoute != null && currentRoute !in AppRoutes.overlayPreservingRoutes) {
             dashboardViewModel.clearDashboardTransientState()
         }

@@ -22,4 +22,21 @@ object AppRoutes {
     )
 
     fun shouldReturnToGardenHub(didPopBackStack: Boolean): Boolean = !didPopBackStack
+
+    fun meadowRouteNavSpec(targetRoute: String, currentRoute: String?): MeadowRouteNavSpec {
+        val goingToGardenHub = targetRoute == DASHBOARD
+        return MeadowRouteNavSpec(
+            usesPopBackStackToDashboard = goingToGardenHub,
+            popDashboardInclusively = false,
+            saveState = !goingToGardenHub && currentRoute in overlayPreservingRoutes,
+            restoreState = !goingToGardenHub && targetRoute in overlayPreservingRoutes
+        )
+    }
 }
+
+data class MeadowRouteNavSpec(
+    val usesPopBackStackToDashboard: Boolean,
+    val popDashboardInclusively: Boolean,
+    val saveState: Boolean,
+    val restoreState: Boolean
+)

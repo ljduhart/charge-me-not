@@ -76,4 +76,70 @@ class MeadowRouteTest {
         assertTrue(AppRoutes.shouldReturnToGardenHub(didPopBackStack = false))
         assertFalse(AppRoutes.shouldReturnToGardenHub(didPopBackStack = true))
     }
+
+    @Test
+    fun meadowRouteNavSpec_neverPopsDashboardInclusively() {
+        val fromHubSurfaces = AppRoutes.overlayPreservingRoutes + setOf(
+            AppRoutes.SCANNER,
+            AppRoutes.COMPOST_BIN,
+            AppRoutes.PRUNING_SIMULATOR,
+            AppRoutes.WEED_WHACKER
+        )
+        val targets = MeadowRoute.entries.map { meadowRoute -> meadowRoute.route }
+
+        fromHubSurfaces.forEach { currentRoute ->
+            targets.forEach { targetRoute ->
+                val spec = AppRoutes.meadowRouteNavSpec(targetRoute, currentRoute)
+                assertFalse(
+                    "inclusive dashboard pop would destroy meadow_hub ViewModels: $currentRoute -> $targetRoute",
+                    spec.popDashboardInclusively
+                )
+            }
+        }
+    }
+
+    @Test
+    fun meadowRouteNavSpec_gardenHubPopsBackToExistingDashboard() {
+        val fromSettings = AppRoutes.meadowRouteNavSpec(
+            targetRoute = AppRoutes.DASHBOARD,
+            currentRoute = AppRoutes.GREENHOUSE_SETTINGS
+        )
+        val fromScanner = AppRoutes.meadowRouteNavSpec(
+            targetRoute = AppRoutes.DASHBOARD,
+            currentRoute = AppRoutes.SCANNER
+        )
+
+        assertTrue(fromSettings.usesPopBackStackToDashboard)
+        assertTrue(fromScanner.usesPopBackStackToDashboard)
+        assertFalse(fromSettings.saveState)
+        assertFalse(fromSettings.restoreState)
+        assertFalse(fromScanner.saveState)
+        assertFalse(fromScanner.restoreState)
+    }
+
+    @Test
+    fun meadowRouteNavSpec_preservesStateOnlyAcrossGardenHubSurfaces() {
+        val settingsToPetals = AppRoutes.meadowRouteNavSpec(
+            targetRoute = AppRoutes.PETALS_AND_WEEDS,
+            currentRoute = AppRoutes.GREENHOUSE_SETTINGS
+        )
+        val scannerToPetals = AppRoutes.meadowRouteNavSpec(
+            targetRoute = AppRoutes.PETALS_AND_WEEDS,
+            currentRoute = AppRoutes.SCANNER
+        )
+        val dashboardToCompost = AppRoutes.meadowRouteNavSpec(
+            targetRoute = AppRoutes.COMPOST_BIN,
+            currentRoute = AppRoutes.DASHBOARD
+        )
+
+        assertFalse(settingsToPetals.usesPopBackStackToDashboard)
+        assertTrue(settingsToPetals.saveState)
+        assertTrue(settingsToPetals.restoreState)
+
+        assertFalse(scannerToPetals.saveState)
+        assertTrue(scannerToPetals.restoreState)
+
+        assertTrue(dashboardToCompost.saveState)
+        assertFalse(dashboardToCompost.restoreState)
+    }
 }

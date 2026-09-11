@@ -295,6 +295,20 @@ class DashboardViewModelBloomTest {
     }
 
     @Test
+    fun showManualBillEntry_reopensAfterScannerClearsTransients() {
+        val viewModel = createViewModel()
+        viewModel.onPetalTapped("Canopy")
+        viewModel.showProfileEdit()
+
+        viewModel.clearDashboardTransientState()
+        viewModel.showManualBillEntry()
+
+        assertTrue(viewModel.uiState.value.isManualBillVisible)
+        assertNull(viewModel.uiState.value.selectedCategoryForEdit)
+        assertFalse(viewModel.uiState.value.isProfileEditVisible)
+    }
+
+    @Test
     fun clearDashboardTransientState_clearsBloomHighlight() {
         val viewModel = createViewModel()
         testScope.advanceUntilIdle()
