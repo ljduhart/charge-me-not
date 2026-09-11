@@ -33,6 +33,7 @@ import com.artie.chargemenot.ui.navigation.AppRoutes
 import com.artie.chargemenot.ui.navigation.MeadowRoute
 import com.artie.chargemenot.ui.screens.onboarding.OnboardingLoadingScreen
 import com.artie.chargemenot.ui.navigation.ChargeMeNotNavHost
+import com.artie.chargemenot.ui.navigation.navigateBackOrGardenHub
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowSky
@@ -96,7 +97,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 LaunchedEffect(currentRoute) {
-                    if (currentRoute != null && currentRoute !in MEADOW_HUB_ROUTES) {
+                    if (currentRoute != null && currentRoute !in AppRoutes.overlayPreservingRoutes) {
                         dashboardViewModel.clearDashboardTransientState()
                     }
                 }
@@ -252,34 +253,39 @@ class MainActivity : ComponentActivity() {
                                 onCategorySelected = scannerViewModel::selectParentCategory,
                                 onAcceptPollinatedBill = {
                                     scannerViewModel.acceptPollinatedBill {
-                                        navController.popBackStack()
+                                        navController.navigateBackOrGardenHub()
                                     }
                                 },
                                 onDiscardPollen = scannerViewModel::discardPollen,
                                 onScannerNavigateBack = {
                                     scannerViewModel.resetScanSession()
-                                    navController.popBackStack()
+                                    navController.navigateBackOrGardenHub()
+                                },
+                                onEnterBillManuallyFromScanner = {
+                                    scannerViewModel.resetScanSession()
+                                    dashboardViewModel.showManualBillEntry()
+                                    navController.navigateBackOrGardenHub()
                                 },
                                 onPruningNavigateBack = {
                                     pruningViewModel.clearRootExpansion()
-                                    navController.popBackStack()
+                                    navController.navigateBackOrGardenHub()
                                 },
                                 weedWhackerUiState = weedWhackerUiState,
                                 onRecordAuditResponse = weedWhackerViewModel::recordAuditResponse,
                                 onRestartAuditSession = weedWhackerViewModel::restartAuditSession,
                                 onWeedWhackerNavigateBack = {
-                                    navController.popBackStack()
+                                    navController.navigateBackOrGardenHub()
                                 },
                                 onLinkBillToParent = dashboardViewModel::linkBillToParent,
                                 onSaveScannedBill = {
                                     scannerViewModel.saveScannedBill {
-                                        navController.popBackStack()
+                                        navController.navigateBackOrGardenHub()
                                     }
                                 },
                                 compostBinUiState = compostBinUiState,
                                 onCompostSearchQueryChanged = compostBinViewModel::onSearchQueryChanged,
                                 onCompostBinNavigateBack = {
-                                    navController.popBackStack()
+                                    navController.navigateBackOrGardenHub()
                                 },
                                 onSelectBillForEdit = dashboardViewModel::selectBillForEdit,
                                 onPetalTapped = dashboardViewModel::onPetalTapped,
@@ -292,7 +298,7 @@ class MainActivity : ComponentActivity() {
                                 onBloomSettingsClick = dashboardViewModel::openBloomSettingsEdit,
                                 onOpenDrawer = openDrawer,
                                 onMeadowHubNavigateBack = {
-                                    navController.popBackStack()
+                                    navController.navigateBackOrGardenHub()
                                 },
                                 onShowManualBillEntry = dashboardViewModel::showManualBillEntry,
                                 onDeleteBill = dashboardViewModel::deleteBill,
@@ -316,13 +322,5 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_NAVIGATION_ROUTE = "extra_navigation_route"
-
-        private val MEADOW_HUB_ROUTES = setOf(
-            AppRoutes.DASHBOARD,
-            AppRoutes.PETALS_AND_WEEDS,
-            AppRoutes.RICH_SOIL,
-            AppRoutes.HARVEST_REPORT,
-            AppRoutes.GREENHOUSE_SETTINGS
-        )
     }
 }

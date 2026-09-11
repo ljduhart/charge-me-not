@@ -355,6 +355,23 @@ class DashboardViewModelBloomTest {
     }
 
     @Test
+    fun emptyGarden_exposesZeroTotalsAndNoForecast() {
+        billDao = CategoryTrackingBillDao(seedBills = emptyList())
+        val viewModel = createViewModel()
+        testScope.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.gardenPathBills.isEmpty())
+        assertTrue(state.upcomingBills.isEmpty())
+        assertTrue(state.subscriptionBills.isEmpty())
+        assertTrue(state.parentCategoryTotals.isEmpty())
+        assertEquals(0.0, state.totalUpcoming, 0.0)
+        assertEquals(0, state.upcomingBillCount)
+        assertNull(state.forecastResult)
+        assertFalse(state.isLoading)
+    }
+
+    @Test
     fun onCleared_stopsParallaxSensor() = runTest(testDispatcher) {
         val tiltSensor = FakeDeviceTiltSensor()
         val viewModel = createViewModel(deviceTiltSensor = tiltSensor)
@@ -384,35 +401,10 @@ class DashboardViewModelBloomTest {
         )
     }
 
-    private class CategoryTrackingBillDao : BillDao {
-        private val bills = MutableStateFlow(
-            listOf(
-                BillEntity(
-                    id = 1L,
-                    name = "Maple Street Apartment",
-                    amount = 1_450.0,
-                    dueDate = LocalDate.of(2026, 9, 12),
-                    parentCategory = MeadowCategories.CANOPY,
-                    subCategory = "Rent"
-                ),
-                BillEntity(
-                    id = 2L,
-                    name = "Pacific Gas & Electric",
-                    amount = 94.17,
-                    dueDate = LocalDate.of(2026, 9, 15),
-                    parentCategory = MeadowCategories.ROOT_SYSTEM,
-                    subCategory = "Utilities"
-                ),
-                BillEntity(
-                    id = 3L,
-                    name = "Hulu",
-                    amount = 7.99,
-                    dueDate = LocalDate.of(2026, 9, 20),
-                    parentCategory = MeadowCategories.VINES,
-                    subCategory = "Streaming"
-                )
-            )
-        )
+    private class CategoryTrackingBillDao(
+        seedBills: List<BillEntity> = defaultSeedBills()
+    ) : BillDao {
+        private val bills = MutableStateFlow(seedBills)
 
         override fun getAllBills(): Flow<List<BillEntity>> = bills
 
@@ -487,5 +479,34 @@ class DashboardViewModelBloomTest {
         suspend fun emit(x: Float, y: Float) {
             emissions.emit(x to y)
         }
+    }
+
+    companion object {
+        private fun defaultSeedBills(): List<BillEntity> = listOf(
+            BillEntity(
+                id = 1L,
+                name = "Maple Street Apartment",
+                amount = 1_450.0,
+                dueDate = LocalDate.of(2026, 9, 12),
+                parentCategory = MeadowCategories.CANOPY,
+                subCategory = "Rent"
+            ),
+            BillEntity(
+                id = 2L,
+                name = "Pacific Gas & Electric",
+                amount = 94.17,
+                dueDate = LocalDate.of(2026, 9, 15),
+                parentCategory = MeadowCategories.ROOT_SYSTEM,
+                subCategory = "Utilities"
+            ),
+            BillEntity(
+                id = 3L,
+                name = "Hulu",
+                amount = 7.99,
+                dueDate = LocalDate.of(2026, 9, 20),
+                parentCategory = MeadowCategories.VINES,
+                subCategory = "Streaming"
+            )
+        )
     }
 }

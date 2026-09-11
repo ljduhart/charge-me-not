@@ -7,6 +7,8 @@ import com.artie.chargemenot.ui.navigation.AppRoutes.HARVEST_REPORT
 import com.artie.chargemenot.ui.navigation.AppRoutes.PETALS_AND_WEEDS
 import com.artie.chargemenot.ui.navigation.AppRoutes.RICH_SOIL
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MeadowRouteTest {
@@ -45,5 +47,28 @@ class MeadowRouteTest {
         val grouped = MeadowRoute.coreDailyRoutes + MeadowRoute.analyticalRoutes
         assertEquals(MeadowRoute.entries.size, grouped.size)
         assertEquals(MeadowRoute.entries.toSet(), grouped.toSet())
+    }
+
+    @Test
+    fun overlayPreservingRoutes_staySyncedWithGardenHubSurfaces() {
+        assertEquals(
+            setOf(
+                DASHBOARD,
+                PETALS_AND_WEEDS,
+                RICH_SOIL,
+                HARVEST_REPORT,
+                GREENHOUSE_SETTINGS
+            ),
+            AppRoutes.overlayPreservingRoutes
+        )
+        assertFalse(AppRoutes.overlayPreservingRoutes.contains(AppRoutes.SCANNER))
+        assertFalse(AppRoutes.overlayPreservingRoutes.contains(AppRoutes.ONBOARDING))
+        assertFalse(AppRoutes.overlayPreservingRoutes.contains(AppRoutes.COMPOST_BIN))
+    }
+
+    @Test
+    fun shouldReturnToGardenHub_whenBackStackDidNotPop() {
+        assertTrue(AppRoutes.shouldReturnToGardenHub(didPopBackStack = false))
+        assertFalse(AppRoutes.shouldReturnToGardenHub(didPopBackStack = true))
     }
 }

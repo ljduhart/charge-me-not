@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.NavController
 import com.artie.chargemenot.ui.dashboard.DashboardUiState
 import com.artie.chargemenot.ui.screens.CompostBinScreen
 import com.artie.chargemenot.ui.screens.DashboardScreen
@@ -97,6 +98,7 @@ fun ChargeMeNotNavHost(
     onAcceptPollinatedBill: () -> Unit,
     onDiscardPollen: () -> Unit,
     onScannerNavigateBack: () -> Unit,
+    onEnterBillManuallyFromScanner: () -> Unit,
     onPruningNavigateBack: () -> Unit,
     weedWhackerUiState: WeedWhackerUiState,
     onRecordAuditResponse: (Long, Boolean) -> Unit,
@@ -298,7 +300,8 @@ fun ChargeMeNotNavHost(
                 onAcceptPollinatedBill = onAcceptPollinatedBill,
                 onDiscardPollen = onDiscardPollen,
                 onSaveScannedBill = onSaveScannedBill,
-                onNavigateBack = onScannerNavigateBack
+                onNavigateBack = onScannerNavigateBack,
+                onEnterBillManually = onEnterBillManuallyFromScanner
             )
         }
 
@@ -315,6 +318,15 @@ fun ChargeMeNotNavHost(
                 onNavigateBack = onCompostBinNavigateBack,
                 onOpenDrawer = onOpenDrawer
             )
+        }
+    }
+}
+
+fun NavController.navigateBackOrGardenHub() {
+    val didPop = popBackStack()
+    if (AppRoutes.shouldReturnToGardenHub(didPop)) {
+        navigate(AppRoutes.DASHBOARD) {
+            launchSingleTop = true
         }
     }
 }

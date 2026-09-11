@@ -109,6 +109,7 @@ fun ScannerScreen(
     onDiscardPollen: () -> Unit,
     onSaveScannedBill: () -> Unit,
     onNavigateBack: () -> Unit,
+    onEnterBillManually: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
@@ -125,12 +126,12 @@ fun ScannerScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("Scan Bill") },
+                title = { Text(stringResource(R.string.scanner_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back to dashboard"
+                            contentDescription = stringResource(R.string.scanner_navigate_back)
                         )
                     }
                 },
@@ -162,7 +163,9 @@ fun ScannerScreen(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 } else {
-                    CameraPermissionPlaceholder()
+                    CameraPermissionPlaceholder(
+                        onEnterBillManually = onEnterBillManually
+                    )
                 }
 
                 ScanCaptureBanner(
@@ -342,20 +345,33 @@ private fun CameraPreviewSection(
 }
 
 @Composable
-private fun CameraPermissionPlaceholder() {
-    Box(
+private fun CameraPermissionPlaceholder(
+    onEnterBillManually: () -> Unit
+) {
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.85f)),
-        contentAlignment = Alignment.Center
+            .background(Color.Black.copy(alpha = 0.85f))
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Camera permission is required to scan bills.",
+            text = stringResource(R.string.scanner_camera_permission_required),
             style = MaterialTheme.typography.bodyLarge,
             color = Color.White,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(24.dp)
+            textAlign = TextAlign.Center
         )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = onEnterBillManually,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MeadowSage,
+                contentColor = MeadowGreenDark
+            )
+        ) {
+            Text(stringResource(R.string.scanner_enter_manually))
+        }
     }
 }
 
@@ -724,7 +740,8 @@ private fun ScannerScreenPreview() {
             onAcceptPollinatedBill = {},
             onDiscardPollen = {},
             onSaveScannedBill = {},
-            onNavigateBack = {}
+            onNavigateBack = {},
+            onEnterBillManually = {}
         )
     }
 }

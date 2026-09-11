@@ -11,4 +11,14 @@ object AppRoutes {
     const val PRUNING_SIMULATOR = "pruning_simulator"
     const val WEED_WHACKER = "weed_whacker"
     const val COMPOST_BIN = "compost_bin"
+
+    val overlayPreservingRoutes: Set<String> = setOf(
+        DASHBOARD,
+        PETALS_AND_WEEDS,
+        RICH_SOIL,
+        HARVEST_REPORT,
+        GREENHOUSE_SETTINGS
+    )
+
+    fun shouldReturnToGardenHub(didPopBackStack: Boolean): Boolean = !didPopBackStack
 }
