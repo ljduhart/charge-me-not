@@ -2,6 +2,7 @@ package com.artie.chargemenot.ui.components
 
 import android.os.Build
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -25,10 +26,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -43,15 +40,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter
-import coil.request.ImageRequest
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.MeadowCategories
@@ -62,12 +56,6 @@ import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 const val GARDEN_PATH_FAR_OFF_DAYS = 7L
-
-const val GARDEN_PAID_ROSE_IMAGE_URL =
-    "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/The_Rose.png/500px-The_Rose.png"
-
-const val GARDEN_OVERDUE_LEAF_IMAGE_URL =
-    "https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Autumn_Red_Oak_Leaf.jpg/500px-Autumn_Red_Oak_Leaf.jpg"
 
 enum class GardenBillState {
     Paid,
@@ -195,19 +183,13 @@ private fun PaidRoseBillCard(
             .gardenLeafCyanGlow(),
         contentAlignment = Alignment.Center
     ) {
-        GardenCoilAsset(
-            modelUrl = GARDEN_PAID_ROSE_IMAGE_URL,
+        Image(
+            painter = painterResource(id = R.drawable.ic_paid_rose),
             contentDescription = "$paidBloomDescription: $billName",
             modifier = Modifier
                 .fillMaxWidth()
                 .height(roseHeight),
-            contentScale = ContentScale.Fit,
-            fallback = {
-                BloomedRoseAnchor(
-                    large = isFeatured,
-                    showStamp = false
-                )
-            }
+            contentScale = ContentScale.Fit
         )
 
         Box(
@@ -245,16 +227,15 @@ private fun OverdueLeafBillCard(
             .gardenLeafCyanGlow(),
         contentAlignment = Alignment.Center
     ) {
-        GardenCoilAsset(
-            modelUrl = GARDEN_OVERDUE_LEAF_IMAGE_URL,
+        Image(
+            painter = painterResource(id = R.drawable.ic_overdue_leaf),
             contentDescription = stringResource(
                 R.string.petals_and_weeds_overdue
             ) + ": ${bill.name}",
             modifier = Modifier
                 .fillMaxWidth()
                 .height(132.dp),
-            contentScale = ContentScale.Fit,
-            fallback = { AutumnLeafAnchor() }
+            contentScale = ContentScale.Fit
         )
 
         Column(
@@ -456,37 +437,6 @@ private fun gardenCategoryIcon(parentCategory: String): ImageVector {
 }
 
 @Composable
-private fun GardenCoilAsset(
-    modelUrl: String,
-    contentDescription: String,
-    modifier: Modifier,
-    contentScale: ContentScale,
-    fallback: @Composable () -> Unit
-) {
-    val context = LocalContext.current
-    var painterState by remember(modelUrl) {
-        mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Empty)
-    }
-
-    if (painterState is AsyncImagePainter.State.Error) {
-        fallback()
-        return
-    }
-
-    AsyncImage(
-        model = ImageRequest.Builder(context)
-            .data(modelUrl)
-            .crossfade(true)
-            .allowHardware(false)
-            .build(),
-        contentDescription = contentDescription,
-        contentScale = contentScale,
-        modifier = modifier,
-        onState = { state -> painterState = state }
-    )
-}
-
-@Composable
 private fun OrganicStemBud(
     isSmall: Boolean,
     alignToStemOnLeft: Boolean,
@@ -556,77 +506,5 @@ private fun OrganicStemBud(
                 center = Offset(budCenter.x - radius * 0.18f, budCenter.y - radius * 0.45f)
             )
         }
-    }
-}
-
-@Composable
-private fun AutumnLeafAnchor(
-    modifier: Modifier = Modifier
-) {
-    Canvas(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(132.dp)
-    ) {
-        val center = Offset(size.width / 2f, size.height / 2f)
-        val leafWidth = size.width * 0.42f
-        val leafHeight = size.height * 0.78f
-
-        val leafPath = Path().apply {
-            moveTo(center.x, center.y - leafHeight * 0.48f)
-            cubicTo(
-                center.x + leafWidth * 0.22f,
-                center.y - leafHeight * 0.42f,
-                center.x + leafWidth * 0.62f,
-                center.y - leafHeight * 0.18f,
-                center.x + leafWidth * 0.38f,
-                center.y
-            )
-            cubicTo(
-                center.x + leafWidth * 0.58f,
-                center.y + leafHeight * 0.12f,
-                center.x + leafWidth * 0.18f,
-                center.y + leafHeight * 0.32f,
-                center.x,
-                center.y + leafHeight * 0.42f
-            )
-            cubicTo(
-                center.x - leafWidth * 0.18f,
-                center.y + leafHeight * 0.32f,
-                center.x - leafWidth * 0.58f,
-                center.y + leafHeight * 0.12f,
-                center.x - leafWidth * 0.38f,
-                center.y
-            )
-            cubicTo(
-                center.x - leafWidth * 0.62f,
-                center.y - leafHeight * 0.18f,
-                center.x - leafWidth * 0.22f,
-                center.y - leafHeight * 0.42f,
-                center.x,
-                center.y - leafHeight * 0.48f
-            )
-            close()
-        }
-
-        drawPath(
-            path = leafPath,
-            brush = Brush.linearGradient(
-                colors = listOf(
-                    Color(0xFFD7A35A),
-                    Color(0xFFC4783A),
-                    Color(0xFF8D4E24)
-                ),
-                start = Offset(center.x, center.y - leafHeight * 0.5f),
-                end = Offset(center.x, center.y + leafHeight * 0.5f)
-            )
-        )
-        drawLine(
-            color = Color(0xAA5D4037),
-            start = Offset(center.x, center.y - leafHeight * 0.42f),
-            end = Offset(center.x, center.y + leafHeight * 0.48f),
-            strokeWidth = 2.4f,
-            cap = StrokeCap.Round
-        )
     }
 }

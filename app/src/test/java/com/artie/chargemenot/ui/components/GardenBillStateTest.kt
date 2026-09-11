@@ -100,14 +100,6 @@ class GardenBillStateTest {
     }
 
     @Test
-    fun gardenPathImageUrls_useReachableWikimediaEndpoints() {
-        assertTrue(GARDEN_PAID_ROSE_IMAGE_URL.startsWith("https://upload.wikimedia.org/"))
-        assertTrue(GARDEN_OVERDUE_LEAF_IMAGE_URL.startsWith("https://upload.wikimedia.org/"))
-        assertTrue(GARDEN_PAID_ROSE_IMAGE_URL.endsWith("The_Rose.png"))
-        assertTrue(GARDEN_OVERDUE_LEAF_IMAGE_URL.contains("Autumn_Red_Oak_Leaf"))
-    }
-
-    @Test
     fun stemXAt_weavesAwayFromTheCenterLine() {
         val centerX = 200f
         val offsetAtFirstBend = stemXAt(
