@@ -1,6 +1,8 @@
 package com.artie.chargemenot.ui.components
 
 import com.artie.chargemenot.domain.model.Bill
+import com.artie.chargemenot.domain.model.SupportedCurrency
+import com.artie.chargemenot.util.CurrencyFormatter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -110,5 +112,38 @@ class GardenBillStateTest {
         )
 
         assertTrue(kotlin.math.abs(offsetAtFirstBend - centerX) > 1f)
+    }
+
+    @Test
+    fun leafCornerRadiiForIndex_usesAsymmetricLeftAndRightLeaves() {
+        val leftLeaf = leafCornerRadiiForIndex(0)
+        val rightLeaf = leafCornerRadiiForIndex(1)
+
+        assertEquals(0f, leftLeaf.topStartDp)
+        assertEquals(48f, leftLeaf.topEndDp)
+        assertEquals(0f, leftLeaf.bottomEndDp)
+        assertEquals(48f, leftLeaf.bottomStartDp)
+
+        assertEquals(48f, rightLeaf.topStartDp)
+        assertEquals(0f, rightLeaf.topEndDp)
+        assertEquals(48f, rightLeaf.bottomEndDp)
+        assertEquals(0f, rightLeaf.bottomStartDp)
+    }
+
+    @Test
+    fun offshootTipX_reachesLeftAndRightCardsFromTheStem() {
+        assertEquals(80f, offshootTipX(stemX = 200f, branchLeft = true, branchLength = 120f))
+        assertEquals(320f, offshootTipX(stemX = 200f, branchLeft = false, branchLength = 120f))
+    }
+
+    @Test
+    fun gardenBillAmounts_areFormattedFromLongCents() {
+        val formatted = CurrencyFormatter.format(8_500L, SupportedCurrency.USD)
+
+        assertTrue(formatted.contains("85"))
+        assertEquals(
+            formatted,
+            CurrencyFormatter.format(sampleBill().amount, SupportedCurrency.USD)
+        )
     }
 }
