@@ -1,6 +1,5 @@
 package com.artie.chargemenot.ui.components
 
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -11,34 +10,35 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.unit.dp
+import kotlin.math.PI
 import kotlin.math.sin
 
-private val VineCyanHalo = Color(0x5534E5D0)
-private val VineBaseGlow = Color(0x664CAF50)
-private val VineCoreGlow = Color(0xAA81C784)
-private val VineTendril = Color(0xAA66BB6A)
-private val VineTendrilCyan = Color(0x9964FFDA)
+internal val OrganicVineBase = Color(0x664CAF50)
+internal val OrganicVineCore = Color(0xAA81C784)
 private val VineHighlight = Color(0xE6B9F6CA)
 
 /**
- * Draws a curvy, organic glowing vine stem behind the garden-path timeline.
- * The stem weaves in a gentle S-curve and sends bezier offshoots toward each leaf.
+ * Draws a curvy organic stem down the garden-path center using cubicTo,
+ * then small bezier offshoots that reach from the stem toward each leaf card.
+ *
+ * [scrollOffsetPx] must be read during composition so scrolling invalidates draw.
  */
 fun Modifier.gardenPathVineBackground(
-    listState: LazyListState,
+    scrollOffsetPx: Float,
     itemCount: Int,
     estimatedItemHeightPx: Float
 ): Modifier = drawBehind {
-    if (itemCount == 0) return@drawBehind
+    if (itemCount <= 0 || estimatedItemHeightPx <= 0f || !estimatedItemHeightPx.isFinite()) {
+        return@drawBehind
+    }
+    if (!scrollOffsetPx.isFinite()) {
+        return@drawBehind
+    }
 
-    val scrollOffset =
-        listState.firstVisibleItemIndex * estimatedItemHeightPx +
-            listState.firstVisibleItemScrollOffset.toFloat()
     val vineLength = itemCount * estimatedItemHeightPx + size.height
     val centerX = size.width / 2f
-    val amplitude = size.width * 0.18f
+    val amplitude = size.width * 0.16f
     val segmentHeight = estimatedItemHeightPx * 0.95f
-    val cyanHaloWidth = 14.dp.toPx()
     val baseStrokeWidth = 6.dp.toPx()
     val coreStrokeWidth = 2.dp.toPx()
 
@@ -51,46 +51,50 @@ fun Modifier.gardenPathVineBackground(
     )
 
     drawContext.canvas.save()
-    drawContext.canvas.translate(0f, -scrollOffset)
+    try {
+        drawContext.canvas.translate(0f, -scrollOffsetPx)
 
-    drawPath(
-        path = path,
-        color = VineCyanHalo,
-        style = Stroke(width = cyanHaloWidth, cap = StrokeCap.Round)
-    )
-    drawPath(
-        path = path,
-        color = VineBaseGlow,
-        style = Stroke(width = baseStrokeWidth, cap = StrokeCap.Round)
-    )
-    drawPath(
-        path = path,
-        color = VineCoreGlow,
-        style = Stroke(width = coreStrokeWidth, cap = StrokeCap.Round)
-    )
+        drawPath(
+            path = path,
+            color = OrganicVineBase,
+            style = Stroke(width = baseStrokeWidth, cap = StrokeCap.Round)
+        )
+        drawPath(
+            path = path,
+            color = OrganicVineCore,
+            style = Stroke(width = coreStrokeWidth, cap = StrokeCap.Round)
+        )
 
-    var tendrilY = estimatedItemHeightPx * 0.78f
-    var tendrilIndex = 0
-    while (tendrilY < vineLength) {
-        val stemPoint = Offset(
-            x = stemXAt(
-                centerX = centerX,
-                y = tendrilY,
-                amplitude = amplitude,
-                segmentHeight = segmentHeight
-            ),
-            y = tendrilY
-        )
-        drawBezierOffshoot(
-            stemPoint = stemPoint,
-            branchLeft = tendrilIndex % 2 == 0,
-            branchLength = size.width * 0.24f
-        )
-        tendrilY += estimatedItemHeightPx
-        tendrilIndex++
+        val billCount = (itemCount - 1).coerceAtLeast(0)
+        val visibleTop = scrollOffsetPx - estimatedItemHeightPx
+        val visibleBottom = scrollOffsetPx + size.height + estimatedItemHeightPx
+        var tendrilIndex = 0
+        while (tendrilIndex < billCount) {
+            val tendrilY = estimatedItemHeightPx * (tendrilIndex + 1.55f)
+            if (tendrilY > visibleBottom) {
+                break
+            }
+            if (tendrilY >= visibleTop) {
+                val stemPoint = Offset(
+                    x = stemXAt(
+                        centerX = centerX,
+                        y = tendrilY,
+                        amplitude = amplitude,
+                        segmentHeight = segmentHeight
+                    ),
+                    y = tendrilY
+                )
+                drawBezierOffshoot(
+                    stemPoint = stemPoint,
+                    branchLeft = tendrilIndex % 2 == 0,
+                    branchLength = size.width * 0.20f
+                )
+            }
+            tendrilIndex++
+        }
+    } finally {
+        drawContext.canvas.restore()
     }
-
-    drawContext.canvas.restore()
 }
 
 private fun DrawScope.drawBezierOffshoot(
@@ -99,16 +103,20 @@ private fun DrawScope.drawBezierOffshoot(
     branchLength: Float
 ) {
     val direction = if (branchLeft) -1f else 1f
-    val tipX = stemPoint.x + direction * branchLength
-    val tipY = stemPoint.y - 4f
+    val tipX = offshootTipX(
+        stemX = stemPoint.x,
+        branchLeft = branchLeft,
+        branchLength = branchLength
+    )
+    val tipY = stemPoint.y - 2f
 
     val offshootPath = Path().apply {
         moveTo(stemPoint.x, stemPoint.y)
         cubicTo(
-            x1 = stemPoint.x + direction * branchLength * 0.22f,
-            y1 = stemPoint.y - 16f,
-            x2 = stemPoint.x + direction * branchLength * 0.68f,
-            y2 = stemPoint.y + 10f,
+            x1 = stemPoint.x + direction * branchLength * 0.28f,
+            y1 = stemPoint.y - 22f,
+            x2 = stemPoint.x + direction * branchLength * 0.72f,
+            y2 = stemPoint.y + 14f,
             x3 = tipX,
             y3 = tipY
         )
@@ -116,29 +124,24 @@ private fun DrawScope.drawBezierOffshoot(
 
     drawPath(
         path = offshootPath,
-        color = VineTendrilCyan,
-        style = Stroke(width = 5.5f, cap = StrokeCap.Round)
+        color = OrganicVineBase,
+        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
     )
     drawPath(
         path = offshootPath,
-        color = VineTendril,
-        style = Stroke(width = 2.5f, cap = StrokeCap.Round)
-    )
-    drawPath(
-        path = offshootPath,
-        color = VineCoreGlow.copy(alpha = 0.7f),
-        style = Stroke(width = 1.2f, cap = StrokeCap.Round)
+        color = OrganicVineCore,
+        style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round)
     )
     drawCircle(
         color = VineHighlight,
-        radius = 4.2f,
+        radius = 3.6f,
         center = Offset(tipX, tipY)
     )
 }
 
 /**
- * True S-curve: each segment swings wide left then right with cubicTo,
- * so the stem never reads as a straight neon line.
+ * Smooth S-curve built from cubicTo segments whose endpoints lie on [stemXAt],
+ * so offshoots attach to the same center path that is drawn.
  */
 internal fun buildOrganicVinePath(
     centerX: Float,
@@ -148,29 +151,34 @@ internal fun buildOrganicVinePath(
     segmentHeight: Float
 ): Path {
     val path = Path()
-    path.moveTo(centerX, startY)
+    path.moveTo(
+        stemXAt(centerX, startY, amplitude, segmentHeight),
+        startY
+    )
 
     var currentY = startY
-    var segmentIndex = 0
-    while (currentY < totalHeight) {
+    if (segmentHeight <= 0f || !segmentHeight.isFinite() || !totalHeight.isFinite()) {
+        return path
+    }
+    var segmentsDrawn = 0
+    while (currentY < totalHeight && segmentsDrawn < 10_000) {
         val nextY = (currentY + segmentHeight).coerceAtMost(totalHeight)
-        val span = (nextY - currentY).coerceAtLeast(1f)
-        val sway = if (segmentIndex % 2 == 0) amplitude else -amplitude
+        if (nextY <= currentY) {
+            break
+        }
+        val span = nextY - currentY
+        val control1Y = currentY + span * 0.33f
+        val control2Y = currentY + span * 0.67f
         path.cubicTo(
-            x1 = centerX + sway,
-            y1 = currentY + span * 0.28f,
-            x2 = centerX - sway * 0.92f,
-            y2 = currentY + span * 0.72f,
-            x3 = stemXAt(
-                centerX = centerX,
-                y = nextY,
-                amplitude = amplitude,
-                segmentHeight = segmentHeight
-            ),
+            x1 = stemXAt(centerX, control1Y, amplitude, segmentHeight),
+            y1 = control1Y,
+            x2 = stemXAt(centerX, control2Y, amplitude, segmentHeight),
+            y2 = control2Y,
+            x3 = stemXAt(centerX, nextY, amplitude, segmentHeight),
             y3 = nextY
         )
         currentY = nextY
-        segmentIndex++
+        segmentsDrawn++
     }
     return path
 }
@@ -181,9 +189,20 @@ internal fun stemXAt(
     amplitude: Float,
     segmentHeight: Float
 ): Float {
-    if (segmentHeight <= 0f) return centerX
-    val phase = y / segmentHeight
-    return centerX + sin(phase * 0.85f) * amplitude * 0.42f
+    if (segmentHeight <= 0f || !segmentHeight.isFinite() || !y.isFinite() || !amplitude.isFinite()) {
+        return centerX
+    }
+    val phase = (y / segmentHeight) * (PI.toFloat() / 2f)
+    val offsetX = sin(phase) * amplitude * 0.55f
+    return if (offsetX.isFinite()) centerX + offsetX else centerX
+}
+
+internal fun offshootTipX(
+    stemX: Float,
+    branchLeft: Boolean,
+    branchLength: Float
+): Float {
+    return if (branchLeft) stemX - branchLength else stemX + branchLength
 }
 
 /**
@@ -196,49 +215,33 @@ fun Modifier.decorativeVineBorder(): Modifier = drawBehind {
     val right = size.width - inset
     val bottom = size.height - inset
 
-    val vineColor = Color(0xAA81C784)
-    val accentColor = Color(0x66B9F6CA)
-    val cyanAccent = Color(0x8864FFDA)
-
     rotate(degrees = -4f, pivot = Offset(left, top)) {
         drawLine(
-            color = cyanAccent,
+            color = OrganicVineBase,
             start = Offset(left, bottom * 0.55f),
             end = Offset(left + size.width * 0.18f, top),
             strokeWidth = 3.2f
         )
         drawLine(
-            color = vineColor,
+            color = OrganicVineCore,
             start = Offset(left, bottom * 0.55f),
             end = Offset(left + size.width * 0.18f, top),
             strokeWidth = 1.6f
-        )
-        drawLine(
-            color = accentColor,
-            start = Offset(left + 8f, bottom * 0.42f),
-            end = Offset(left + size.width * 0.12f, top + 10f),
-            strokeWidth = 1f
         )
     }
 
     rotate(degrees = 4f, pivot = Offset(right, top)) {
         drawLine(
-            color = cyanAccent,
+            color = OrganicVineBase,
             start = Offset(right, bottom * 0.55f),
             end = Offset(right - size.width * 0.18f, top),
             strokeWidth = 3.2f
         )
         drawLine(
-            color = vineColor,
+            color = OrganicVineCore,
             start = Offset(right, bottom * 0.55f),
             end = Offset(right - size.width * 0.18f, top),
             strokeWidth = 1.6f
-        )
-        drawLine(
-            color = accentColor,
-            start = Offset(right - 8f, bottom * 0.42f),
-            end = Offset(right - size.width * 0.12f, top + 10f),
-            strokeWidth = 1f
         )
     }
 
@@ -257,7 +260,7 @@ fun Modifier.decorativeVineBorder(): Modifier = drawBehind {
 
 fun Modifier.gardenLeafCyanGlow(): Modifier = drawBehind {
     drawCircle(
-        color = Color(0x334DD0E1),
+        color = Color(0x334CAF50),
         radius = size.maxDimension * 0.42f,
         center = Offset(size.width / 2f, size.height / 2f)
     )

@@ -93,7 +93,10 @@ fun PetalsAndWeedsScreen(
     var billPendingDelete by remember { mutableStateOf<Bill?>(null) }
     val listState = rememberLazyListState()
     val density = LocalDensity.current
-    val estimatedItemHeightPx = remember(density) { with(density) { 168.dp.toPx() } }
+    val estimatedItemHeightPx = remember(density) { with(density) { 184.dp.toPx() } }
+    val vineScrollOffsetPx =
+        listState.firstVisibleItemIndex * estimatedItemHeightPx +
+            listState.firstVisibleItemScrollOffset.toFloat()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner, onStartParallaxSensor, onStopParallaxSensor) {
@@ -225,7 +228,7 @@ fun PetalsAndWeedsScreen(
                         .fillMaxSize()
                         .padding(innerPadding)
                         .gardenPathVineBackground(
-                            listState = listState,
+                            scrollOffsetPx = vineScrollOffsetPx,
                             itemCount = gardenBills.size + 1,
                             estimatedItemHeightPx = estimatedItemHeightPx
                         ),

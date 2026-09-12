@@ -79,26 +79,51 @@ fun sortGardenPathBills(bills: List<Bill>): List<Bill> {
 }
 
 private val GardenForestGreen = Color(0xFF1B3B22)
-private val LeafGlassFill = Color.White.copy(alpha = 0.35f)
+private val LeafGlassFill = Color.White.copy(alpha = 0.25f)
+private val LeafGlassBlurRadius = 24.dp
 private val LeafCyanEdge = Color(0xB380DEEA)
-private val BudGreen = Color(0xFF4CAF50)
-private val BudStem = Color(0xAA81C784)
 private val BudCream = Color(0xFFFFF8E1)
 private val BudGold = Color(0xFFFFE082)
 private val VineDateLabel = Color(0xFFF5F5F5)
 private val CategoryChipBackground = Color.White.copy(alpha = 0.35f)
-private val OverdueStampBrown = Color(0xCCBF360C)
+private val PaidRoseSize = 120.dp
+private val FrostedPillFill = Color.White.copy(alpha = 0.45f)
 
-@Composable
-fun leafShapeForIndex(index: Int): RoundedCornerShape {
+data class LeafCornerRadii(
+    val topStartDp: Float,
+    val topEndDp: Float,
+    val bottomEndDp: Float,
+    val bottomStartDp: Float
+)
+
+fun leafCornerRadiiForIndex(index: Int): LeafCornerRadii {
     return if (index % 2 == 0) {
-        RoundedCornerShape(topStart = 0.dp, topEnd = 48.dp, bottomEnd = 0.dp, bottomStart = 48.dp)
+        LeafCornerRadii(
+            topStartDp = 0f,
+            topEndDp = 48f,
+            bottomEndDp = 0f,
+            bottomStartDp = 48f
+        )
     } else {
-        RoundedCornerShape(topStart = 48.dp, topEnd = 0.dp, bottomEnd = 48.dp, bottomStart = 0.dp)
+        LeafCornerRadii(
+            topStartDp = 48f,
+            topEndDp = 0f,
+            bottomEndDp = 48f,
+            bottomStartDp = 0f
+        )
     }
 }
 
-@Composable
+fun leafShapeForIndex(index: Int): RoundedCornerShape {
+    val radii = leafCornerRadiiForIndex(index)
+    return RoundedCornerShape(
+        topStart = radii.topStartDp.dp,
+        topEnd = radii.topEndDp.dp,
+        bottomEnd = radii.bottomEndDp.dp,
+        bottomStart = radii.bottomStartDp.dp
+    )
+}
+
 fun dismissShapeForGardenState(gardenState: GardenBillState, index: Int): RoundedCornerShape {
     return when (gardenState) {
         GardenBillState.Paid,
@@ -173,41 +198,46 @@ private fun PaidRoseBillCard(
     isFeatured: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val roseHeight = if (isFeatured) 148.dp else 120.dp
+    val roseSize = if (isFeatured) 128.dp else PaidRoseSize
     val stampFontSize = if (isFeatured) 12.sp else 10.sp
     val paidBloomDescription = stringResource(R.string.petals_and_weeds_paid_bloom)
+    val supportsNativeBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(roseHeight)
+            .height(roseSize)
             .gardenLeafCyanGlow(),
         contentAlignment = Alignment.Center
     ) {
         Image(
             painter = painterResource(id = R.drawable.ic_paid_rose),
             contentDescription = "$paidBloomDescription: $billName",
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(roseHeight),
+            modifier = Modifier.size(PaidRoseSize),
             contentScale = ContentScale.Fit
         )
 
-        Box(
-            modifier = Modifier
-                .background(
-                    color = Color.White.copy(alpha = 0.72f),
-                    shape = RoundedCornerShape(50)
-                )
-                .padding(horizontal = 12.dp, vertical = 5.dp),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(RoundedCornerShape(50))
+                    .background(FrostedPillFill)
+                    .then(
+                        if (supportsNativeBlur) {
+                            Modifier.blur(radius = 12.dp)
+                        } else {
+                            Modifier
+                        }
+                    )
+            )
             Text(
                 text = stringResource(R.string.petals_and_weeds_paid_stamp),
                 color = GardenForestGreen,
                 fontSize = stampFontSize,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 0.8.sp
+                letterSpacing = 0.8.sp,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
             )
         }
     }
@@ -272,22 +302,6 @@ private fun OverdueLeafBillCard(
                 modifier = Modifier.padding(top = 4.dp)
             )
         }
-
-        Text(
-            text = stringResource(R.string.petals_and_weeds_overdue),
-            color = Color.White,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 8.dp)
-                .background(
-                    color = OverdueStampBrown,
-                    shape = RoundedCornerShape(4.dp)
-                )
-                .padding(horizontal = 14.dp, vertical = 5.dp)
-        )
     }
 }
 
@@ -321,17 +335,19 @@ private fun GlassLeafBillCard(
         Box(
             modifier = Modifier
                 .matchParentSize()
+                .clip(leafShape)
+                .background(LeafGlassFill)
                 .then(
                     if (supportsNativeBlur) {
                         Modifier.blur(
-                            radius = 20.dp,
+                            radius = LeafGlassBlurRadius,
                             edgeTreatment = BlurredEdgeTreatment.Rectangle
                         )
                     } else {
                         Modifier
                     }
                 )
-                .background(LeafGlassFill)
+                .clip(leafShape)
         )
 
         DefaultLeafBillContent(
@@ -467,13 +483,13 @@ private fun OrganicStemBud(
 
         drawPath(
             path = stemPath,
-            color = Color(0x664DD0E1),
-            style = Stroke(width = 5.5f, cap = StrokeCap.Round)
+            color = OrganicVineBase,
+            style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round)
         )
         drawPath(
             path = stemPath,
-            color = BudStem,
-            style = Stroke(width = 2.5f, cap = StrokeCap.Round)
+            color = OrganicVineCore,
+            style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round)
         )
 
         if (!showBud) {
@@ -485,12 +501,12 @@ private fun OrganicStemBud(
 
         rotate(degrees = if (alignToStemOnLeft) -18f else 18f, pivot = budCenter) {
             drawOval(
-                color = BudGreen,
+                color = Color(0xFF4CAF50),
                 topLeft = Offset(budCenter.x - radius * 0.7f, budCenter.y + radius * 0.15f),
                 size = androidx.compose.ui.geometry.Size(radius * 0.55f, radius * 0.9f)
             )
             drawOval(
-                color = BudGreen,
+                color = Color(0xFF4CAF50),
                 topLeft = Offset(budCenter.x + radius * 0.15f, budCenter.y + radius * 0.15f),
                 size = androidx.compose.ui.geometry.Size(radius * 0.55f, radius * 0.9f)
             )
