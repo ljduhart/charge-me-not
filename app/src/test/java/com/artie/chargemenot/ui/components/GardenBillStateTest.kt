@@ -102,6 +102,31 @@ class GardenBillStateTest {
     }
 
     @Test
+    fun stemXAt_returnsCenterWhenSegmentHeightIsNotPositive() {
+        assertEquals(
+            200f,
+            stemXAt(centerX = 200f, y = 50f, amplitude = 80f, segmentHeight = 0f)
+        )
+        assertEquals(
+            200f,
+            stemXAt(centerX = 200f, y = 50f, amplitude = 80f, segmentHeight = -16f)
+        )
+        assertEquals(
+            200f,
+            stemXAt(centerX = 200f, y = 50f, amplitude = 80f, segmentHeight = Float.NaN)
+        )
+        assertEquals(
+            200f,
+            stemXAt(
+                centerX = 200f,
+                y = 50f,
+                amplitude = 80f,
+                segmentHeight = Float.POSITIVE_INFINITY
+            )
+        )
+    }
+
+    @Test
     fun stemXAt_weavesAwayFromTheCenterLine() {
         val centerX = 200f
         val offsetAtFirstBend = stemXAt(

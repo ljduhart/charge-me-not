@@ -335,6 +335,7 @@ private fun GlassLeafBillCard(
         Box(
             modifier = Modifier
                 .matchParentSize()
+                .clip(leafShape)
                 .background(LeafGlassFill)
                 .then(
                     if (supportsNativeBlur) {
@@ -346,6 +347,7 @@ private fun GlassLeafBillCard(
                         Modifier
                     }
                 )
+                .clip(leafShape)
         )
 
         DefaultLeafBillContent(
