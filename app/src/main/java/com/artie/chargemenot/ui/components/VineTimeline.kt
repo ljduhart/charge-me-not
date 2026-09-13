@@ -38,6 +38,9 @@ fun Modifier.gardenPathVineBackground(
     }
 
     val vineLength = itemCount * estimatedItemHeightPx + size.height
+    if (!vineLength.isFinite() || !size.width.isFinite() || !size.height.isFinite()) {
+        return@drawBehind
+    }
     val centerX = size.width / 2f
     val amplitude = size.width * VINE_SWEEP_FRACTION
     val segmentHeight = estimatedItemHeightPx

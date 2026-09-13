@@ -43,6 +43,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.artie.chargemenot.R
@@ -284,7 +285,9 @@ private fun OverdueLeafBillCard(
                 style = MaterialTheme.typography.titleMedium,
                 color = OverdueInk,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = stringResource(R.string.petals_and_weeds_overdue),
@@ -361,7 +364,9 @@ private fun DefaultLeafBillContent(
                 text = bill.name,
                 style = MaterialTheme.typography.titleMedium,
                 color = GardenForestGreen,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = when (gardenState) {
@@ -413,7 +418,9 @@ private fun DefaultLeafBillContent(
                 text = categoryLabel,
                 style = MaterialTheme.typography.labelSmall,
                 color = GardenForestGreen,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

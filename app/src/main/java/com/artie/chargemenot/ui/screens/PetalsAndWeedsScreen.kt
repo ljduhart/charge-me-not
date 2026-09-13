@@ -1,6 +1,7 @@
 package com.artie.chargemenot.ui.screens
 
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,7 +33,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -45,6 +48,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -89,6 +93,12 @@ fun PetalsAndWeedsScreen(
         }?.id
     }
     var billPendingDelete by remember { mutableStateOf<Bill?>(null) }
+    LaunchedEffect(gardenBills, billPendingDelete) {
+        val pendingBill = billPendingDelete ?: return@LaunchedEffect
+        if (gardenBills.none { bill -> bill.id == pendingBill.id }) {
+            billPendingDelete = null
+        }
+    }
     val listState = rememberLazyListState()
     val density = LocalDensity.current
     val estimatedItemHeightPx = remember(density) { with(density) { 184.dp.toPx() } }
@@ -277,6 +287,10 @@ fun PetalsAndWeedsScreen(
             }
         }
     }
+
+    BackHandler(enabled = billPendingDelete != null) {
+        billPendingDelete = null
+    }
 }
 
 @Composable
@@ -387,7 +401,7 @@ private fun GardenPathAddBillFab(
     Box(
         modifier = Modifier
             .clip(pillShape)
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick, role = Role.Button)
     ) {
         Box(
             modifier = Modifier
@@ -428,48 +442,50 @@ private fun SwipeableGardenPathBillCard(
     onRequestDelete: (Bill) -> Unit
 ) {
     val dismissShape = dismissShapeForGardenState(gardenState, index)
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { direction ->
-            if (direction == SwipeToDismissBoxValue.EndToStart) {
-                onRequestDelete(bill)
-                false
-            } else {
-                false
+    key(bill.id) {
+        val dismissState = rememberSwipeToDismissBoxState(
+            confirmValueChange = { direction ->
+                if (direction == SwipeToDismissBoxValue.EndToStart) {
+                    onRequestDelete(bill)
+                    false
+                } else {
+                    false
+                }
             }
-        }
-    )
-
-    SwipeToDismissBox(
-        state = dismissState,
-        enableDismissFromStartToEnd = false,
-        backgroundContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        color = WeedRed.copy(alpha = 0.88f),
-                        shape = dismissShape
-                    )
-                    .padding(horizontal = 20.dp),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = stringResource(R.string.petals_and_weeds_swipe_delete),
-                    tint = MeadowWhite
-                )
-            }
-        }
-    ) {
-        LeafBillCard(
-            bill = bill,
-            index = index,
-            gardenState = gardenState,
-            currency = currency,
-            isFeaturedPaidRose = isFeaturedPaidRose,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onSelectBillForEdit(bill) }
         )
+
+        SwipeToDismissBox(
+            state = dismissState,
+            enableDismissFromStartToEnd = false,
+            backgroundContent = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            color = WeedRed.copy(alpha = 0.88f),
+                            shape = dismissShape
+                        )
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.petals_and_weeds_swipe_delete),
+                        tint = MeadowWhite
+                    )
+                }
+            }
+        ) {
+            LeafBillCard(
+                bill = bill,
+                index = index,
+                gardenState = gardenState,
+                currency = currency,
+                isFeaturedPaidRose = isFeaturedPaidRose,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(role = Role.Button) { onSelectBillForEdit(bill) }
+            )
+        }
     }
 }

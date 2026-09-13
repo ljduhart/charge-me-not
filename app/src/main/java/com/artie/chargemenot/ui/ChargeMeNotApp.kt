@@ -78,7 +78,9 @@ fun ChargeMeNotApp(
         if (!AppRoutes.shouldConsumePendingNavigation(currentRoute)) {
             return@LaunchedEffect
         }
-        navController.navigatePendingNotificationRoute(route)
+        if (AppRoutes.isAllowedPendingNavigationRoute(route)) {
+            navController.navigatePendingNotificationRoute(route)
+        }
         onPendingNavigationConsumed()
     }
 

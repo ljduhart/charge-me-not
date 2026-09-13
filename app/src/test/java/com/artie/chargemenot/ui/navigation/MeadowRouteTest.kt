@@ -149,7 +149,21 @@ class MeadowRouteTest {
         assertFalse(AppRoutes.shouldConsumePendingNavigation(AppRoutes.ONBOARDING))
         assertTrue(AppRoutes.shouldConsumePendingNavigation(AppRoutes.DASHBOARD))
         assertTrue(AppRoutes.shouldConsumePendingNavigation(AppRoutes.MEADOW_HUB))
+        assertTrue(AppRoutes.shouldConsumePendingNavigation(AppRoutes.PETALS_AND_WEEDS))
         assertTrue(AppRoutes.shouldConsumePendingNavigation(AppRoutes.WEED_WHACKER))
         assertTrue(AppRoutes.shouldConsumePendingNavigation(AppRoutes.SCANNER))
+    }
+
+    @Test
+    fun isAllowedPendingNavigationRoute_acceptsKnownDestinationsOnly() {
+        assertTrue(AppRoutes.isAllowedPendingNavigationRoute(AppRoutes.WEED_WHACKER))
+        assertTrue(AppRoutes.isAllowedPendingNavigationRoute(AppRoutes.PETALS_AND_WEEDS))
+        assertTrue(AppRoutes.isAllowedPendingNavigationRoute(AppRoutes.DASHBOARD))
+        assertTrue(AppRoutes.isAllowedPendingNavigationRoute(AppRoutes.MEADOW_HUB))
+        assertTrue(AppRoutes.isAllowedPendingNavigationRoute(AppRoutes.COMPOST_BIN))
+        assertFalse(AppRoutes.isAllowedPendingNavigationRoute(AppRoutes.ONBOARDING))
+        assertFalse(AppRoutes.isAllowedPendingNavigationRoute(null))
+        assertFalse(AppRoutes.isAllowedPendingNavigationRoute(""))
+        assertFalse(AppRoutes.isAllowedPendingNavigationRoute("not_a_real_route"))
     }
 }

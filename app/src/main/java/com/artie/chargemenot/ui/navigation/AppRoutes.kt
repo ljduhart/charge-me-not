@@ -21,10 +21,27 @@ object AppRoutes {
         GREENHOUSE_SETTINGS
     )
 
+    val navigableRoutes: Set<String> = setOf(
+        MEADOW_HUB,
+        DASHBOARD,
+        PETALS_AND_WEEDS,
+        RICH_SOIL,
+        HARVEST_REPORT,
+        GREENHOUSE_SETTINGS,
+        SCANNER,
+        PRUNING_SIMULATOR,
+        WEED_WHACKER,
+        COMPOST_BIN
+    )
+
     fun shouldReturnToGardenHub(didPopBackStack: Boolean): Boolean = !didPopBackStack
 
     fun shouldConsumePendingNavigation(currentRoute: String?): Boolean {
         return currentRoute != null && currentRoute != ONBOARDING
+    }
+
+    fun isAllowedPendingNavigationRoute(route: String?): Boolean {
+        return route != null && route in navigableRoutes
     }
 
     fun meadowRouteNavSpec(targetRoute: String, currentRoute: String?): MeadowRouteNavSpec {

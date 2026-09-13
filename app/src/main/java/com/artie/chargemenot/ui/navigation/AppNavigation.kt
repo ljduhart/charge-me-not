@@ -349,6 +349,9 @@ fun NavController.navigateBackOrGardenHub() {
 }
 
 fun NavController.navigatePendingNotificationRoute(route: String) {
+    if (!AppRoutes.isAllowedPendingNavigationRoute(route)) {
+        return
+    }
     navigate(route) {
         launchSingleTop = true
     }
