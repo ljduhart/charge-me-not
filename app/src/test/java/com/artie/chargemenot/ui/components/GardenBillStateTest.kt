@@ -168,6 +168,7 @@ class GardenBillStateTest {
         )
         assertTrue(leftLeafAttach < centerX - amplitude * 0.9f)
         assertTrue(rightLeafAttach > centerX + amplitude * 0.9f)
+        assertEquals(0f, stemDxDy(y = segmentHeight / 2f, amplitude = amplitude, segmentHeight = segmentHeight), 0.01f)
     }
 
     @Test

@@ -174,11 +174,25 @@ internal fun buildOrganicVinePath(
         val endX = stemXAt(centerX, nextY, amplitude, segmentHeight)
         val startSlope = stemDxDy(currentY, amplitude, segmentHeight)
         val endSlope = stemDxDy(nextY, amplitude, segmentHeight)
+        val control1X = startX + startSlope * span / 3f
+        val control1Y = currentY + span / 3f
+        val control2X = endX - endSlope * span / 3f
+        val control2Y = nextY - span / 3f
+        if (
+            !control1X.isFinite() ||
+            !control1Y.isFinite() ||
+            !control2X.isFinite() ||
+            !control2Y.isFinite() ||
+            !endX.isFinite() ||
+            !nextY.isFinite()
+        ) {
+            break
+        }
         path.cubicTo(
-            x1 = startX + startSlope * span / 3f,
-            y1 = currentY + span / 3f,
-            x2 = endX - endSlope * span / 3f,
-            y2 = nextY - span / 3f,
+            x1 = control1X,
+            y1 = control1Y,
+            x2 = control2X,
+            y2 = control2Y,
             x3 = endX,
             y3 = nextY
         )

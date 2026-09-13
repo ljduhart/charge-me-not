@@ -322,8 +322,12 @@ private fun GlassLeafBillCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(leafShape)
-            .frostedGardenGlass(supportsNativeBlur)
     ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .frostedGardenGlass(supportsNativeBlur)
+        )
         DefaultLeafBillContent(
             bill = bill,
             gardenState = gardenState,
