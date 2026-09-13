@@ -38,8 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -64,8 +62,8 @@ import com.artie.chargemenot.ui.components.GardenPathStemConnector
 import com.artie.chargemenot.ui.components.GlasshouseForestGreen
 import com.artie.chargemenot.ui.components.LeafBillCard
 import com.artie.chargemenot.ui.components.MeadowHubScaffold
-import com.artie.chargemenot.ui.components.decorativeVineBorder
 import com.artie.chargemenot.ui.components.dismissShapeForGardenState
+import com.artie.chargemenot.ui.components.frostedGardenGlass
 import com.artie.chargemenot.ui.components.gardenPathVineBackground
 import com.artie.chargemenot.ui.components.resolveGardenBillState
 import com.artie.chargemenot.ui.theme.MeadowWhite
@@ -390,22 +388,11 @@ private fun GardenPathAddBillFab(
         modifier = Modifier
             .clip(pillShape)
             .clickable(onClick = onClick)
-            .decorativeVineBorder()
     ) {
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .then(
-                    if (supportsNativeBlur) {
-                        Modifier.blur(
-                            radius = 16.dp,
-                            edgeTreatment = BlurredEdgeTreatment.Rectangle
-                        )
-                    } else {
-                        Modifier
-                    }
-                )
-                .background(Color(0xFFF9F9F4).copy(alpha = 0.6f), pillShape)
+                .frostedGardenGlass(supportsNativeBlur)
         )
 
         Row(

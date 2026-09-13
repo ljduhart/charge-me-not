@@ -11,11 +11,13 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.unit.dp
 import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.sin
 
 internal val OrganicVineBase = Color(0x664CAF50)
-internal val OrganicVineCore = Color(0xAA81C784)
+internal val OrganicVineCore = Color(0xEEA5D6A7)
 private val VineHighlight = Color(0xE6B9F6CA)
+private const val VINE_SWEEP_FRACTION = 0.36f
 
 /**
  * Draws a curvy organic stem down the garden-path center using cubicTo,
@@ -37,9 +39,9 @@ fun Modifier.gardenPathVineBackground(
 
     val vineLength = itemCount * estimatedItemHeightPx + size.height
     val centerX = size.width / 2f
-    val amplitude = size.width * 0.16f
-    val segmentHeight = estimatedItemHeightPx * 0.95f
-    val baseStrokeWidth = 6.dp.toPx()
+    val amplitude = size.width * VINE_SWEEP_FRACTION
+    val segmentHeight = estimatedItemHeightPx
+    val baseStrokeWidth = 8.dp.toPx()
     val coreStrokeWidth = 2.dp.toPx()
 
     val path = buildOrganicVinePath(
@@ -140,8 +142,8 @@ private fun DrawScope.drawBezierOffshoot(
 }
 
 /**
- * Smooth S-curve built from cubicTo segments whose endpoints lie on [stemXAt],
- * so offshoots attach to the same center path that is drawn.
+ * Aggressive S-curve built from cubicTo segments whose endpoints and tangents
+ * follow [stemXAt], so the vine sweeps around each leaf instead of staying vertical.
  */
 internal fun buildOrganicVinePath(
     centerX: Float,
@@ -160,21 +162,24 @@ internal fun buildOrganicVinePath(
     if (segmentHeight <= 0f || !segmentHeight.isFinite() || !totalHeight.isFinite()) {
         return path
     }
+    val step = segmentHeight * 0.5f
     var segmentsDrawn = 0
     while (currentY < totalHeight && segmentsDrawn < 10_000) {
-        val nextY = (currentY + segmentHeight).coerceAtMost(totalHeight)
+        val nextY = (currentY + step).coerceAtMost(totalHeight)
         if (nextY <= currentY) {
             break
         }
         val span = nextY - currentY
-        val control1Y = currentY + span * 0.33f
-        val control2Y = currentY + span * 0.67f
+        val startX = stemXAt(centerX, currentY, amplitude, segmentHeight)
+        val endX = stemXAt(centerX, nextY, amplitude, segmentHeight)
+        val startSlope = stemDxDy(currentY, amplitude, segmentHeight)
+        val endSlope = stemDxDy(nextY, amplitude, segmentHeight)
         path.cubicTo(
-            x1 = stemXAt(centerX, control1Y, amplitude, segmentHeight),
-            y1 = control1Y,
-            x2 = stemXAt(centerX, control2Y, amplitude, segmentHeight),
-            y2 = control2Y,
-            x3 = stemXAt(centerX, nextY, amplitude, segmentHeight),
+            x1 = startX + startSlope * span / 3f,
+            y1 = currentY + span / 3f,
+            x2 = endX - endSlope * span / 3f,
+            y2 = nextY - span / 3f,
+            x3 = endX,
             y3 = nextY
         )
         currentY = nextY
@@ -192,9 +197,22 @@ internal fun stemXAt(
     if (segmentHeight <= 0f || !segmentHeight.isFinite() || !y.isFinite() || !amplitude.isFinite()) {
         return centerX
     }
-    val phase = (y / segmentHeight) * (PI.toFloat() / 2f)
-    val offsetX = sin(phase) * amplitude * 0.55f
+    val phase = (y / segmentHeight) * PI.toFloat()
+    val offsetX = sin(phase) * amplitude
     return if (offsetX.isFinite()) centerX + offsetX else centerX
+}
+
+internal fun stemDxDy(
+    y: Float,
+    amplitude: Float,
+    segmentHeight: Float
+): Float {
+    if (segmentHeight <= 0f || !segmentHeight.isFinite() || !y.isFinite() || !amplitude.isFinite()) {
+        return 0f
+    }
+    val waveNumber = PI.toFloat() / segmentHeight
+    val slope = amplitude * waveNumber * cos(y * waveNumber)
+    return if (slope.isFinite()) slope else 0f
 }
 
 internal fun offshootTipX(

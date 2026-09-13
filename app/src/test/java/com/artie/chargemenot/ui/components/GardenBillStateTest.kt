@@ -129,30 +129,61 @@ class GardenBillStateTest {
     @Test
     fun stemXAt_weavesAwayFromTheCenterLine() {
         val centerX = 200f
-        val offsetAtFirstBend = stemXAt(
+        val amplitude = 80f
+        val segmentHeight = 160f
+        val peakOffset = stemXAt(
             centerX = centerX,
-            y = 160f,
-            amplitude = 80f,
-            segmentHeight = 160f
+            y = segmentHeight / 2f,
+            amplitude = amplitude,
+            segmentHeight = segmentHeight
+        )
+        val crossing = stemXAt(
+            centerX = centerX,
+            y = segmentHeight,
+            amplitude = amplitude,
+            segmentHeight = segmentHeight
+        )
+        val oppositePeak = stemXAt(
+            centerX = centerX,
+            y = segmentHeight * 1.5f,
+            amplitude = amplitude,
+            segmentHeight = segmentHeight
         )
 
-        assertTrue(kotlin.math.abs(offsetAtFirstBend - centerX) > 1f)
+        assertEquals(centerX + amplitude, peakOffset, 0.01f)
+        assertEquals(centerX, crossing, 0.01f)
+        assertEquals(centerX - amplitude, oppositePeak, 0.01f)
+
+        val leftLeafAttach = stemXAt(
+            centerX = centerX,
+            y = segmentHeight * 1.55f,
+            amplitude = amplitude,
+            segmentHeight = segmentHeight
+        )
+        val rightLeafAttach = stemXAt(
+            centerX = centerX,
+            y = segmentHeight * 2.55f,
+            amplitude = amplitude,
+            segmentHeight = segmentHeight
+        )
+        assertTrue(leftLeafAttach < centerX - amplitude * 0.9f)
+        assertTrue(rightLeafAttach > centerX + amplitude * 0.9f)
     }
 
     @Test
-    fun leafCornerRadiiForIndex_usesAsymmetricLeftAndRightLeaves() {
-        val leftLeaf = leafCornerRadiiForIndex(0)
-        val rightLeaf = leafCornerRadiiForIndex(1)
+    fun leafCornerPercentsForIndex_usesAsymmetricLeftAndRightLeaves() {
+        val leftLeaf = leafCornerPercentsForIndex(0)
+        val rightLeaf = leafCornerPercentsForIndex(1)
 
-        assertEquals(0f, leftLeaf.topStartDp)
-        assertEquals(48f, leftLeaf.topEndDp)
-        assertEquals(0f, leftLeaf.bottomEndDp)
-        assertEquals(48f, leftLeaf.bottomStartDp)
+        assertEquals(0, leftLeaf.topStartPercent)
+        assertEquals(100, leftLeaf.topEndPercent)
+        assertEquals(0, leftLeaf.bottomEndPercent)
+        assertEquals(100, leftLeaf.bottomStartPercent)
 
-        assertEquals(48f, rightLeaf.topStartDp)
-        assertEquals(0f, rightLeaf.topEndDp)
-        assertEquals(48f, rightLeaf.bottomEndDp)
-        assertEquals(0f, rightLeaf.bottomStartDp)
+        assertEquals(100, rightLeaf.topStartPercent)
+        assertEquals(0, rightLeaf.topEndPercent)
+        assertEquals(100, rightLeaf.bottomEndPercent)
+        assertEquals(0, rightLeaf.bottomStartPercent)
     }
 
     @Test

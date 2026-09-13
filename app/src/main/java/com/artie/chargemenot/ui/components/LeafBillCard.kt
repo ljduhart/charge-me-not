@@ -4,11 +4,11 @@ import android.os.Build
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -28,7 +28,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -79,49 +78,62 @@ fun sortGardenPathBills(bills: List<Bill>): List<Bill> {
 }
 
 private val GardenForestGreen = Color(0xFF1B3B22)
-private val LeafGlassFill = Color.White.copy(alpha = 0.25f)
-private val LeafGlassBlurRadius = 24.dp
-private val LeafCyanEdge = Color(0xB380DEEA)
+private val OverdueInk = Color(0xFF1A0E08)
+internal val GardenGlassFill = Color.White.copy(alpha = 0.25f)
+internal val GardenGlassBlurRadius = 24.dp
 private val BudCream = Color(0xFFFFF8E1)
 private val BudGold = Color(0xFFFFE082)
 private val VineDateLabel = Color(0xFFF5F5F5)
 private val CategoryChipBackground = Color.White.copy(alpha = 0.35f)
 private val PaidRoseSize = 120.dp
 private val FrostedPillFill = Color.White.copy(alpha = 0.45f)
+private val OverdueLeafHeight = 140.dp
 
-data class LeafCornerRadii(
-    val topStartDp: Float,
-    val topEndDp: Float,
-    val bottomEndDp: Float,
-    val bottomStartDp: Float
+data class LeafCornerPercents(
+    val topStartPercent: Int,
+    val topEndPercent: Int,
+    val bottomEndPercent: Int,
+    val bottomStartPercent: Int
 )
 
-fun leafCornerRadiiForIndex(index: Int): LeafCornerRadii {
+fun leafCornerPercentsForIndex(index: Int): LeafCornerPercents {
     return if (index % 2 == 0) {
-        LeafCornerRadii(
-            topStartDp = 0f,
-            topEndDp = 48f,
-            bottomEndDp = 0f,
-            bottomStartDp = 48f
+        LeafCornerPercents(
+            topStartPercent = 0,
+            topEndPercent = 100,
+            bottomEndPercent = 0,
+            bottomStartPercent = 100
         )
     } else {
-        LeafCornerRadii(
-            topStartDp = 48f,
-            topEndDp = 0f,
-            bottomEndDp = 48f,
-            bottomStartDp = 0f
+        LeafCornerPercents(
+            topStartPercent = 100,
+            topEndPercent = 0,
+            bottomEndPercent = 100,
+            bottomStartPercent = 0
         )
     }
 }
 
 fun leafShapeForIndex(index: Int): RoundedCornerShape {
-    val radii = leafCornerRadiiForIndex(index)
+    val corners = leafCornerPercentsForIndex(index)
     return RoundedCornerShape(
-        topStart = radii.topStartDp.dp,
-        topEnd = radii.topEndDp.dp,
-        bottomEnd = radii.bottomEndDp.dp,
-        bottomStart = radii.bottomStartDp.dp
+        topStartPercent = corners.topStartPercent,
+        topEndPercent = corners.topEndPercent,
+        bottomEndPercent = corners.bottomEndPercent,
+        bottomStartPercent = corners.bottomStartPercent
     )
+}
+
+fun Modifier.frostedGardenGlass(supportsNativeBlur: Boolean): Modifier {
+    return this
+        .background(GardenGlassFill)
+        .then(
+            if (supportsNativeBlur) {
+                Modifier.blur(radius = GardenGlassBlurRadius)
+            } else {
+                Modifier
+            }
+        )
 }
 
 fun dismissShapeForGardenState(gardenState: GardenBillState, index: Int): RoundedCornerShape {
@@ -249,54 +261,44 @@ private fun OverdueLeafBillCard(
     currency: SupportedCurrency,
     modifier: Modifier = Modifier
 ) {
-    val statusDateFormat = DateTimeFormatter.ofPattern("MMM d", Locale.US)
-
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(132.dp)
-            .gardenLeafCyanGlow(),
+            .height(OverdueLeafHeight),
         contentAlignment = Alignment.Center
     ) {
         Image(
             painter = painterResource(id = R.drawable.ic_overdue_leaf),
-            contentDescription = stringResource(
-                R.string.petals_and_weeds_overdue
-            ) + ": ${bill.name}",
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(132.dp),
+            contentDescription = stringResource(R.string.petals_and_weeds_overdue) + ": ${bill.name}",
+            modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Fit
         )
 
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = bill.name,
                 style = MaterialTheme.typography.titleMedium,
-                color = GardenForestGreen,
+                color = OverdueInk,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
             Text(
-                text = stringResource(
-                    R.string.petals_and_weeds_status_overdue,
-                    statusDateFormat.format(bill.dueDate)
-                ),
+                text = stringResource(R.string.petals_and_weeds_overdue),
                 style = MaterialTheme.typography.bodyMedium,
-                color = GardenForestGreen,
+                color = OverdueInk,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.2.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 2.dp)
             )
             Text(
                 text = CurrencyFormatter.format(bill.amount, currency),
                 style = MaterialTheme.typography.titleLarge,
-                color = GardenForestGreen,
+                color = OverdueInk,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 4.dp)
@@ -319,37 +321,9 @@ private fun GlassLeafBillCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .gardenLeafCyanGlow()
             .clip(leafShape)
-            .border(
-                width = 1.4.dp,
-                color = LeafCyanEdge,
-                shape = leafShape
-            )
-            .border(
-                width = 1.dp,
-                color = Color.White.copy(alpha = 0.4f),
-                shape = leafShape
-            )
+            .frostedGardenGlass(supportsNativeBlur)
     ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .clip(leafShape)
-                .background(LeafGlassFill)
-                .then(
-                    if (supportsNativeBlur) {
-                        Modifier.blur(
-                            radius = LeafGlassBlurRadius,
-                            edgeTreatment = BlurredEdgeTreatment.Rectangle
-                        )
-                    } else {
-                        Modifier
-                    }
-                )
-                .clip(leafShape)
-        )
-
         DefaultLeafBillContent(
             bill = bill,
             gardenState = gardenState,
