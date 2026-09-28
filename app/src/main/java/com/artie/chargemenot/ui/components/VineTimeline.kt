@@ -14,9 +14,12 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
-internal val OrganicVineBase = Color(0x664CAF50)
-internal val OrganicVineCore = Color(0xEEA5D6A7)
-private val VineHighlight = Color(0xE6B9F6CA)
+internal val OrganicVineGlow = Color(0x5530E8D0)
+internal val OrganicVineBase = Color(0xAA2EC4C8)
+internal val OrganicVineCore = Color(0xEEB8FFF8)
+private val VineHighlight = Color(0xE6E0FFFF)
+private val VineBudSepal = Color(0xFF43A047)
+private val VineBudPetal = Color(0xFFFFF8E1)
 private const val VINE_SWEEP_FRACTION = 0.36f
 
 /**
@@ -44,8 +47,9 @@ fun Modifier.gardenPathVineBackground(
     val centerX = size.width / 2f
     val amplitude = size.width * VINE_SWEEP_FRACTION
     val segmentHeight = estimatedItemHeightPx
+    val glowStrokeWidth = 16.dp.toPx()
     val baseStrokeWidth = 8.dp.toPx()
-    val coreStrokeWidth = 2.dp.toPx()
+    val coreStrokeWidth = 2.5.dp.toPx()
 
     val path = buildOrganicVinePath(
         centerX = centerX,
@@ -59,6 +63,11 @@ fun Modifier.gardenPathVineBackground(
     try {
         drawContext.canvas.translate(0f, -scrollOffsetPx)
 
+        drawPath(
+            path = path,
+            color = OrganicVineGlow,
+            style = Stroke(width = glowStrokeWidth, cap = StrokeCap.Round)
+        )
         drawPath(
             path = path,
             color = OrganicVineBase,
@@ -94,6 +103,11 @@ fun Modifier.gardenPathVineBackground(
                     branchLeft = tendrilIndex % 2 == 0,
                     branchLength = size.width * 0.20f
                 )
+                if (tendrilIndex % 2 == 1) {
+                    drawVineBud(
+                        center = Offset(stemPoint.x, stemPoint.y - estimatedItemHeightPx * 0.18f)
+                    )
+                }
             }
             tendrilIndex++
         }
@@ -129,6 +143,11 @@ private fun DrawScope.drawBezierOffshoot(
 
     drawPath(
         path = offshootPath,
+        color = OrganicVineGlow,
+        style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
+    )
+    drawPath(
+        path = offshootPath,
         color = OrganicVineBase,
         style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
     )
@@ -142,6 +161,33 @@ private fun DrawScope.drawBezierOffshoot(
         radius = 3.6f,
         center = Offset(tipX, tipY)
     )
+}
+
+private fun DrawScope.drawVineBud(center: Offset) {
+    val sepalWidth = 7.dp.toPx()
+    val sepalHeight = 9.dp.toPx()
+    rotate(degrees = -8f, pivot = center) {
+        drawOval(
+            color = VineBudSepal,
+            topLeft = Offset(center.x - sepalWidth * 0.85f, center.y - sepalHeight * 0.15f),
+            size = androidx.compose.ui.geometry.Size(sepalWidth * 0.55f, sepalHeight * 0.7f)
+        )
+        drawOval(
+            color = VineBudSepal,
+            topLeft = Offset(center.x + sepalWidth * 0.12f, center.y - sepalHeight * 0.15f),
+            size = androidx.compose.ui.geometry.Size(sepalWidth * 0.55f, sepalHeight * 0.7f)
+        )
+        drawOval(
+            color = VineBudPetal,
+            topLeft = Offset(center.x - sepalWidth * 0.42f, center.y - sepalHeight * 0.85f),
+            size = androidx.compose.ui.geometry.Size(sepalWidth * 0.84f, sepalHeight)
+        )
+        drawCircle(
+            color = VineHighlight,
+            radius = 2.2f,
+            center = Offset(center.x - 1.4f, center.y - sepalHeight * 0.35f)
+        )
+    }
 }
 
 /**
@@ -244,59 +290,79 @@ internal fun offshootTipX(
  * Decorative vine strokes wrapping frosted-glass pill buttons.
  */
 fun Modifier.decorativeVineBorder(): Modifier = drawBehind {
-    val inset = 6f
+    val inset = 8f
     val left = inset
     val top = inset
     val right = size.width - inset
     val bottom = size.height - inset
 
-    rotate(degrees = -4f, pivot = Offset(left, top)) {
-        drawLine(
-            color = OrganicVineBase,
-            start = Offset(left, bottom * 0.55f),
-            end = Offset(left + size.width * 0.18f, top),
-            strokeWidth = 3.2f
+    val leftVine = Path().apply {
+        moveTo(left, bottom * 0.78f)
+        cubicTo(
+            x1 = left - 6f,
+            y1 = bottom * 0.48f,
+            x2 = left + size.width * 0.10f,
+            y2 = top + 10f,
+            x3 = left + size.width * 0.24f,
+            y3 = top + 2f
         )
-        drawLine(
-            color = OrganicVineCore,
-            start = Offset(left, bottom * 0.55f),
-            end = Offset(left + size.width * 0.18f, top),
-            strokeWidth = 1.6f
+    }
+    val rightVine = Path().apply {
+        moveTo(right, bottom * 0.78f)
+        cubicTo(
+            x1 = right + 6f,
+            y1 = bottom * 0.48f,
+            x2 = right - size.width * 0.10f,
+            y2 = top + 10f,
+            x3 = right - size.width * 0.24f,
+            y3 = top + 2f
         )
     }
 
-    rotate(degrees = 4f, pivot = Offset(right, top)) {
-        drawLine(
-            color = OrganicVineBase,
-            start = Offset(right, bottom * 0.55f),
-            end = Offset(right - size.width * 0.18f, top),
-            strokeWidth = 3.2f
-        )
-        drawLine(
-            color = OrganicVineCore,
-            start = Offset(right, bottom * 0.55f),
-            end = Offset(right - size.width * 0.18f, top),
-            strokeWidth = 1.6f
-        )
-    }
+    drawPath(
+        path = leftVine,
+        color = OrganicVineGlow,
+        style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
+    )
+    drawPath(
+        path = leftVine,
+        color = OrganicVineBase,
+        style = Stroke(width = 3.2.dp.toPx(), cap = StrokeCap.Round)
+    )
+    drawPath(
+        path = leftVine,
+        color = OrganicVineCore,
+        style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round)
+    )
+    drawPath(
+        path = rightVine,
+        color = OrganicVineGlow,
+        style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
+    )
+    drawPath(
+        path = rightVine,
+        color = OrganicVineBase,
+        style = Stroke(width = 3.2.dp.toPx(), cap = StrokeCap.Round)
+    )
+    drawPath(
+        path = rightVine,
+        color = OrganicVineCore,
+        style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round)
+    )
 
-    val budRadius = 3.4f
-    drawCircle(
-        color = VineHighlight,
-        radius = budRadius,
-        center = Offset(left + size.width * 0.14f, top + 8f)
-    )
-    drawCircle(
-        color = VineHighlight,
-        radius = budRadius,
-        center = Offset(right - size.width * 0.14f, top + 8f)
-    )
+    drawVineBud(center = Offset(left + size.width * 0.16f, top + 7f))
+    drawVineBud(center = Offset(right - size.width * 0.16f, top + 7f))
 }
 
 fun Modifier.gardenLeafCyanGlow(): Modifier = drawBehind {
     drawCircle(
-        color = Color(0x334CAF50),
-        radius = size.maxDimension * 0.42f,
+        color = OrganicVineGlow,
+        radius = size.maxDimension * 0.48f,
+        center = Offset(size.width / 2f, size.height / 2f)
+    )
+    drawCircle(
+        color = Color(0x3326C6DA),
+        radius = size.maxDimension * 0.32f,
         center = Offset(size.width / 2f, size.height / 2f)
     )
 }

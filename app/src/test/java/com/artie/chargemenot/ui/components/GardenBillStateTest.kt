@@ -4,6 +4,7 @@ import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.SupportedCurrency
 import com.artie.chargemenot.util.CurrencyFormatter
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -185,6 +186,112 @@ class GardenBillStateTest {
         assertEquals(0, rightLeaf.topEndPercent)
         assertEquals(100, rightLeaf.bottomEndPercent)
         assertEquals(0, rightLeaf.bottomStartPercent)
+    }
+
+    @Test
+    fun leafTipsLeftForIndex_pointsAwayFromTheVine() {
+        assertTrue(leafTipsLeftForIndex(0))
+        assertFalse(leafTipsLeftForIndex(1))
+        assertTrue(leafTipsLeftForIndex(2))
+    }
+
+    @Test
+    fun organicLeafAnchors_placeTheStemTowardTheVine() {
+        val leftLeaf = organicLeafAnchors(tipOnLeft = true)
+        val rightLeaf = organicLeafAnchors(tipOnLeft = false)
+
+        assertTrue(leftLeaf.tipXFraction < leftLeaf.stemXFraction)
+        assertTrue(rightLeaf.tipXFraction > rightLeaf.stemXFraction)
+        assertEquals(0.04f, leftLeaf.tipXFraction, 0.001f)
+        assertEquals(0.96f, leftLeaf.stemXFraction, 0.001f)
+        assertEquals(
+            organicLeafShapeForIndex(0).tipOnLeft,
+            true
+        )
+        assertEquals(
+            organicLeafShapeForIndex(1).tipOnLeft,
+            false
+        )
+    }
+
+    @Test
+    fun organicLeafChipAlignment_sitsOnTheStemSide() {
+        assertEquals(androidx.compose.ui.Alignment.BottomEnd, organicLeafChipAlignment(tipOnLeft = true))
+        assertEquals(androidx.compose.ui.Alignment.BottomStart, organicLeafChipAlignment(tipOnLeft = false))
+    }
+
+    @Test
+    fun gardenLeafVisualFor_usesRoseOnlyForTheFeaturedPaidBloom() {
+        assertEquals(
+            GardenLeafVisual.FeaturedRose,
+            gardenLeafVisualFor(GardenBillState.Paid, isFeaturedPaidRose = true)
+        )
+        assertEquals(
+            GardenLeafVisual.GlassLeaf,
+            gardenLeafVisualFor(GardenBillState.Paid, isFeaturedPaidRose = false)
+        )
+        assertEquals(
+            GardenLeafVisual.DriedOverdueLeaf,
+            gardenLeafVisualFor(GardenBillState.Overdue, isFeaturedPaidRose = false)
+        )
+        assertEquals(
+            GardenLeafVisual.DriedOverdueLeaf,
+            gardenLeafVisualFor(GardenBillState.Overdue, isFeaturedPaidRose = true)
+        )
+        assertEquals(
+            GardenLeafVisual.GlassLeaf,
+            gardenLeafVisualFor(GardenBillState.Upcoming, isFeaturedPaidRose = false)
+        )
+        assertEquals(
+            GardenLeafVisual.GlassLeaf,
+            gardenLeafVisualFor(GardenBillState.FarOff, isFeaturedPaidRose = true)
+        )
+    }
+
+    @Test
+    fun featuredPaidBillIdFrom_selectsTheChronologicallyFirstPaidBill() {
+        val paidLate = sampleBill(isPaid = true, dueDate = today).copy(id = 2L, name = "Later Paid")
+        val paidEarly = sampleBill(isPaid = true, dueDate = today.minusDays(5)).copy(id = 1L, name = "First Paid")
+        val unpaid = sampleBill(isPaid = false, dueDate = today.plusDays(2)).copy(id = 3L, name = "Upcoming")
+        val gardenPath = sortGardenPathBills(listOf(paidLate, unpaid, paidEarly))
+
+        assertEquals(1L, featuredPaidBillIdFrom(gardenPath, today))
+        assertEquals(
+            null,
+            featuredPaidBillIdFrom(listOf(unpaid), today)
+        )
+    }
+
+    @Test
+    fun gardenBillDetailDate_formatsMonthAndDayForEveryPetal() {
+        assertEquals("Sep 9", gardenBillDetailDate(LocalDate.of(2026, 9, 9)))
+        assertEquals("Sep 5", gardenBillDetailDate(LocalDate.of(2026, 9, 5)))
+        assertEquals("Sep 18", gardenBillDetailDate(LocalDate.of(2026, 9, 18)))
+    }
+
+    @Test
+    fun dismissShapeForGardenState_usesOrganicLeavesExceptTheFeaturedRose() {
+        val featuredRose = dismissShapeForGardenState(
+            gardenState = GardenBillState.Paid,
+            index = 0,
+            isFeaturedPaidRose = true
+        )
+        val paidGlass = dismissShapeForGardenState(
+            gardenState = GardenBillState.Paid,
+            index = 0,
+            isFeaturedPaidRose = false
+        )
+        val overdue = dismissShapeForGardenState(
+            gardenState = GardenBillState.Overdue,
+            index = 1,
+            isFeaturedPaidRose = false
+        )
+
+        assertTrue(featuredRose is androidx.compose.foundation.shape.RoundedCornerShape)
+        assertTrue(paidGlass is OrganicLeafShape)
+        assertTrue((paidGlass as OrganicLeafShape).tipOnLeft)
+        assertTrue(overdue is OrganicLeafShape)
+        assertFalse((overdue as OrganicLeafShape).tipOnLeft)
     }
 
     @Test
