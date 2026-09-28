@@ -88,14 +88,16 @@ fun resolveGardenBillState(bill: Bill, today: LocalDate = LocalDate.now()): Gard
 }
 
 fun sortGardenPathBills(bills: List<Bill>): List<Bill> {
-    return bills.sortedBy { bill -> bill.dueDate }
+    return bills.sortedWith(
+        compareBy<Bill> { bill -> bill.dueDate }.thenBy { bill -> bill.id }
+    )
 }
 
 fun featuredPaidBillIdFrom(
     bills: List<Bill>,
     today: LocalDate = LocalDate.now()
 ): Long? {
-    return bills.firstOrNull { bill ->
+    return sortGardenPathBills(bills).firstOrNull { bill ->
         resolveGardenBillState(bill, today) == GardenBillState.Paid
     }?.id
 }
@@ -232,11 +234,19 @@ data class OrganicLeafShape(
 }
 
 internal fun organicLeafPath(size: Size, tipOnLeft: Boolean): Path {
+    val path = Path()
+    if (
+        !size.width.isFinite() ||
+        !size.height.isFinite() ||
+        size.width <= 0f ||
+        size.height <= 0f
+    ) {
+        return path
+    }
     val anchors = organicLeafAnchors(tipOnLeft)
     val stemX = size.width * anchors.stemXFraction
     val tipX = size.width * anchors.tipXFraction
     val midY = size.height * 0.50f
-    val path = Path()
     path.moveTo(stemX, midY)
     path.cubicTo(
         x1 = lerpFraction(stemX, tipX, 0.22f),

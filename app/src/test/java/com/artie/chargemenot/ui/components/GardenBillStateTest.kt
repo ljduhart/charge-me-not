@@ -103,6 +103,61 @@ class GardenBillStateTest {
     }
 
     @Test
+    fun sortGardenPathBills_usesBillIdAsAStableTieBreaker() {
+        val laterId = sampleBill(dueDate = today).copy(id = 20L, name = "Later Id")
+        val earlierId = sampleBill(dueDate = today).copy(id = 8L, name = "Earlier Id")
+
+        val sorted = sortGardenPathBills(listOf(laterId, earlierId))
+
+        assertEquals(listOf("Earlier Id", "Later Id"), sorted.map { bill -> bill.name })
+    }
+
+    @Test
+    fun gardenPath_projectsOnlyCallerProvidedBillsAndDates() {
+        val userBills = listOf(
+            Bill(
+                id = 41L,
+                name = "River Loft Rent",
+                amount = 210_050L,
+                dueDate = LocalDate.of(2026, 3, 3),
+                parentCategory = "Utilities",
+                subCategory = "Rent",
+                isPaid = false
+            ),
+            Bill(
+                id = 42L,
+                name = "Harbor Electric",
+                amount = 8_888L,
+                dueDate = LocalDate.of(2026, 4, 21),
+                parentCategory = "Utilities",
+                subCategory = "Power",
+                isPaid = true
+            )
+        )
+        val marketingNames = setOf(
+            "Maple Street Apartment",
+            "Whole Foods Groceries",
+            "Trader Joe's",
+            "City Water & Sewer",
+            "Pacific Gas & Electric",
+            "Spotify Premium",
+            "Netflix"
+        )
+
+        val path = sortGardenPathBills(userBills.shuffled())
+
+        assertEquals(listOf("River Loft Rent", "Harbor Electric"), path.map { bill -> bill.name })
+        assertEquals(listOf(210_050L, 8_888L), path.map { bill -> bill.amount })
+        assertEquals(
+            listOf(LocalDate.of(2026, 3, 3), LocalDate.of(2026, 4, 21)),
+            path.map { bill -> bill.dueDate }
+        )
+        assertEquals(listOf("Mar 3", "Apr 21"), path.map { bill -> gardenBillDetailDate(bill.dueDate) })
+        assertEquals(42L, featuredPaidBillIdFrom(userBills.shuffled(), today = LocalDate.of(2026, 3, 10)))
+        assertTrue(path.none { bill -> bill.name in marketingNames })
+    }
+
+    @Test
     fun stemXAt_returnsCenterWhenSegmentHeightIsNotPositive() {
         assertEquals(
             200f,
@@ -253,12 +308,35 @@ class GardenBillStateTest {
         val paidLate = sampleBill(isPaid = true, dueDate = today).copy(id = 2L, name = "Later Paid")
         val paidEarly = sampleBill(isPaid = true, dueDate = today.minusDays(5)).copy(id = 1L, name = "First Paid")
         val unpaid = sampleBill(isPaid = false, dueDate = today.plusDays(2)).copy(id = 3L, name = "Upcoming")
-        val gardenPath = sortGardenPathBills(listOf(paidLate, unpaid, paidEarly))
 
-        assertEquals(1L, featuredPaidBillIdFrom(gardenPath, today))
+        assertEquals(1L, featuredPaidBillIdFrom(listOf(paidLate, unpaid, paidEarly), today))
         assertEquals(
             null,
             featuredPaidBillIdFrom(listOf(unpaid), today)
+        )
+    }
+
+    @Test
+    fun organicLeafPath_skipsNonPositiveOrNonFiniteSizes() {
+        assertTrue(organicLeafPath(androidx.compose.ui.geometry.Size(0f, 120f), tipOnLeft = true).isEmpty)
+        assertTrue(organicLeafPath(androidx.compose.ui.geometry.Size(120f, -8f), tipOnLeft = false).isEmpty)
+        assertTrue(
+            organicLeafPath(
+                androidx.compose.ui.geometry.Size(Float.NaN, 120f),
+                tipOnLeft = true
+            ).isEmpty
+        )
+        assertTrue(
+            organicLeafPath(
+                androidx.compose.ui.geometry.Size(120f, Float.POSITIVE_INFINITY),
+                tipOnLeft = false
+            ).isEmpty
+        )
+        assertFalse(
+            organicLeafPath(
+                androidx.compose.ui.geometry.Size(160f, 96f),
+                tipOnLeft = true
+            ).isEmpty
         )
     }
 

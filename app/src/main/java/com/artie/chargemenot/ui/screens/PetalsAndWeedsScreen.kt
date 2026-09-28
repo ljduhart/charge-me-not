@@ -75,6 +75,7 @@ import com.artie.chargemenot.ui.components.gardenPathVineBackground
 import com.artie.chargemenot.ui.components.resolveGardenBillState
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import com.artie.chargemenot.ui.theme.WeedRed
+import java.time.LocalDate
 
 @Composable
 fun PetalsAndWeedsScreen(
@@ -90,8 +91,9 @@ fun PetalsAndWeedsScreen(
     onDeleteBill: (Bill) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val featuredPaidBillId = remember(gardenBills) {
-        featuredPaidBillIdFrom(gardenBills)
+    val today = LocalDate.now()
+    val featuredPaidBillId = remember(gardenBills, today) {
+        featuredPaidBillIdFrom(gardenBills, today)
     }
     var billPendingDelete by remember { mutableStateOf<Bill?>(null) }
     LaunchedEffect(gardenBills, billPendingDelete) {
@@ -279,6 +281,7 @@ fun PetalsAndWeedsScreen(
                             bill = bill,
                             index = index,
                             currency = currency,
+                            today = today,
                             isFeaturedPaidRose = bill.id == featuredPaidBillId,
                             onSelectBillForEdit = onSelectBillForEdit,
                             onRequestDelete = { billPendingDelete = it }
@@ -299,11 +302,12 @@ private fun GardenPathTimelineRow(
     bill: Bill,
     index: Int,
     currency: SupportedCurrency,
+    today: LocalDate,
     isFeaturedPaidRose: Boolean,
     onSelectBillForEdit: (Bill) -> Unit,
     onRequestDelete: (Bill) -> Unit
 ) {
-    val gardenState = resolveGardenBillState(bill)
+    val gardenState = resolveGardenBillState(bill, today)
     val isLeftLeaf = index % 2 == 0
     val isOverdue = gardenState == GardenBillState.Overdue
     val rowMinHeight = when {

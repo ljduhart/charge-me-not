@@ -155,6 +155,28 @@ class MeadowRouteTest {
     }
 
     @Test
+    fun meadowRouteNavSpec_fromPetalsPopsBackToGardenHubWithoutDestroyingHubState() {
+        val petalsToHub = AppRoutes.meadowRouteNavSpec(
+            targetRoute = AppRoutes.DASHBOARD,
+            currentRoute = AppRoutes.PETALS_AND_WEEDS
+        )
+        val hubToPetals = AppRoutes.meadowRouteNavSpec(
+            targetRoute = AppRoutes.PETALS_AND_WEEDS,
+            currentRoute = AppRoutes.DASHBOARD
+        )
+
+        assertTrue(petalsToHub.usesPopBackStackToDashboard)
+        assertFalse(petalsToHub.popDashboardInclusively)
+        assertFalse(petalsToHub.saveState)
+        assertFalse(petalsToHub.restoreState)
+
+        assertFalse(hubToPetals.usesPopBackStackToDashboard)
+        assertFalse(hubToPetals.popDashboardInclusively)
+        assertTrue(hubToPetals.saveState)
+        assertTrue(hubToPetals.restoreState)
+    }
+
+    @Test
     fun isAllowedPendingNavigationRoute_acceptsKnownDestinationsOnly() {
         assertTrue(AppRoutes.isAllowedPendingNavigationRoute(AppRoutes.WEED_WHACKER))
         assertTrue(AppRoutes.isAllowedPendingNavigationRoute(AppRoutes.PETALS_AND_WEEDS))
