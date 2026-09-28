@@ -317,27 +317,12 @@ class GardenBillStateTest {
     }
 
     @Test
-    fun organicLeafPath_skipsNonPositiveOrNonFiniteSizes() {
-        assertTrue(organicLeafPath(androidx.compose.ui.geometry.Size(0f, 120f), tipOnLeft = true).isEmpty)
-        assertTrue(organicLeafPath(androidx.compose.ui.geometry.Size(120f, -8f), tipOnLeft = false).isEmpty)
-        assertTrue(
-            organicLeafPath(
-                androidx.compose.ui.geometry.Size(Float.NaN, 120f),
-                tipOnLeft = true
-            ).isEmpty
-        )
-        assertTrue(
-            organicLeafPath(
-                androidx.compose.ui.geometry.Size(120f, Float.POSITIVE_INFINITY),
-                tipOnLeft = false
-            ).isEmpty
-        )
-        assertFalse(
-            organicLeafPath(
-                androidx.compose.ui.geometry.Size(160f, 96f),
-                tipOnLeft = true
-            ).isEmpty
-        )
+    fun isValidOrganicLeafSize_rejectsNonPositiveOrNonFiniteSizes() {
+        assertFalse(isValidOrganicLeafSize(androidx.compose.ui.geometry.Size(0f, 120f)))
+        assertFalse(isValidOrganicLeafSize(androidx.compose.ui.geometry.Size(120f, -8f)))
+        assertFalse(isValidOrganicLeafSize(androidx.compose.ui.geometry.Size(Float.NaN, 120f)))
+        assertFalse(isValidOrganicLeafSize(androidx.compose.ui.geometry.Size(120f, Float.POSITIVE_INFINITY)))
+        assertTrue(isValidOrganicLeafSize(androidx.compose.ui.geometry.Size(160f, 96f)))
     }
 
     @Test

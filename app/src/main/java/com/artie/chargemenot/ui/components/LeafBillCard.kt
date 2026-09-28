@@ -233,14 +233,16 @@ data class OrganicLeafShape(
     }
 }
 
+internal fun isValidOrganicLeafSize(size: Size): Boolean {
+    return size.width.isFinite() &&
+        size.height.isFinite() &&
+        size.width > 0f &&
+        size.height > 0f
+}
+
 internal fun organicLeafPath(size: Size, tipOnLeft: Boolean): Path {
     val path = Path()
-    if (
-        !size.width.isFinite() ||
-        !size.height.isFinite() ||
-        size.width <= 0f ||
-        size.height <= 0f
-    ) {
+    if (!isValidOrganicLeafSize(size)) {
         return path
     }
     val anchors = organicLeafAnchors(tipOnLeft)
