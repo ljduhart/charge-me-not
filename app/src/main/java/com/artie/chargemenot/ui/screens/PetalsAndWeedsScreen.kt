@@ -66,12 +66,16 @@ import com.artie.chargemenot.ui.components.GardenPathStemConnector
 import com.artie.chargemenot.ui.components.GlasshouseForestGreen
 import com.artie.chargemenot.ui.components.LeafBillCard
 import com.artie.chargemenot.ui.components.MeadowHubScaffold
+import com.artie.chargemenot.ui.components.decorativeVineBorder
 import com.artie.chargemenot.ui.components.dismissShapeForGardenState
+import com.artie.chargemenot.ui.components.featuredPaidBillIdFrom
 import com.artie.chargemenot.ui.components.frostedGardenGlass
+import com.artie.chargemenot.ui.components.gardenLeafCyanGlow
 import com.artie.chargemenot.ui.components.gardenPathVineBackground
 import com.artie.chargemenot.ui.components.resolveGardenBillState
 import com.artie.chargemenot.ui.theme.MeadowWhite
 import com.artie.chargemenot.ui.theme.WeedRed
+import java.time.LocalDate
 
 @Composable
 fun PetalsAndWeedsScreen(
@@ -87,10 +91,9 @@ fun PetalsAndWeedsScreen(
     onDeleteBill: (Bill) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val featuredPaidBillId = remember(gardenBills) {
-        gardenBills.firstOrNull { bill ->
-            resolveGardenBillState(bill) == GardenBillState.Paid
-        }?.id
+    val today = LocalDate.now()
+    val featuredPaidBillId = remember(gardenBills, today) {
+        featuredPaidBillIdFrom(gardenBills, today)
     }
     var billPendingDelete by remember { mutableStateOf<Bill?>(null) }
     LaunchedEffect(gardenBills, billPendingDelete) {
@@ -101,7 +104,7 @@ fun PetalsAndWeedsScreen(
     }
     val listState = rememberLazyListState()
     val density = LocalDensity.current
-    val estimatedItemHeightPx = remember(density) { with(density) { 184.dp.toPx() } }
+    val estimatedItemHeightPx = remember(density) { with(density) { 196.dp.toPx() } }
     val vineScrollOffsetPx =
         listState.firstVisibleItemIndex * estimatedItemHeightPx +
             listState.firstVisibleItemScrollOffset.toFloat()
@@ -278,6 +281,7 @@ fun PetalsAndWeedsScreen(
                             bill = bill,
                             index = index,
                             currency = currency,
+                            today = today,
                             isFeaturedPaidRose = bill.id == featuredPaidBillId,
                             onSelectBillForEdit = onSelectBillForEdit,
                             onRequestDelete = { billPendingDelete = it }
@@ -298,19 +302,18 @@ private fun GardenPathTimelineRow(
     bill: Bill,
     index: Int,
     currency: SupportedCurrency,
+    today: LocalDate,
     isFeaturedPaidRose: Boolean,
     onSelectBillForEdit: (Bill) -> Unit,
     onRequestDelete: (Bill) -> Unit
 ) {
-    val gardenState = resolveGardenBillState(bill)
+    val gardenState = resolveGardenBillState(bill, today)
     val isLeftLeaf = index % 2 == 0
-    val isPaid = gardenState == GardenBillState.Paid
     val isOverdue = gardenState == GardenBillState.Overdue
     val rowMinHeight = when {
-        isFeaturedPaidRose -> 168.dp
-        isPaid -> 148.dp
-        isOverdue -> 140.dp
-        else -> 128.dp
+        isFeaturedPaidRose -> 228.dp
+        isOverdue -> 148.dp
+        else -> 132.dp
     }
 
     Box(
@@ -400,32 +403,39 @@ private fun GardenPathAddBillFab(
 
     Box(
         modifier = Modifier
-            .clip(pillShape)
-            .clickable(onClick = onClick, role = Role.Button)
+            .gardenLeafCyanGlow()
+            .decorativeVineBorder()
     ) {
         Box(
             modifier = Modifier
-                .matchParentSize()
-                .frostedGardenGlass(supportsNativeBlur)
-        )
-
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 20.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(8.dp)
+                .clip(pillShape)
+                .clickable(onClick = onClick, role = Role.Button)
         ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = stringResource(R.string.dashboard_manual_bill_entry),
-                tint = GlasshouseForestGreen
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .frostedGardenGlass(supportsNativeBlur)
             )
-            Text(
-                text = stringResource(R.string.dashboard_manual_bill_entry),
-                color = GlasshouseForestGreen,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold
-            )
+
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = stringResource(R.string.dashboard_manual_bill_entry),
+                    tint = GlasshouseForestGreen
+                )
+                Text(
+                    text = stringResource(R.string.dashboard_manual_bill_entry),
+                    color = GlasshouseForestGreen,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -441,7 +451,11 @@ private fun SwipeableGardenPathBillCard(
     onSelectBillForEdit: (Bill) -> Unit,
     onRequestDelete: (Bill) -> Unit
 ) {
-    val dismissShape = dismissShapeForGardenState(gardenState, index)
+    val dismissShape = dismissShapeForGardenState(
+        gardenState = gardenState,
+        index = index,
+        isFeaturedPaidRose = isFeaturedPaidRose
+    )
     key(bill.id) {
         val dismissState = rememberSwipeToDismissBoxState(
             confirmValueChange = { direction ->
