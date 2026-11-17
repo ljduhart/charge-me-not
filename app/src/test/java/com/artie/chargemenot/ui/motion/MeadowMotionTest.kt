@@ -28,7 +28,11 @@ class MeadowMotionTest {
             width = 360f,
             height = 640f
         )
-        assertEquals(640f, fromBottomCenter, 0.5f)
+        assertEquals(
+            kotlin.math.hypot(180.0, 640.0).toFloat(),
+            fromBottomCenter,
+            0.001f
+        )
 
         val fromCorner = MeadowMotion.maxCircularRevealRadius(
             originX = 0f,
