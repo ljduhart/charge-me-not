@@ -184,7 +184,7 @@ fun ChargeMeNotNavHost(
                     onPreviousCalendarMonth = dashboardViewModel::showPreviousCalendarMonth,
                     onNextCalendarMonth = dashboardViewModel::showNextCalendarMonth,
                     onCalendarDayTapped = dashboardViewModel::onCalendarDayTapped,
-                    onCalendarBillTapped = dashboardViewModel::onCalendarBillTapped,
+                    onMarkCalendarBillPaid = dashboardViewModel::keepSubscription,
                     onBloomSettingsClick = dashboardViewModel::openBloomSettingsEdit,
                     onToggleSearchActive = dashboardViewModel::toggleSearchActive,
                     onSearchQueryChanged = dashboardViewModel::onSearchQueryChanged,

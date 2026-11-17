@@ -121,8 +121,9 @@ class DashboardViewModelBloomTest {
     }
 
     @Test
-    fun onCalendarDayTapped_opensManualBillWithPrefillDate() {
+    fun onCalendarDayTapped_emptyDay_opensManualBillWithPrefillDate() {
         val viewModel = createViewModel()
+        testScope.advanceUntilIdle()
         val dueDate = LocalDate.of(2026, 9, 18)
 
         viewModel.onCalendarDayTapped(dueDate)
@@ -130,6 +131,20 @@ class DashboardViewModelBloomTest {
         assertEquals(dueDate, viewModel.uiState.value.manualBillPrefillDate)
         assertTrue(viewModel.uiState.value.isManualBillVisible)
         assertEquals(dueDate, viewModel.uiState.value.selectedCalendarDate)
+    }
+
+    @Test
+    fun onCalendarDayTapped_dottedDay_selectsDateWithoutOpeningManualEntry() {
+        val viewModel = createViewModel()
+        testScope.advanceUntilIdle()
+        val dueDate = LocalDate.of(2026, 9, 12)
+
+        viewModel.onCalendarDayTapped(dueDate)
+
+        assertEquals(dueDate, viewModel.uiState.value.selectedCalendarDate)
+        assertFalse(viewModel.uiState.value.isManualBillVisible)
+        assertNull(viewModel.uiState.value.manualBillPrefillDate)
+        assertEquals(1, viewModel.uiState.value.billsByDueDate[dueDate].orEmpty().size)
     }
 
     @Test
@@ -232,6 +247,7 @@ class DashboardViewModelBloomTest {
     @Test
     fun dismissManualBillEntry_clearsSelectedCalendarDate() {
         val viewModel = createViewModel()
+        testScope.advanceUntilIdle()
         val dueDate = LocalDate.of(2026, 9, 18)
 
         viewModel.onCalendarDayTapped(dueDate)

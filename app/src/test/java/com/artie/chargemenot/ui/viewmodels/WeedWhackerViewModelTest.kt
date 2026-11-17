@@ -189,6 +189,38 @@ class WeedWhackerViewModelTest {
     }
 
     @Test
+    fun uiState_exposesUpcomingAuditCardsBehindTheCurrentCard() {
+        val billDao = FakeBillDao(
+            initialBills = listOf(
+                subscriptionBill(id = 1L, name = "Netflix"),
+                subscriptionBill(id = 2L, name = "Spotify Premium"),
+                subscriptionBill(id = 3L, name = "Hulu")
+            )
+        )
+        val viewModel = WeedWhackerViewModel(
+            billDao = billDao,
+            userSettingsRepository = UserSettingsRepository(FakeUserSettingsDao()),
+        )
+        testScope.advanceUntilIdle()
+
+        val firstState = viewModel.uiState.value
+        assertEquals("Netflix", firstState.currentAuditCard?.name)
+        assertEquals(
+            listOf("Spotify Premium", "Hulu"),
+            firstState.upcomingAuditCards.map { card -> card.name }
+        )
+        assertEquals(3, firstState.pendingAuditCount)
+
+        viewModel.recordAuditResponse(billId = 1L, used = true)
+        testScope.advanceUntilIdle()
+
+        val secondState = viewModel.uiState.value
+        assertEquals("Spotify Premium", secondState.currentAuditCard?.name)
+        assertEquals(listOf("Hulu"), secondState.upcomingAuditCards.map { card -> card.name })
+        assertEquals(2, secondState.pendingAuditCount)
+    }
+
+    @Test
     fun restartAuditSession_resetsCurrentAuditCard() {
         val billDao = FakeBillDao(
             initialBills = listOf(

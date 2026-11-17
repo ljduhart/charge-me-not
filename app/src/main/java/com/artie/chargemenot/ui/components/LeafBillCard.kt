@@ -1,6 +1,9 @@
 package com.artie.chargemenot.ui.components
 
 import android.os.Build
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -57,6 +60,7 @@ import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
 import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.domain.model.SupportedCurrency
+import com.artie.chargemenot.ui.motion.MeadowMotion
 import com.artie.chargemenot.util.CurrencyFormatter
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -328,25 +332,33 @@ fun LeafBillCard(
     isFeaturedPaidRose: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    when (gardenLeafVisualFor(gardenState, isFeaturedPaidRose)) {
-        GardenLeafVisual.FeaturedRose -> PaidRoseBillCard(
-            bill = bill,
-            currency = currency,
-            modifier = modifier
-        )
-        GardenLeafVisual.DriedOverdueLeaf -> OverdueLeafBillCard(
-            bill = bill,
-            index = index,
-            currency = currency,
-            modifier = modifier
-        )
-        GardenLeafVisual.GlassLeaf -> GlassLeafBillCard(
-            bill = bill,
-            index = index,
-            gardenState = gardenState,
-            currency = currency,
-            modifier = modifier
-        )
+    val leafVisual = gardenLeafVisualFor(gardenState, isFeaturedPaidRose)
+    Crossfade(
+        targetState = leafVisual,
+        animationSpec = tween(durationMillis = MeadowMotion.PAID_ROSE_CROSSFADE_MS),
+        label = "garden_leaf_visual",
+        modifier = modifier.animateContentSize()
+    ) { visual ->
+        when (visual) {
+            GardenLeafVisual.FeaturedRose -> PaidRoseBillCard(
+                bill = bill,
+                currency = currency,
+                modifier = Modifier.fillMaxWidth()
+            )
+            GardenLeafVisual.DriedOverdueLeaf -> OverdueLeafBillCard(
+                bill = bill,
+                index = index,
+                currency = currency,
+                modifier = Modifier.fillMaxWidth()
+            )
+            GardenLeafVisual.GlassLeaf -> GlassLeafBillCard(
+                bill = bill,
+                index = index,
+                gardenState = gardenState,
+                currency = currency,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 }
 

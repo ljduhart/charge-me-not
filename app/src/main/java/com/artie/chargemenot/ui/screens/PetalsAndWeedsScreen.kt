@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -70,6 +71,7 @@ import com.artie.chargemenot.ui.components.GlasshouseForestGreen
 import com.artie.chargemenot.ui.components.LeafBillCard
 import com.artie.chargemenot.ui.components.MeadowHubScaffold
 import com.artie.chargemenot.ui.motion.MeadowPredictiveBackContainer
+import com.artie.chargemenot.ui.motion.gardenPathEdgeFade
 import com.artie.chargemenot.ui.motion.sharedFinancialBloom
 import com.artie.chargemenot.ui.components.decorativeVineBorder
 import com.artie.chargemenot.ui.components.dismissShapeForGardenState
@@ -302,6 +304,8 @@ fun PetalsAndWeedsScreen(
                             currency = currency,
                             today = today,
                             isFeaturedPaidRose = bill.id == featuredPaidBillId,
+                            listState = listState,
+                            layoutIndex = index + 1,
                             onSelectBillForEdit = onSelectBillForEdit,
                             onRequestDelete = { billPendingDelete = it }
                         )
@@ -324,6 +328,8 @@ private fun GardenPathTimelineRow(
     currency: SupportedCurrency,
     today: LocalDate,
     isFeaturedPaidRose: Boolean,
+    listState: LazyListState,
+    layoutIndex: Int,
     onSelectBillForEdit: (Bill) -> Unit,
     onRequestDelete: (Bill) -> Unit
 ) {
@@ -340,6 +346,10 @@ private fun GardenPathTimelineRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = rowMinHeight)
+            .gardenPathEdgeFade(
+                listState = listState,
+                layoutIndex = layoutIndex
+            )
     ) {
         GardenPathDateMarker(
             dueDate = bill.dueDate,

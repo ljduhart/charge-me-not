@@ -239,7 +239,10 @@ class DashboardViewModel(
                 calendarVisibleMonth = YearMonth.from(date)
             )
         }
-        showManualBillEntry(prefillDate = date)
+        val hasBillsOnDate = uiState.value.billsByDueDate[date].orEmpty().isNotEmpty()
+        if (!hasBillsOnDate) {
+            showManualBillEntry(prefillDate = date)
+        }
     }
 
     fun onCalendarBillTapped(bill: Bill) {

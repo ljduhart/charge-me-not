@@ -128,28 +128,29 @@ class WeedWhackerViewModel(
             .map { row -> row.billId }
             .toSet()
 
-        val currentBill = if (!sessionComplete && auditIndex in subscriptions.indices) {
-            subscriptions[auditIndex]
+        val remainingCards = if (!sessionComplete && auditIndex in subscriptions.indices) {
+            subscriptions.drop(auditIndex).map { bill ->
+                SubscriptionAuditCard(
+                    billId = bill.id,
+                    name = bill.name,
+                    amount = bill.amount
+                )
+            }
         } else {
-            null
+            emptyList()
         }
-
-        val currentAuditCard = currentBill?.let { bill ->
-            SubscriptionAuditCard(
-                billId = bill.id,
-                name = bill.name,
-                amount = bill.amount
-            )
-        }
+        val currentAuditCard = remainingCards.firstOrNull()
+        val upcomingAuditCards = remainingCards.drop(1)
 
         val pendingAuditCount = if (sessionComplete) {
             0
         } else {
-            (subscriptions.size - auditIndex).coerceAtLeast(0)
+            remainingCards.size
         }
 
         return WeedWhackerUiState(
             currentAuditCard = currentAuditCard,
+            upcomingAuditCards = upcomingAuditCards,
             pendingAuditCount = pendingAuditCount,
             costPerUseReport = reportRows,
             primeWeedBillIds = primeWeedIds,

@@ -3,6 +3,7 @@ package com.artie.chargemenot.ui.screens
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,8 +30,10 @@ import androidx.compose.material.icons.filled.LocalFlorist
 import androidx.compose.material.icons.filled.Nature
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -41,12 +44,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -78,6 +86,7 @@ import com.artie.chargemenot.ui.components.PhotorealisticBloomCanvas
 import com.artie.chargemenot.ui.components.LinkRootBottomSheet
 import com.artie.chargemenot.ui.components.MeadowBillCalendarCard
 import com.artie.chargemenot.ui.components.MeadowTickerAmount
+import com.artie.chargemenot.ui.motion.WateringDropletBurst
 import com.artie.chargemenot.ui.motion.sharedFinancialBloom
 import com.artie.chargemenot.ui.navigation.MeadowRoute
 import com.artie.chargemenot.ui.components.SubscriptionBrandIcon
@@ -121,7 +130,7 @@ fun DashboardScreen(
     onPreviousCalendarMonth: () -> Unit,
     onNextCalendarMonth: () -> Unit,
     onCalendarDayTapped: (LocalDate) -> Unit,
-    onCalendarBillTapped: (Bill) -> Unit,
+    onMarkCalendarBillPaid: (Bill) -> Unit,
     onBloomSettingsClick: () -> Unit,
     onToggleSearchActive: () -> Unit,
     onSearchQueryChanged: (String) -> Unit,
@@ -150,6 +159,7 @@ fun DashboardScreen(
         }
     }
 
+    var billPendingPull by remember { mutableStateOf<Bill?>(null) }
     val selectedCurrency = uiState.selectedCurrency
 
     uiState.billToShare?.let { bill ->
@@ -172,6 +182,45 @@ fun DashboardScreen(
             },
             onDismiss = onDismissLinkBill
         )
+    }
+
+    billPendingPull?.let { bill ->
+        AlertDialog(
+            onDismissRequest = { billPendingPull = null },
+            title = {
+                Text(text = stringResource(R.string.dashboard_pull_confirm_title))
+            },
+            text = {
+                Text(
+                    text = stringResource(
+                        R.string.dashboard_pull_confirm_message,
+                        bill.name
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onPullSubscription(bill)
+                        billPendingPull = null
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.dashboard_pull_confirm),
+                        color = WeedRed
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { billPendingPull = null }) {
+                    Text(text = stringResource(R.string.dashboard_pull_cancel))
+                }
+            }
+        )
+    }
+
+    BackHandler(enabled = billPendingPull != null) {
+        billPendingPull = null
     }
 
     val filteredSubscriptions = remember(uiState.subscriptionBills, uiState.searchQuery) {
@@ -318,7 +367,7 @@ fun DashboardScreen(
                             bill = bill,
                             onRowClick = { onSelectBillForEdit(bill) },
                             onKeep = { onKeepSubscription(bill) },
-                            onPull = { onPullSubscription(bill) },
+                            onRequestPull = { billPendingPull = bill },
                             onShare = { onShareBill(bill) },
                             onLinkRoots = { onLinkBill(bill) },
                             modifier = Modifier.padding(top = 10.dp)
@@ -332,11 +381,12 @@ fun DashboardScreen(
                         isExpanded = uiState.isBillCalendarExpanded,
                         billsByDueDate = uiState.billsByDueDate,
                         selectedDate = uiState.selectedCalendarDate,
+                        currency = selectedCurrency,
                         onToggleExpanded = onToggleBillCalendarExpanded,
                         onPreviousMonth = onPreviousCalendarMonth,
                         onNextMonth = onNextCalendarMonth,
                         onDayTapped = onCalendarDayTapped,
-                        onBillTapped = onCalendarBillTapped,
+                        onMarkPaid = onMarkCalendarBillPaid,
                         modifier = Modifier.padding(top = 16.dp)
                     )
                 }
@@ -659,77 +709,128 @@ private fun SubscriptionsWeedsHeader(modifier: Modifier = Modifier) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SubscriptionWeedFlowerRow(
     bill: Bill,
     onRowClick: () -> Unit,
     onKeep: () -> Unit,
-    onPull: () -> Unit,
+    onRequestPull: () -> Unit,
     onShare: () -> Unit,
     onLinkRoots: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onRowClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MeadowWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            SubscriptionBrandIcon(bill = bill)
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = bill.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF1A1A1A),
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = stringResource(R.string.dashboard_keep_pull_prompt),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+    key(bill.id) {
+        val dismissState = rememberSwipeToDismissBoxState(
+            confirmValueChange = { direction ->
+                when (direction) {
+                    SwipeToDismissBoxValue.StartToEnd -> {
+                        onKeep()
+                        true
+                    }
+                    SwipeToDismissBoxValue.EndToStart -> {
+                        onRequestPull()
+                        false
+                    }
+                    SwipeToDismissBoxValue.Settled -> false
+                }
             }
-            IconButton(onClick = onLinkRoots) {
-                Icon(
-                    imageVector = Icons.Default.Nature,
-                    contentDescription = stringResource(R.string.link_roots_icon),
-                    tint = MeadowEarth,
-                    modifier = Modifier.size(24.dp)
-                )
+        )
+        val keepBackgroundVisible =
+            dismissState.targetValue == SwipeToDismissBoxValue.StartToEnd
+        val pullBackgroundVisible =
+            dismissState.targetValue == SwipeToDismissBoxValue.EndToStart
+
+        Box(modifier = modifier.fillMaxWidth()) {
+            SwipeToDismissBox(
+                state = dismissState,
+                enableDismissFromStartToEnd = true,
+                enableDismissFromEndToStart = true,
+                backgroundContent = {
+                    val backgroundColor = when {
+                        keepBackgroundVisible -> LeafGreen.copy(alpha = 0.92f)
+                        pullBackgroundVisible -> WeedRed.copy(alpha = 0.92f)
+                        else -> Color.Transparent
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(backgroundColor)
+                            .padding(horizontal = 20.dp),
+                        contentAlignment = when {
+                            keepBackgroundVisible -> Alignment.CenterStart
+                            else -> Alignment.CenterEnd
+                        }
+                    ) {
+                        if (keepBackgroundVisible) {
+                            Icon(
+                                imageVector = Icons.Default.WaterDrop,
+                                contentDescription = stringResource(R.string.dashboard_swipe_keep),
+                                tint = MeadowWhite
+                            )
+                        } else if (pullBackgroundVisible) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = stringResource(R.string.dashboard_swipe_pull),
+                                tint = MeadowWhite
+                            )
+                        }
+                    }
+                }
+            ) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onRowClick),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MeadowWhite),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        SubscriptionBrandIcon(bill = bill)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = bill.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color(0xFF1A1A1A),
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = stringResource(R.string.dashboard_keep_pull_prompt),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        IconButton(onClick = onLinkRoots) {
+                            Icon(
+                                imageVector = Icons.Default.Nature,
+                                contentDescription = stringResource(R.string.link_roots_icon),
+                                tint = MeadowEarth,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        IconButton(onClick = onShare) {
+                            Icon(
+                                imageVector = Icons.Default.LocalFlorist,
+                                contentDescription = stringResource(R.string.cross_pollinate_share),
+                                tint = MeadowGreen,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                }
             }
-            IconButton(onClick = onShare) {
-                Icon(
-                    imageVector = Icons.Default.LocalFlorist,
-                    contentDescription = stringResource(R.string.cross_pollinate_share),
-                    tint = MeadowGreen,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            IconButton(onClick = onPull) {
-                Icon(
-                    imageVector = Icons.Default.Eco,
-                    contentDescription = stringResource(R.string.dashboard_pull_weed),
-                    tint = WeedRed,
-                    modifier = Modifier.size(26.dp)
-                )
-            }
-            IconButton(onClick = onKeep) {
-                Icon(
-                    imageVector = Icons.Default.Eco,
-                    contentDescription = stringResource(R.string.dashboard_keep_flower),
-                    tint = LeafGreen,
-                    modifier = Modifier.size(26.dp)
-                )
-            }
+            WateringDropletBurst(
+                active = keepBackgroundVisible,
+                modifier = Modifier.matchParentSize()
+            )
         }
     }
 }
@@ -786,7 +887,7 @@ private fun DashboardScreenPreview() {
             onPreviousCalendarMonth = {},
             onNextCalendarMonth = {},
             onCalendarDayTapped = {},
-            onCalendarBillTapped = {},
+            onMarkCalendarBillPaid = {},
             onBloomSettingsClick = {},
             onToggleSearchActive = {},
             onSearchQueryChanged = {},

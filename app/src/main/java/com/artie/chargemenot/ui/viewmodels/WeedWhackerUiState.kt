@@ -20,6 +20,7 @@ data class CostPerUseReportRow(
 
 data class WeedWhackerUiState(
     val currentAuditCard: SubscriptionAuditCard? = null,
+    val upcomingAuditCards: List<SubscriptionAuditCard> = emptyList(),
     val pendingAuditCount: Int = 0,
     val costPerUseReport: List<CostPerUseReportRow> = emptyList(),
     val primeWeedBillIds: Set<Long> = emptySet(),

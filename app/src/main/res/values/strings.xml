@@ -55,6 +55,9 @@
     <string name="weed_whacker_pending_count">%1$d remaining in this audit</string>
     <string name="weed_whacker_used_yes">Yes, I used it</string>
     <string name="weed_whacker_used_no">No</string>
+    <string name="weed_whacker_swipe_hint">Swipe right for yes, left for no</string>
+    <string name="weed_whacker_swipe_yes_label">YES</string>
+    <string name="weed_whacker_swipe_no_label">NO</string>
     <string name="weed_whacker_no_subscriptions">No active subscriptions to audit right now.</string>
     <string name="weed_whacker_audit_complete">Audit complete for this session. Review your garden health report below.</string>
     <string name="weed_whacker_restart_audit">Start New Audit</string>
@@ -114,6 +117,12 @@
     <string name="dashboard_keep_pull_prompt">(Keep? Pull?)</string>
     <string name="dashboard_keep_flower">Keep subscription</string>
     <string name="dashboard_pull_weed">Pull subscription</string>
+    <string name="dashboard_swipe_keep">Swipe right to water and keep</string>
+    <string name="dashboard_swipe_pull">Swipe left to pull this weed</string>
+    <string name="dashboard_pull_confirm_title">Pull this subscription?</string>
+    <string name="dashboard_pull_confirm_message">Remove %1$s from your garden? This sends it out of the vines list.</string>
+    <string name="dashboard_pull_confirm">Pull</string>
+    <string name="dashboard_pull_cancel">Keep growing</string>
     <string name="dashboard_subscriptions_empty">No subscriptions sprouting — your garden is clear!</string>
     <string name="dashboard_monthly_budget_label">Monthly budget</string>
     <string name="dashboard_monthly_budget_edit">Edit monthly budget</string>
@@ -222,5 +231,7 @@
     <string name="meadow_bill_calendar_collapse">Collapse calendar</string>
     <string name="meadow_bill_calendar_previous_month">Previous month</string>
     <string name="meadow_bill_calendar_next_month">Next month</string>
-    <string name="meadow_bill_calendar_tap_hint">Tap any day to plant a bill due date. Tap a green dot to edit an existing bill.</string>
+    <string name="meadow_bill_calendar_tap_hint">Tap a dotted day to review bills due that day. Tap an empty day to plant a due date.</string>
+    <string name="meadow_bill_calendar_due_on">Due %1$s</string>
+    <string name="meadow_bill_calendar_mark_paid">Mark Paid</string>
 </resources>

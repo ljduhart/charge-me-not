@@ -1,7 +1,10 @@
 package com.artie.chargemenot.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,8 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Eco
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,15 +36,29 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.artie.chargemenot.R
+import com.artie.chargemenot.ui.motion.MeadowMotion
 import com.artie.chargemenot.ui.theme.ChargeMeNotTheme
 import com.artie.chargemenot.ui.theme.LeafGreen
 import com.artie.chargemenot.ui.theme.MeadowGreen
@@ -184,8 +199,9 @@ private fun AuditPromptSection(
                 }
 
                 uiState.currentAuditCard != null -> {
-                    SubscriptionAuditCardContent(
-                        card = uiState.currentAuditCard,
+                    SubscriptionAuditCardStack(
+                        currentCard = uiState.currentAuditCard,
+                        upcomingCards = uiState.upcomingAuditCards,
                         currency = currency,
                         pendingAuditCount = uiState.pendingAuditCount,
                         onRecordAuditResponse = onRecordAuditResponse
@@ -197,88 +213,233 @@ private fun AuditPromptSection(
 }
 
 @Composable
-private fun SubscriptionAuditCardContent(
-    card: SubscriptionAuditCard,
+private fun SubscriptionAuditCardStack(
+    currentCard: SubscriptionAuditCard,
+    upcomingCards: List<SubscriptionAuditCard>,
     currency: SupportedCurrency,
     pendingAuditCount: Int,
     onRecordAuditResponse: (Long, Boolean) -> Unit
 ) {
-    Card(
+    val density = LocalDensity.current
+    val stackSpacingPx = remember(density) { with(density) { 14.dp.toPx() } }
+    val peekCards = upcomingCards.take(2)
+
+    Column(
         modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            peekCards.asReversed().forEachIndexed { reversedIndex, card ->
+                val depth = peekCards.size - reversedIndex
+                SubscriptionAuditCardFace(
+                    card = card,
+                    currency = currency,
+                    pendingAuditCount = pendingAuditCount,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .zIndex(depth.toFloat())
+                        .graphicsLayer {
+                            val scale = MeadowMotion.weedWhackerStackScale(depth)
+                            scaleX = scale
+                            scaleY = scale
+                            translationY = MeadowMotion.weedWhackerStackOffsetY(depth, stackSpacingPx)
+                            alpha = 0.72f
+                        }
+                )
+            }
+            SwipeableAuditCard(
+                card = currentCard,
+                currency = currency,
+                pendingAuditCount = pendingAuditCount,
+                onRecordAuditResponse = onRecordAuditResponse,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .zIndex((peekCards.size + 1).toFloat())
+            )
+        }
+        Text(
+            text = stringResource(R.string.weed_whacker_swipe_hint),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 14.dp)
+        )
+    }
+}
+
+@Composable
+private fun SwipeableAuditCard(
+    card: SubscriptionAuditCard,
+    currency: SupportedCurrency,
+    pendingAuditCount: Int,
+    onRecordAuditResponse: (Long, Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val density = LocalDensity.current
+    val thresholdPx = remember(density) { with(density) { 120.dp.toPx() } }
+    val yesLabel = stringResource(R.string.weed_whacker_used_yes)
+    val noLabel = stringResource(R.string.weed_whacker_used_no)
+
+    key(card.billId) {
+        var dragging by remember { mutableStateOf(false) }
+        var dragX by remember { mutableFloatStateOf(0f) }
+        var dragY by remember { mutableFloatStateOf(0f) }
+        val settledX by animateFloatAsState(
+            targetValue = if (dragging) dragX else 0f,
+            animationSpec = tween(durationMillis = 220),
+            label = "weed_whacker_swipe_x"
+        )
+        val settledY by animateFloatAsState(
+            targetValue = if (dragging) dragY else 0f,
+            animationSpec = tween(durationMillis = 220),
+            label = "weed_whacker_swipe_y"
+        )
+        val displayX = if (dragging) dragX else settledX
+        val displayY = if (dragging) dragY else settledY
+
+        Box(
+            modifier = modifier
+                .semantics {
+                    customActions = listOf(
+                        CustomAccessibilityAction(yesLabel) {
+                            onRecordAuditResponse(card.billId, true)
+                            true
+                        },
+                        CustomAccessibilityAction(noLabel) {
+                            onRecordAuditResponse(card.billId, false)
+                            true
+                        }
+                    )
+                }
+                .pointerInput(card.billId, thresholdPx) {
+                    detectDragGestures(
+                        onDragStart = {
+                            dragging = true
+                        },
+                        onDragEnd = {
+                            val used = MeadowMotion.weedWhackerSwipeDecision(dragX, thresholdPx)
+                            dragging = false
+                            dragX = 0f
+                            dragY = 0f
+                            if (used != null) {
+                                onRecordAuditResponse(card.billId, used)
+                            }
+                        },
+                        onDragCancel = {
+                            dragging = false
+                            dragX = 0f
+                            dragY = 0f
+                        }
+                    ) { change, dragAmount ->
+                        change.consume()
+                        dragX += dragAmount.x
+                        dragY += dragAmount.y * 0.35f
+                    }
+                }
+                .graphicsLayer {
+                    translationX = displayX
+                    translationY = displayY
+                    rotationZ = MeadowMotion.weedWhackerSwipeRotation(displayX)
+                }
+        ) {
+            SubscriptionAuditCardFace(
+                card = card,
+                currency = currency,
+                pendingAuditCount = pendingAuditCount,
+                swipeOffsetX = displayX,
+                swipeThreshold = thresholdPx,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+private fun SubscriptionAuditCardFace(
+    card: SubscriptionAuditCard,
+    currency: SupportedCurrency,
+    pendingAuditCount: Int,
+    modifier: Modifier = Modifier,
+    swipeOffsetX: Float = 0f,
+    swipeThreshold: Float = 1f
+) {
+    val tintAlpha = MeadowMotion.weedWhackerSwipeTintAlpha(swipeOffsetX, swipeThreshold)
+    val overlayColor = when {
+        swipeOffsetX > 0f -> LeafGreen.copy(alpha = tintAlpha)
+        swipeOffsetX < 0f -> WeedRed.copy(alpha = tintAlpha)
+        else -> null
+    }
+    val labelAlpha = (tintAlpha / 0.42f).coerceIn(0f, 1f)
+
+    Card(
+        modifier = modifier,
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MeadowWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 22.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(R.string.weed_whacker_audit_question, card.name),
-                style = MaterialTheme.typography.titleLarge,
-                color = MeadowGreenDark,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = stringResource(
-                    R.string.weed_whacker_audit_amount,
-                    CurrencyFormatter.format(card.amount, currency)
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 6.dp)
-            )
-            Text(
-                text = stringResource(R.string.weed_whacker_pending_count, pendingAuditCount),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Button(
-                    onClick = { onRecordAuditResponse(card.billId, true) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = LeafGreen,
-                        contentColor = MeadowWhite
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Eco,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.weed_whacker_used_yes))
-                }
-
-                Button(
-                    onClick = { onRecordAuditResponse(card.billId, false) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = WeedRed,
-                        contentColor = MeadowWhite
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ContentCut,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.weed_whacker_used_no))
-                }
+                Text(
+                    text = stringResource(R.string.weed_whacker_audit_question, card.name),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MeadowGreenDark,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = stringResource(
+                        R.string.weed_whacker_audit_amount,
+                        CurrencyFormatter.format(card.amount, currency)
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+                Text(
+                    text = stringResource(R.string.weed_whacker_pending_count, pendingAuditCount),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+            overlayColor?.let { color ->
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(color)
+                )
+            }
+            if (swipeOffsetX > 0f && labelAlpha > 0f) {
+                Text(
+                    text = stringResource(R.string.weed_whacker_swipe_yes_label),
+                    color = LeafGreen.copy(alpha = labelAlpha),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(16.dp)
+                        .graphicsLayer { rotationZ = -12f }
+                )
+            } else if (swipeOffsetX < 0f && labelAlpha > 0f) {
+                Text(
+                    text = stringResource(R.string.weed_whacker_swipe_no_label),
+                    color = WeedRed.copy(alpha = labelAlpha),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                        .graphicsLayer { rotationZ = 12f }
+                )
             }
         }
     }
@@ -444,6 +605,13 @@ private fun WeedWhackerScreenPreview() {
                     billId = 1L,
                     name = "Netflix",
                     amount = 1_549L
+                ),
+                upcomingAuditCards = listOf(
+                    SubscriptionAuditCard(
+                        billId = 2L,
+                        name = "Spotify Premium",
+                        amount = 1_199L
+                    )
                 ),
                 pendingAuditCount = 2,
                 costPerUseReport = listOf(

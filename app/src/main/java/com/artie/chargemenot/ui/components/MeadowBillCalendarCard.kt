@@ -1,5 +1,6 @@
 package com.artie.chargemenot.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,15 +39,22 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.artie.chargemenot.R
 import com.artie.chargemenot.domain.model.Bill
+import com.artie.chargemenot.domain.model.SupportedCurrency
+import com.artie.chargemenot.ui.theme.LeafGreen
 import com.artie.chargemenot.ui.theme.MeadowGreen
 import com.artie.chargemenot.ui.theme.MeadowGreenDark
 import com.artie.chargemenot.ui.theme.MeadowSky
 import com.artie.chargemenot.ui.theme.MeadowWhite
+import com.artie.chargemenot.util.CurrencyFormatter
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
+
+private val CalendarDueDateFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US)
 
 @Composable
 fun MeadowBillCalendarCard(
@@ -53,15 +62,17 @@ fun MeadowBillCalendarCard(
     isExpanded: Boolean,
     billsByDueDate: Map<LocalDate, List<Bill>>,
     selectedDate: LocalDate?,
+    currency: SupportedCurrency,
     onToggleExpanded: () -> Unit,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onDayTapped: (LocalDate) -> Unit,
-    onBillTapped: (Bill) -> Unit,
+    onMarkPaid: (Bill) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val monthFlower = MonthlyMeadowFlower.forMonth(visibleMonth.month)
     val today = LocalDate.now()
+    val selectedBills = selectedDate?.let { date -> billsByDueDate[date].orEmpty() }.orEmpty()
 
     Card(
         modifier = modifier
@@ -171,8 +182,17 @@ fun MeadowBillCalendarCard(
                         billsByDueDate = billsByDueDate,
                         selectedDate = selectedDate,
                         onDayTapped = onDayTapped,
-                        onBillTapped = onBillTapped,
                         modifier = Modifier.padding(top = 6.dp)
+                    )
+                }
+
+                AnimatedVisibility(visible = selectedDate != null && selectedBills.isNotEmpty()) {
+                    MeadowBillCalendarSelectedDayPanel(
+                        date = selectedDate ?: today,
+                        bills = selectedBills,
+                        currency = currency,
+                        onMarkPaid = onMarkPaid,
+                        modifier = Modifier.padding(top = 12.dp)
                     )
                 }
 
@@ -227,7 +247,6 @@ private fun MeadowBillCalendarWeekStrip(
                 isSelected = date == selectedDate,
                 bills = billsByDueDate[date].orEmpty(),
                 onDayTapped = onDayTapped,
-                onBillTapped = {},
                 showBillDots = false,
                 modifier = Modifier.weight(1f)
             )
@@ -242,7 +261,6 @@ private fun MeadowBillCalendarMonthGrid(
     billsByDueDate: Map<LocalDate, List<Bill>>,
     selectedDate: LocalDate?,
     onDayTapped: (LocalDate) -> Unit,
-    onBillTapped: (Bill) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val monthDates = buildCalendarMonthDates(visibleMonth)
@@ -262,7 +280,6 @@ private fun MeadowBillCalendarMonthGrid(
                             isSelected = date == selectedDate,
                             bills = billsByDueDate[date].orEmpty(),
                             onDayTapped = onDayTapped,
-                            onBillTapped = onBillTapped,
                             showBillDots = true,
                             modifier = Modifier.weight(1f)
                         )
@@ -280,7 +297,6 @@ private fun MeadowBillCalendarDayCell(
     isSelected: Boolean,
     bills: List<Bill>,
     onDayTapped: (LocalDate) -> Unit,
-    onBillTapped: (Bill) -> Unit,
     showBillDots: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -306,13 +322,7 @@ private fun MeadowBillCalendarDayCell(
                 color = borderColor,
                 shape = RoundedCornerShape(10.dp)
             )
-            .then(
-                if (!showBillDots) {
-                    Modifier.clickable { onDayTapped(date) }
-                } else {
-                    Modifier
-                }
-            )
+            .clickable { onDayTapped(date) }
             .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -321,28 +331,19 @@ private fun MeadowBillCalendarDayCell(
             text = date.dayOfMonth.toString(),
             style = MaterialTheme.typography.labelMedium,
             color = if (isToday) MeadowGreenDark else Color(0xFF1A1A1A),
-            fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Medium,
-            modifier = if (showBillDots) {
-                Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .clickable { onDayTapped(date) }
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            } else {
-                Modifier
-            }
+            fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Medium
         )
         if (showBillDots && bills.isNotEmpty()) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier.padding(top = 2.dp)
             ) {
-                bills.take(3).forEach { bill ->
+                bills.take(3).forEach { _ ->
                     Box(
                         modifier = Modifier
                             .size(12.dp)
                             .clip(CircleShape)
-                            .background(MeadowGreen)
-                            .clickable { onBillTapped(bill) },
+                            .background(MeadowGreen),
                         contentAlignment = Alignment.Center
                     ) {
                         Box(
@@ -361,6 +362,65 @@ private fun MeadowBillCalendarDayCell(
                     color = MeadowGreenDark,
                     modifier = Modifier.padding(top = 1.dp)
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MeadowBillCalendarSelectedDayPanel(
+    date: LocalDate,
+    bills: List<Bill>,
+    currency: SupportedCurrency,
+    onMarkPaid: (Bill) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MeadowSky.copy(alpha = 0.22f))
+            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .animateContentSize()
+    ) {
+        Text(
+            text = stringResource(
+                R.string.meadow_bill_calendar_due_on,
+                date.format(CalendarDueDateFormatter)
+            ),
+            style = MaterialTheme.typography.labelLarge,
+            color = MeadowGreenDark,
+            fontWeight = FontWeight.SemiBold
+        )
+        bills.forEach { bill ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = bill.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color(0xFF1A1A1A),
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = CurrencyFormatter.format(bill.amount, currency),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                TextButton(onClick = { onMarkPaid(bill) }) {
+                    Text(
+                        text = stringResource(R.string.meadow_bill_calendar_mark_paid),
+                        color = LeafGreen,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
