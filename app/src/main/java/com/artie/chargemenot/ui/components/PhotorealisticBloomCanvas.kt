@@ -46,6 +46,7 @@ fun PhotorealisticBloomCanvas(
     monthlyBudget: Long,
     highlightedParent: String?,
     onPetalTapped: (String) -> Unit,
+    onOpenGardenPath: () -> Unit = {},
     parallaxOffset: Pair<Float, Float> = 0f to 0f,
     modifier: Modifier = Modifier
 ) {
@@ -108,7 +109,11 @@ fun PhotorealisticBloomCanvas(
                         tapX = offset.x - foregroundTranslationX,
                         tapY = offset.y - foregroundTranslationY,
                         layout = layout
-                    ) ?: return@detectTapGestures
+                    )
+                    if (sliceIndex == null) {
+                        onOpenGardenPath()
+                        return@detectTapGestures
+                    }
 
                     val categoryName = BloomCategoryDefinitions.displayNameAtSliceIndex(sliceIndex)
                     pressedCategory = categoryName

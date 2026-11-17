@@ -1,5 +1,8 @@
 package com.artie.chargemenot.ui.screens
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -75,6 +78,7 @@ import com.artie.chargemenot.ui.components.PhotorealisticBloomCanvas
 import com.artie.chargemenot.ui.components.LinkRootBottomSheet
 import com.artie.chargemenot.ui.components.MeadowBillCalendarCard
 import com.artie.chargemenot.ui.components.MeadowTickerAmount
+import com.artie.chargemenot.ui.motion.sharedFinancialBloom
 import com.artie.chargemenot.ui.navigation.MeadowRoute
 import com.artie.chargemenot.ui.components.SubscriptionBrandIcon
 import com.artie.chargemenot.ui.components.WeatherForecastCard
@@ -96,13 +100,16 @@ import com.artie.chargemenot.util.CurrencyFormatter
 import java.time.LocalDate
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun DashboardScreen(
     uiState: DashboardUiState,
     onStartParallaxSensor: () -> Unit,
     onStopParallaxSensor: () -> Unit,
     onNavigateToAdmin: (MeadowRoute) -> Unit,
+    onOpenGardenPath: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
     onKeepSubscription: (Bill) -> Unit,
     onPullSubscription: (Bill) -> Unit,
     onMonthlyBudgetChange: (String) -> Boolean,
@@ -282,6 +289,9 @@ fun DashboardScreen(
                         onBloomSettingsClick = onBloomSettingsClick,
                         onMonthlyBudgetChange = onMonthlyBudgetChange,
                         onPetalTapped = onPetalTapped,
+                        onOpenGardenPath = onOpenGardenPath,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
                         modifier = Modifier.padding(top = 16.dp)
                     )
                 }
@@ -502,6 +512,7 @@ private fun TotalUpcomingSummaryCard(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun FinancialBloomCard(
     parentCategoryTotals: Map<String, Long>,
@@ -512,6 +523,9 @@ private fun FinancialBloomCard(
     onBloomSettingsClick: () -> Unit,
     onMonthlyBudgetChange: (String) -> Boolean,
     onPetalTapped: (String) -> Unit,
+    onOpenGardenPath: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedVisibilityScope: AnimatedVisibilityScope?,
     modifier: Modifier = Modifier
 ) {
     var isEditingBudget by remember { mutableStateOf(false) }
@@ -528,7 +542,10 @@ private fun FinancialBloomCard(
                     text = stringResource(R.string.dashboard_financial_bloom_title),
                     style = MaterialTheme.typography.titleMedium,
                     color = GlasshouseForestGreen,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(onClick = onOpenGardenPath)
                 )
                 IconButton(onClick = onBloomSettingsClick) {
                     Icon(
@@ -544,8 +561,14 @@ private fun FinancialBloomCard(
                 monthlyBudget = monthlyBudget,
                 highlightedParent = highlightedBloomParent,
                 onPetalTapped = onPetalTapped,
+                onOpenGardenPath = onOpenGardenPath,
                 parallaxOffset = parallaxOffset,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .sharedFinancialBloom(
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope
+                    )
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -711,6 +734,7 @@ private fun SubscriptionWeedFlowerRow(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Preview(showBackground = true)
 @Composable
 private fun DashboardScreenPreview() {
@@ -750,6 +774,7 @@ private fun DashboardScreenPreview() {
             onStartParallaxSensor = {},
             onStopParallaxSensor = {},
             onNavigateToAdmin = {},
+            onOpenGardenPath = {},
             onKeepSubscription = {},
             onPullSubscription = {},
             onMonthlyBudgetChange = { _ -> true },

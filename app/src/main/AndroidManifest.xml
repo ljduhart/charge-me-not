@@ -30,6 +30,8 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:enableOnBackInvokedCallback="true"
+            tools:targetApi="33"
             android:theme="@style/Theme.ChargeMeNot">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

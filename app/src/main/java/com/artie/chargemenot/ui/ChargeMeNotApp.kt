@@ -1,5 +1,7 @@
 package com.artie.chargemenot.ui
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -27,6 +29,8 @@ import com.artie.chargemenot.di.AppViewModelProvider
 import com.artie.chargemenot.ui.components.BloomCategoryDefinitions
 import com.artie.chargemenot.ui.components.MeadowAppOverlays
 import com.artie.chargemenot.ui.dashboard.DashboardViewModel
+import com.artie.chargemenot.ui.motion.ScannerCircularReveal
+import com.artie.chargemenot.ui.motion.ScannerFabOrigin
 import com.artie.chargemenot.ui.navigation.AppRoutes
 import com.artie.chargemenot.ui.navigation.ChargeMeNotNavHost
 import com.artie.chargemenot.ui.navigation.MeadowBottomBar
@@ -37,6 +41,7 @@ import com.artie.chargemenot.ui.navigation.navigatePendingNotificationRoute
 import com.artie.chargemenot.ui.screens.onboarding.OnboardingLoadingScreen
 import com.artie.chargemenot.ui.viewmodels.CategoryViewModel
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ChargeMeNotApp(
     application: ChargeMeNotApplication,
@@ -78,6 +83,18 @@ fun ChargeMeNotApp(
         runCatching { navController.getBackStackEntry(AppRoutes.MEADOW_HUB) }.getOrNull()
     }
     val selectedBottomBarRoute = MeadowRoute.selectedBottomBarRoute(currentRoute)
+    var scannerFabOrigin by remember { mutableStateOf<ScannerFabOrigin?>(null) }
+    var scannerRevealVisible by remember { mutableStateOf(false) }
+    var scannerRevealConsumed by remember { mutableStateOf(false) }
+
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == AppRoutes.SCANNER && scannerRevealVisible) {
+            scannerRevealVisible = false
+        }
+        if (currentRoute != AppRoutes.SCANNER) {
+            scannerRevealConsumed = false
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -92,25 +109,46 @@ fun ChargeMeNotApp(
                         },
                         onScanBill = {
                             if (currentRoute != AppRoutes.SCANNER) {
-                                navController.navigate(AppRoutes.SCANNER) {
-                                    launchSingleTop = true
-                                }
+                                scannerRevealConsumed = false
+                                scannerRevealVisible = true
                             }
+                        },
+                        onScannerFabPositioned = { windowOffset, radiusPx ->
+                            scannerFabOrigin = ScannerFabOrigin(
+                                windowOffset = windowOffset,
+                                radiusPx = radiusPx
+                            )
                         }
                     )
                 }
             }
         ) { innerPadding ->
-            ChargeMeNotNavHost(
-                navController = navController,
-                startDestination = graphStartDestination!!,
-                modifier = Modifier.padding(
-                    start = innerPadding.calculateStartPadding(layoutDirection),
-                    end = innerPadding.calculateEndPadding(layoutDirection),
-                    bottom = innerPadding.calculateBottomPadding()
+            SharedTransitionLayout(modifier = Modifier.fillMaxSize()) {
+                ChargeMeNotNavHost(
+                    navController = navController,
+                    startDestination = graphStartDestination!!,
+                    sharedTransitionScope = this,
+                    modifier = Modifier.padding(
+                        start = innerPadding.calculateStartPadding(layoutDirection),
+                        end = innerPadding.calculateEndPadding(layoutDirection),
+                        bottom = innerPadding.calculateBottomPadding()
+                    )
                 )
-            )
+            }
         }
+
+        ScannerCircularReveal(
+            visible = scannerRevealVisible,
+            origin = scannerFabOrigin,
+            onExpanded = {
+                if (!scannerRevealConsumed && currentRoute != AppRoutes.SCANNER) {
+                    scannerRevealConsumed = true
+                    navController.navigate(AppRoutes.SCANNER) {
+                        launchSingleTop = true
+                    }
+                }
+            }
+        )
 
         if (meadowHubEntry != null) {
             MeadowHubOverlays(

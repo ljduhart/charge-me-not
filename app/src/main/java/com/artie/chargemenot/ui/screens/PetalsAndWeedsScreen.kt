@@ -2,6 +2,9 @@ package com.artie.chargemenot.ui.screens
 
 import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -66,6 +69,8 @@ import com.artie.chargemenot.ui.components.GardenPathStemConnector
 import com.artie.chargemenot.ui.components.GlasshouseForestGreen
 import com.artie.chargemenot.ui.components.LeafBillCard
 import com.artie.chargemenot.ui.components.MeadowHubScaffold
+import com.artie.chargemenot.ui.motion.MeadowPredictiveBackContainer
+import com.artie.chargemenot.ui.motion.sharedFinancialBloom
 import com.artie.chargemenot.ui.components.decorativeVineBorder
 import com.artie.chargemenot.ui.components.dismissShapeForGardenState
 import com.artie.chargemenot.ui.components.featuredPaidBillIdFrom
@@ -77,6 +82,7 @@ import com.artie.chargemenot.ui.theme.MeadowWhite
 import com.artie.chargemenot.ui.theme.WeedRed
 import java.time.LocalDate
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun PetalsAndWeedsScreen(
     gardenBills: List<Bill>,
@@ -85,6 +91,8 @@ fun PetalsAndWeedsScreen(
     onStartParallaxSensor: () -> Unit,
     onStopParallaxSensor: () -> Unit,
     onNavigateBack: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
     onSelectBillForEdit: (Bill) -> Unit,
     onShowManualBillEntry: () -> Unit,
     onDeleteBill: (Bill) -> Unit,
@@ -167,7 +175,19 @@ fun PetalsAndWeedsScreen(
         )
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    MeadowPredictiveBackContainer(
+        enabled = billPendingDelete == null,
+        onBack = onNavigateBack,
+        modifier = modifier.fillMaxSize()
+    ) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .sharedFinancialBloom(
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope
+            )
+    ) {
         Image(
             painter = painterResource(id = R.drawable.bg_greenhouse),
             contentDescription = null,
@@ -185,6 +205,7 @@ fun PetalsAndWeedsScreen(
         MeadowHubScaffold(
             title = stringResource(R.string.meadow_route_petals_and_weeds),
             onNavigateBack = onNavigateBack,
+            handleSystemBack = false,
             containerColor = Color.Transparent,
             topBarContainerColor = Color.Transparent,
             titleContentColor = MeadowWhite,
@@ -288,6 +309,7 @@ fun PetalsAndWeedsScreen(
                 }
             }
         }
+    }
     }
 
     BackHandler(enabled = billPendingDelete != null) {

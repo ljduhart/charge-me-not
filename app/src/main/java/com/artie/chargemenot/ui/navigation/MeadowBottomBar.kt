@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import kotlin.math.min
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.FloatingActionButton
@@ -32,6 +36,7 @@ fun MeadowBottomBar(
     selectedRoute: MeadowRoute?,
     onNavigate: (MeadowRoute) -> Unit,
     onScanBill: () -> Unit,
+    onScannerFabPositioned: (Offset, Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier) {
@@ -61,7 +66,16 @@ fun MeadowBottomBar(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .offset(y = (-18).dp)
-                .size(64.dp),
+                .size(64.dp)
+                .onGloballyPositioned { coordinates ->
+                    val windowPosition = coordinates.positionInWindow()
+                    val center = Offset(
+                        x = windowPosition.x + coordinates.size.width / 2f,
+                        y = windowPosition.y + coordinates.size.height / 2f
+                    )
+                    val radius = min(coordinates.size.width, coordinates.size.height) / 2f
+                    onScannerFabPositioned(center, radius)
+                },
             shape = CircleShape,
             containerColor = MeadowSky,
             contentColor = MeadowGreenDark,

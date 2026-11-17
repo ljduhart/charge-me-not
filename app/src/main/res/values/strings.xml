@@ -107,6 +107,7 @@
     <string name="dashboard_total_upcoming_label">TOTAL UPCOMING:</string>
     <string name="dashboard_bill_count">(%1$d Bills)</string>
     <string name="dashboard_financial_bloom_title">YOUR FINANCIAL BLOOM</string>
+    <string name="dashboard_open_garden_path">Open Petals and Weeds</string>
     <string name="dashboard_bloom_settings">Edit bloom settings</string>
     <string name="dashboard_subscriptions_title">SUBSCRIPTIONS</string>
     <string name="dashboard_weeds_or_flowers">WEEDS OR FLOWERS?</string>

@@ -28,6 +28,7 @@ fun MeadowHubScaffold(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
     showBackNavigation: Boolean = false,
+    handleSystemBack: Boolean = true,
     containerColor: Color = MeadowCream,
     topBarContainerColor: Color = MeadowCream,
     titleContentColor: Color = MeadowGreenDark,
@@ -35,7 +36,9 @@ fun MeadowHubScaffold(
     floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit
 ) {
-    BackHandler(onBack = onNavigateBack)
+    if (handleSystemBack) {
+        BackHandler(onBack = onNavigateBack)
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),

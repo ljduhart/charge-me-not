@@ -1,8 +1,13 @@
 package com.artie.chargemenot.ui.navigation
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.TransformOrigin
+import com.artie.chargemenot.ui.motion.MeadowMotion
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
@@ -68,10 +75,40 @@ private val meadowPopExitTransition = fadeOut(
     targetOffsetY = { fullHeight -> fullHeight / MEADOW_SLIDE_FRACTION }
 )
 
+private val meadowSharedEnterTransition = fadeIn(
+    animationSpec = tween(MeadowMotion.SHARED_BOUNDS_MS, easing = FastOutSlowInEasing)
+)
+
+private val meadowSharedExitTransition = fadeOut(
+    animationSpec = tween(MeadowMotion.SHARED_BOUNDS_MS, easing = FastOutSlowInEasing)
+)
+
+private val meadowPredictivePopEnterTransition = fadeIn(
+    animationSpec = tween(MeadowMotion.PREDICTIVE_BACK_MS, easing = FastOutSlowInEasing)
+) + scaleIn(
+    animationSpec = tween(MeadowMotion.PREDICTIVE_BACK_MS, easing = FastOutSlowInEasing),
+    initialScale = 1f,
+    transformOrigin = TransformOrigin.Center
+)
+
+private val meadowPredictivePopExitTransition = fadeOut(
+    animationSpec = tween(MeadowMotion.PREDICTIVE_BACK_MS, easing = FastOutSlowInEasing)
+) + scaleOut(
+    animationSpec = tween(MeadowMotion.PREDICTIVE_BACK_MS, easing = FastOutSlowInEasing),
+    targetScale = MeadowMotion.PREDICTIVE_BACK_MIN_SCALE,
+    transformOrigin = TransformOrigin.Center
+)
+
+private val scannerEnterTransition = fadeIn(
+    animationSpec = tween(220, easing = FastOutSlowInEasing)
+)
+
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ChargeMeNotNavHost(
     navController: NavHostController,
     startDestination: String,
+    sharedTransitionScope: SharedTransitionScope,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -114,9 +151,9 @@ fun ChargeMeNotNavHost(
         ) {
             composable(
                 route = AppRoutes.DASHBOARD,
-                enterTransition = { meadowEnterTransition },
-                exitTransition = { meadowExitTransition },
-                popEnterTransition = { meadowPopEnterTransition },
+                enterTransition = { meadowSharedEnterTransition },
+                exitTransition = { meadowSharedExitTransition },
+                popEnterTransition = { meadowPredictivePopEnterTransition },
                 popExitTransition = { meadowPopExitTransition }
             ) { entry ->
                 val dashboardViewModel: DashboardViewModel = entry.meadowHubViewModel(navController)
@@ -125,8 +162,16 @@ fun ChargeMeNotNavHost(
                     uiState = uiState,
                     onStartParallaxSensor = dashboardViewModel::startParallaxSensor,
                     onStopParallaxSensor = dashboardViewModel::stopParallaxSensor,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = this,
                     onNavigateToAdmin = { meadowRoute ->
                         navController.navigateMeadowRoute(meadowRoute, AppRoutes.DASHBOARD)
+                    },
+                    onOpenGardenPath = {
+                        navController.navigateMeadowRoute(
+                            MeadowRoute.PetalsAndWeeds,
+                            AppRoutes.DASHBOARD
+                        )
                     },
                     onKeepSubscription = dashboardViewModel::keepSubscription,
                     onPullSubscription = dashboardViewModel::pullSubscription,
@@ -152,10 +197,10 @@ fun ChargeMeNotNavHost(
 
             composable(
                 route = AppRoutes.PETALS_AND_WEEDS,
-                enterTransition = { meadowEnterTransition },
-                exitTransition = { meadowExitTransition },
-                popEnterTransition = { meadowPopEnterTransition },
-                popExitTransition = { meadowPopExitTransition }
+                enterTransition = { meadowSharedEnterTransition },
+                exitTransition = { meadowSharedExitTransition },
+                popEnterTransition = { meadowPredictivePopEnterTransition },
+                popExitTransition = { meadowPredictivePopExitTransition }
             ) { entry ->
                 val dashboardViewModel: DashboardViewModel = entry.meadowHubViewModel(navController)
                 val uiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
@@ -163,6 +208,8 @@ fun ChargeMeNotNavHost(
                     gardenBills = uiState.gardenPathBills,
                     currency = uiState.selectedCurrency,
                     parallaxOffset = uiState.parallaxOffset,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = this,
                     onStartParallaxSensor = dashboardViewModel::startParallaxSensor,
                     onStopParallaxSensor = dashboardViewModel::stopParallaxSensor,
                     onNavigateBack = { navController.navigateBackOrGardenHub() },
@@ -271,10 +318,10 @@ fun ChargeMeNotNavHost(
 
         composable(
             route = AppRoutes.SCANNER,
-            enterTransition = { meadowEnterTransition },
-            exitTransition = { meadowExitTransition },
-            popEnterTransition = { meadowPopEnterTransition },
-            popExitTransition = { meadowPopExitTransition }
+            enterTransition = { scannerEnterTransition },
+            exitTransition = { meadowSharedExitTransition },
+            popEnterTransition = { meadowPredictivePopEnterTransition },
+            popExitTransition = { meadowPredictivePopExitTransition }
         ) { entry ->
             val scannerViewModel: ScannerViewModel = destinationViewModel()
             val scannerUiState by scannerViewModel.uiState.collectAsStateWithLifecycle()

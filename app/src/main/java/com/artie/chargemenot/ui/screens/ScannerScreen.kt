@@ -1,7 +1,6 @@
 package com.artie.chargemenot.ui.screens
 
 import android.Manifest
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -67,6 +66,7 @@ import com.artie.chargemenot.domain.model.MeadowCategories
 import com.artie.chargemenot.scanner.BillOcrAnalyzer
 import com.artie.chargemenot.scanner.OcrScanResult
 import com.artie.chargemenot.ui.components.FinancialBloomCanvas
+import com.artie.chargemenot.ui.motion.MeadowPredictiveBackContainer
 import com.artie.chargemenot.ui.components.categoryDisplayName
 import com.artie.chargemenot.ui.theme.meadowParentColor
 import com.artie.chargemenot.ui.theme.meadowParentIcon
@@ -118,10 +118,13 @@ fun ScannerScreen(
         }
     }
 
-    BackHandler(onBack = onNavigateBack)
-
+    MeadowPredictiveBackContainer(
+        enabled = true,
+        onBack = onNavigateBack,
+        modifier = modifier.fillMaxSize()
+    ) {
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.scanner_title)) },
@@ -230,6 +233,7 @@ fun ScannerScreen(
                 }
             }
         }
+    }
     }
 }
 
