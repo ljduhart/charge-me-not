@@ -57,6 +57,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,7 +69,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -721,15 +724,19 @@ private fun SubscriptionWeedFlowerRow(
     modifier: Modifier = Modifier
 ) {
     key(bill.id) {
+        val keepAction by rememberUpdatedState(onKeep)
+        val pullAction by rememberUpdatedState(onRequestPull)
+        val keepLabel = stringResource(R.string.dashboard_keep_flower)
+        val pullLabel = stringResource(R.string.dashboard_pull_weed)
         val dismissState = rememberSwipeToDismissBoxState(
             confirmValueChange = { direction ->
                 when (direction) {
                     SwipeToDismissBoxValue.StartToEnd -> {
-                        onKeep()
+                        keepAction()
                         true
                     }
                     SwipeToDismissBoxValue.EndToStart -> {
-                        onRequestPull()
+                        pullAction()
                         false
                     }
                     SwipeToDismissBoxValue.Settled -> false
@@ -782,7 +789,19 @@ private fun SubscriptionWeedFlowerRow(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable(onClick = onRowClick),
+                        .clickable(onClick = onRowClick)
+                        .semantics {
+                            customActions = listOf(
+                                CustomAccessibilityAction(keepLabel) {
+                                    keepAction()
+                                    true
+                                },
+                                CustomAccessibilityAction(pullLabel) {
+                                    pullAction()
+                                    true
+                                }
+                            )
+                        },
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MeadowWhite),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)

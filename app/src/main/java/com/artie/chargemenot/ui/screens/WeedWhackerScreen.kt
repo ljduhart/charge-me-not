@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material3.Card
@@ -29,6 +30,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -41,6 +43,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,6 +93,14 @@ fun WeedWhackerScreen(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.weed_whacker_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.meadow_navigate_back)
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MeadowGreen,
                     titleContentColor = MeadowWhite,
@@ -282,6 +293,7 @@ private fun SwipeableAuditCard(
     val thresholdPx = remember(density) { with(density) { 120.dp.toPx() } }
     val yesLabel = stringResource(R.string.weed_whacker_used_yes)
     val noLabel = stringResource(R.string.weed_whacker_used_no)
+    val recordResponse by rememberUpdatedState(onRecordAuditResponse)
 
     key(card.billId) {
         var dragging by remember { mutableStateOf(false) }
@@ -305,11 +317,11 @@ private fun SwipeableAuditCard(
                 .semantics {
                     customActions = listOf(
                         CustomAccessibilityAction(yesLabel) {
-                            onRecordAuditResponse(card.billId, true)
+                            recordResponse(card.billId, true)
                             true
                         },
                         CustomAccessibilityAction(noLabel) {
-                            onRecordAuditResponse(card.billId, false)
+                            recordResponse(card.billId, false)
                             true
                         }
                     )
@@ -325,7 +337,7 @@ private fun SwipeableAuditCard(
                             dragX = 0f
                             dragY = 0f
                             if (used != null) {
-                                onRecordAuditResponse(card.billId, used)
+                                recordResponse(card.billId, used)
                             }
                         },
                         onDragCancel = {

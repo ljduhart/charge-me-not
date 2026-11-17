@@ -27,7 +27,7 @@ fun MeadowHubScaffold(
     title: String,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
-    showBackNavigation: Boolean = false,
+    showBackNavigation: Boolean = true,
     handleSystemBack: Boolean = true,
     containerColor: Color = MeadowCream,
     topBarContainerColor: Color = MeadowCream,
