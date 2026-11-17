@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Eco
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -29,7 +28,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -66,7 +64,6 @@ fun WeedWhackerScreen(
     onRecordAuditResponse: (Long, Boolean) -> Unit,
     onRestartAuditSession: () -> Unit,
     onNavigateBack: () -> Unit,
-    onOpenDrawer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currency = uiState.selectedCurrency
@@ -78,14 +75,6 @@ fun WeedWhackerScreen(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.weed_whacker_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onOpenDrawer) {
-                        Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = stringResource(R.string.dashboard_menu)
-                        )
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MeadowGreen,
                     titleContentColor = MeadowWhite,
@@ -484,8 +473,7 @@ private fun WeedWhackerScreenPreview() {
             ),
             onRecordAuditResponse = { _, _ -> },
             onRestartAuditSession = {},
-            onNavigateBack = {},
-            onOpenDrawer = {}
+            onNavigateBack = {}
         )
     }
 }

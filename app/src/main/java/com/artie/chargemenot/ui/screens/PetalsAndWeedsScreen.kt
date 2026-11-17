@@ -84,7 +84,6 @@ fun PetalsAndWeedsScreen(
     parallaxOffset: Pair<Float, Float>,
     onStartParallaxSensor: () -> Unit,
     onStopParallaxSensor: () -> Unit,
-    onOpenDrawer: () -> Unit,
     onNavigateBack: () -> Unit,
     onSelectBillForEdit: (Bill) -> Unit,
     onShowManualBillEntry: () -> Unit,
@@ -185,7 +184,6 @@ fun PetalsAndWeedsScreen(
 
         MeadowHubScaffold(
             title = stringResource(R.string.meadow_route_petals_and_weeds),
-            onOpenDrawer = onOpenDrawer,
             onNavigateBack = onNavigateBack,
             containerColor = Color.Transparent,
             topBarContainerColor = Color.Transparent,

@@ -72,7 +72,6 @@ private val meadowPopExitTransition = fadeOut(
 fun ChargeMeNotNavHost(
     navController: NavHostController,
     startDestination: String,
-    onOpenDrawer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -126,7 +125,9 @@ fun ChargeMeNotNavHost(
                     uiState = uiState,
                     onStartParallaxSensor = dashboardViewModel::startParallaxSensor,
                     onStopParallaxSensor = dashboardViewModel::stopParallaxSensor,
-                    onOpenDrawer = onOpenDrawer,
+                    onNavigateToAdmin = { meadowRoute ->
+                        navController.navigateMeadowRoute(meadowRoute, AppRoutes.DASHBOARD)
+                    },
                     onKeepSubscription = dashboardViewModel::keepSubscription,
                     onPullSubscription = dashboardViewModel::pullSubscription,
                     onMonthlyBudgetChange = dashboardViewModel::updateMonthlyBudget,
@@ -164,7 +165,6 @@ fun ChargeMeNotNavHost(
                     parallaxOffset = uiState.parallaxOffset,
                     onStartParallaxSensor = dashboardViewModel::startParallaxSensor,
                     onStopParallaxSensor = dashboardViewModel::stopParallaxSensor,
-                    onOpenDrawer = onOpenDrawer,
                     onNavigateBack = { navController.navigateBackOrGardenHub() },
                     onSelectBillForEdit = dashboardViewModel::selectBillForEdit,
                     onShowManualBillEntry = { dashboardViewModel.showManualBillEntry() },
@@ -185,7 +185,6 @@ fun ChargeMeNotNavHost(
                     monthlyBudget = uiState.monthlyBudget,
                     totalUpcoming = uiState.totalUpcoming,
                     currency = uiState.selectedCurrency,
-                    onOpenDrawer = onOpenDrawer,
                     onNavigateBack = { navController.navigateBackOrGardenHub() },
                     onMonthlyBudgetChange = dashboardViewModel::updateMonthlyBudget
                 )
@@ -203,7 +202,6 @@ fun ChargeMeNotNavHost(
                 HarvestReportScreen(
                     forecastResult = uiState.forecastResult,
                     currency = uiState.selectedCurrency,
-                    onOpenDrawer = onOpenDrawer,
                     onNavigateBack = { navController.navigateBackOrGardenHub() }
                 )
             }
@@ -223,7 +221,6 @@ fun ChargeMeNotNavHost(
                     userDisplayName = uiState.userDisplayName,
                     selectedCurrencyCode = uiState.selectedCurrency.code,
                     settingsUiState = settingsUiState,
-                    onOpenDrawer = onOpenDrawer,
                     onNavigateBack = { navController.navigateBackOrGardenHub() },
                     onShowProfileEdit = dashboardViewModel::showProfileEdit,
                     onNagModeToggleRequested = settingsViewModel::onNagModeToggleRequested,
@@ -247,8 +244,7 @@ fun ChargeMeNotNavHost(
                 uiState = weedWhackerUiState,
                 onRecordAuditResponse = weedWhackerViewModel::recordAuditResponse,
                 onRestartAuditSession = weedWhackerViewModel::restartAuditSession,
-                onNavigateBack = { navController.navigateBackOrGardenHub() },
-                onOpenDrawer = onOpenDrawer
+                onNavigateBack = { navController.navigateBackOrGardenHub() }
             )
         }
 
@@ -269,8 +265,7 @@ fun ChargeMeNotNavHost(
                 onNavigateBack = {
                     pruningViewModel.clearRootExpansion()
                     navController.navigateBackOrGardenHub()
-                },
-                onOpenDrawer = onOpenDrawer
+                }
             )
         }
 
@@ -332,8 +327,7 @@ fun ChargeMeNotNavHost(
             CompostBinScreen(
                 uiState = compostBinUiState,
                 onSearchQueryChanged = compostBinViewModel::onSearchQueryChanged,
-                onNavigateBack = { navController.navigateBackOrGardenHub() },
-                onOpenDrawer = onOpenDrawer
+                onNavigateBack = { navController.navigateBackOrGardenHub() }
             )
         }
     }

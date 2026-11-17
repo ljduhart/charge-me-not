@@ -21,9 +21,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Eco
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -83,7 +83,6 @@ fun PruningSimulatorScreen(
     onToggleRootExpansion: (Long) -> Unit,
     onResetSandbox: () -> Unit,
     onNavigateBack: () -> Unit,
-    onOpenDrawer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currency = uiState.selectedCurrency
@@ -97,10 +96,10 @@ fun PruningSimulatorScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.pruning_simulator_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onOpenDrawer) {
+                    IconButton(onClick = onNavigateBack) {
                         Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = stringResource(R.string.dashboard_menu)
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.meadow_navigate_back)
                         )
                     }
                 },
@@ -499,8 +498,7 @@ private fun PruningSimulatorScreenPreview() {
             onToggleBillStatus = { _, _ -> },
             onToggleRootExpansion = {},
             onResetSandbox = {},
-            onNavigateBack = {},
-            onOpenDrawer = {}
+            onNavigateBack = {}
         )
     }
 }

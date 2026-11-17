@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.LocalFlorist
@@ -31,6 +30,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -56,6 +57,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -72,6 +75,7 @@ import com.artie.chargemenot.ui.components.PhotorealisticBloomCanvas
 import com.artie.chargemenot.ui.components.LinkRootBottomSheet
 import com.artie.chargemenot.ui.components.MeadowBillCalendarCard
 import com.artie.chargemenot.ui.components.MeadowTickerAmount
+import com.artie.chargemenot.ui.navigation.MeadowRoute
 import com.artie.chargemenot.ui.components.SubscriptionBrandIcon
 import com.artie.chargemenot.ui.components.WeatherForecastCard
 import com.artie.chargemenot.domain.model.UserSettings
@@ -98,7 +102,7 @@ fun DashboardScreen(
     uiState: DashboardUiState,
     onStartParallaxSensor: () -> Unit,
     onStopParallaxSensor: () -> Unit,
-    onOpenDrawer: () -> Unit,
+    onNavigateToAdmin: (MeadowRoute) -> Unit,
     onKeepSubscription: (Bill) -> Unit,
     onPullSubscription: (Bill) -> Unit,
     onMonthlyBudgetChange: (String) -> Boolean,
@@ -204,14 +208,6 @@ fun DashboardScreen(
                             fontWeight = FontWeight.Bold
                         )
                     },
-                    navigationIcon = {
-                        IconButton(onClick = onOpenDrawer) {
-                            Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = stringResource(R.string.dashboard_menu)
-                            )
-                        }
-                    },
                     actions = {
                         IconButton(onClick = onToggleSearchActive) {
                             Icon(
@@ -219,6 +215,10 @@ fun DashboardScreen(
                                 contentDescription = stringResource(R.string.dashboard_search)
                             )
                         }
+                        GardenHubToolsMenu(
+                            userName = uiState.userDisplayName,
+                            onNavigateToAdmin = onNavigateToAdmin
+                        )
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
@@ -342,8 +342,65 @@ fun DashboardScreen(
                 }
 
                 item(key = "bottom_spacer") {
-                    Spacer(modifier = Modifier.height(88.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GardenHubToolsMenu(
+    userName: String,
+    onNavigateToAdmin: (MeadowRoute) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val gardenToolsDescription = stringResource(R.string.dashboard_open_garden_tools)
+    Box {
+        IconButton(
+            onClick = { expanded = true },
+            modifier = Modifier.semantics { contentDescription = gardenToolsDescription }
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(MeadowSage, MeadowSky)
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = userName.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MeadowWhite,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            MeadowRoute.adminMenuRoutes.forEach { route ->
+                DropdownMenuItem(
+                    text = {
+                        Text(text = stringResource(route.titleRes))
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = route.icon,
+                            contentDescription = null,
+                            tint = MeadowGreenDark
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onNavigateToAdmin(route)
+                    }
+                )
             }
         }
     }
@@ -692,7 +749,7 @@ private fun DashboardScreenPreview() {
             ),
             onStartParallaxSensor = {},
             onStopParallaxSensor = {},
-            onOpenDrawer = {},
+            onNavigateToAdmin = {},
             onKeepSubscription = {},
             onPullSubscription = {},
             onMonthlyBudgetChange = { _ -> true },

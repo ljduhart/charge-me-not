@@ -56,7 +56,6 @@ fun RichSoilScreen(
     monthlyBudget: Long,
     totalUpcoming: Long,
     currency: SupportedCurrency,
-    onOpenDrawer: () -> Unit,
     onNavigateBack: () -> Unit,
     onMonthlyBudgetChange: (String) -> Boolean,
     modifier: Modifier = Modifier
@@ -74,7 +73,6 @@ fun RichSoilScreen(
 
     MeadowHubScaffold(
         title = stringResource(R.string.meadow_route_rich_soil),
-        onOpenDrawer = onOpenDrawer,
         onNavigateBack = onNavigateBack,
         modifier = modifier
     ) { innerPadding ->

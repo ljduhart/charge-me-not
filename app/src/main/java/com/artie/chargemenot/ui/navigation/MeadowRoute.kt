@@ -73,6 +73,15 @@ enum class MeadowRoute(
         group = MeadowRouteGroup.AnalyticalAdmin
     );
 
+    val bottomBarLabelRes: Int
+        get() = when (this) {
+            PetalsAndWeeds -> R.string.meadow_bottom_petals
+            RichSoil -> R.string.meadow_bottom_rich_soil
+            WeedWhacker -> R.string.meadow_bottom_weed_whacker
+            HarvestReport -> R.string.meadow_bottom_harvest
+            else -> titleRes
+        }
+
     companion object {
         val coreDailyRoutes: List<MeadowRoute> = entries.filter { route ->
             route.group == MeadowRouteGroup.CoreDaily
@@ -81,6 +90,25 @@ enum class MeadowRoute(
         val analyticalRoutes: List<MeadowRoute> = entries.filter { route ->
             route.group == MeadowRouteGroup.AnalyticalAdmin
         }
+
+        val bottomBarLeadingRoutes: List<MeadowRoute> = listOf(
+            PetalsAndWeeds,
+            RichSoil
+        )
+
+        val bottomBarTrailingRoutes: List<MeadowRoute> = listOf(
+            WeedWhacker,
+            HarvestReport
+        )
+
+        val bottomBarRoutes: List<MeadowRoute> =
+            bottomBarLeadingRoutes + bottomBarTrailingRoutes
+
+        val adminMenuRoutes: List<MeadowRoute> = listOf(
+            GreenhouseSettings,
+            PruningSkills,
+            CompostBin
+        )
 
         fun fromNavRoute(route: String?): MeadowRoute {
             return fromNavRouteOrNull(route) ?: GardenHub
@@ -91,6 +119,12 @@ enum class MeadowRoute(
                 return GardenHub
             }
             return entries.firstOrNull { meadowRoute -> meadowRoute.route == route }
+        }
+
+        fun selectedBottomBarRoute(route: String?): MeadowRoute? {
+            return fromNavRouteOrNull(route)?.takeIf { meadowRoute ->
+                meadowRoute in bottomBarRoutes
+            }
         }
     }
 }

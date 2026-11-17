@@ -18,7 +18,10 @@ object AppRoutes {
         PETALS_AND_WEEDS,
         RICH_SOIL,
         HARVEST_REPORT,
-        GREENHOUSE_SETTINGS
+        GREENHOUSE_SETTINGS,
+        WEED_WHACKER,
+        COMPOST_BIN,
+        PRUNING_SIMULATOR
     )
 
     val navigableRoutes: Set<String> = setOf(
@@ -35,6 +38,20 @@ object AppRoutes {
     )
 
     fun shouldReturnToGardenHub(didPopBackStack: Boolean): Boolean = !didPopBackStack
+
+    fun showsMeadowBottomBar(currentRoute: String?): Boolean {
+        return currentRoute != null &&
+            currentRoute != ONBOARDING &&
+            currentRoute != SCANNER
+    }
+
+    fun showsMeadowOverlays(currentRoute: String?): Boolean {
+        return currentRoute in overlayPreservingRoutes
+    }
+
+    fun shouldClearOverlayState(currentRoute: String?): Boolean {
+        return currentRoute == ONBOARDING
+    }
 
     fun shouldConsumePendingNavigation(currentRoute: String?): Boolean {
         return currentRoute != null && currentRoute != ONBOARDING

@@ -30,10 +30,52 @@ class MeadowRouteTest {
     }
 
     @Test
-    fun fromNavRouteOrNull_mapsDrawerDestinations() {
+    fun fromNavRouteOrNull_mapsAdminAndTabDestinations() {
         assertEquals(MeadowRoute.CompostBin, MeadowRoute.fromNavRouteOrNull(AppRoutes.COMPOST_BIN))
         assertEquals(MeadowRoute.PruningSkills, MeadowRoute.fromNavRouteOrNull(AppRoutes.PRUNING_SIMULATOR))
         assertEquals(MeadowRoute.WeedWhacker, MeadowRoute.fromNavRouteOrNull(AppRoutes.WEED_WHACKER))
+    }
+
+    @Test
+    fun bottomBarRoutes_flattenPrimaryTabsAroundTheScannerFab() {
+        assertEquals(
+            listOf(
+                MeadowRoute.PetalsAndWeeds,
+                MeadowRoute.RichSoil,
+                MeadowRoute.WeedWhacker,
+                MeadowRoute.HarvestReport
+            ),
+            MeadowRoute.bottomBarRoutes
+        )
+        assertEquals(
+            listOf(MeadowRoute.PetalsAndWeeds, MeadowRoute.RichSoil),
+            MeadowRoute.bottomBarLeadingRoutes
+        )
+        assertEquals(
+            listOf(MeadowRoute.WeedWhacker, MeadowRoute.HarvestReport),
+            MeadowRoute.bottomBarTrailingRoutes
+        )
+        assertFalse(MeadowRoute.bottomBarRoutes.contains(MeadowRoute.GardenHub))
+        assertFalse(MeadowRoute.bottomBarRoutes.contains(MeadowRoute.GreenhouseSettings))
+        assertFalse(MeadowRoute.bottomBarRoutes.contains(MeadowRoute.CompostBin))
+        assertFalse(MeadowRoute.bottomBarRoutes.contains(MeadowRoute.PruningSkills))
+        assertEquals(MeadowRoute.PetalsAndWeeds, MeadowRoute.selectedBottomBarRoute(PETALS_AND_WEEDS))
+        assertEquals(MeadowRoute.WeedWhacker, MeadowRoute.selectedBottomBarRoute(AppRoutes.WEED_WHACKER))
+        assertEquals(null, MeadowRoute.selectedBottomBarRoute(DASHBOARD))
+        assertEquals(null, MeadowRoute.selectedBottomBarRoute(AppRoutes.COMPOST_BIN))
+        assertEquals(null, MeadowRoute.selectedBottomBarRoute(AppRoutes.SCANNER))
+    }
+
+    @Test
+    fun adminMenuRoutes_houseDisplacedGardenTools() {
+        assertEquals(
+            listOf(
+                MeadowRoute.GreenhouseSettings,
+                MeadowRoute.PruningSkills,
+                MeadowRoute.CompostBin
+            ),
+            MeadowRoute.adminMenuRoutes
+        )
     }
 
     @Test
@@ -62,13 +104,35 @@ class MeadowRouteTest {
                 PETALS_AND_WEEDS,
                 RICH_SOIL,
                 HARVEST_REPORT,
-                GREENHOUSE_SETTINGS
+                GREENHOUSE_SETTINGS,
+                AppRoutes.WEED_WHACKER,
+                AppRoutes.COMPOST_BIN,
+                AppRoutes.PRUNING_SIMULATOR
             ),
             AppRoutes.overlayPreservingRoutes
         )
         assertFalse(AppRoutes.overlayPreservingRoutes.contains(AppRoutes.SCANNER))
         assertFalse(AppRoutes.overlayPreservingRoutes.contains(AppRoutes.ONBOARDING))
-        assertFalse(AppRoutes.overlayPreservingRoutes.contains(AppRoutes.COMPOST_BIN))
+        assertTrue(AppRoutes.showsMeadowOverlays(DASHBOARD))
+        assertTrue(AppRoutes.showsMeadowOverlays(AppRoutes.WEED_WHACKER))
+        assertTrue(AppRoutes.showsMeadowOverlays(AppRoutes.COMPOST_BIN))
+        assertFalse(AppRoutes.showsMeadowOverlays(AppRoutes.SCANNER))
+        assertFalse(AppRoutes.showsMeadowOverlays(AppRoutes.ONBOARDING))
+        assertFalse(AppRoutes.shouldClearOverlayState(DASHBOARD))
+        assertFalse(AppRoutes.shouldClearOverlayState(AppRoutes.SCANNER))
+        assertTrue(AppRoutes.shouldClearOverlayState(AppRoutes.ONBOARDING))
+    }
+
+    @Test
+    fun showsMeadowBottomBar_hidesOnOnboardingAndScanner() {
+        assertTrue(AppRoutes.showsMeadowBottomBar(DASHBOARD))
+        assertTrue(AppRoutes.showsMeadowBottomBar(PETALS_AND_WEEDS))
+        assertTrue(AppRoutes.showsMeadowBottomBar(AppRoutes.WEED_WHACKER))
+        assertTrue(AppRoutes.showsMeadowBottomBar(AppRoutes.COMPOST_BIN))
+        assertTrue(AppRoutes.showsMeadowBottomBar(AppRoutes.PRUNING_SIMULATOR))
+        assertFalse(AppRoutes.showsMeadowBottomBar(null))
+        assertFalse(AppRoutes.showsMeadowBottomBar(AppRoutes.ONBOARDING))
+        assertFalse(AppRoutes.showsMeadowBottomBar(AppRoutes.SCANNER))
     }
 
     @Test
@@ -140,7 +204,7 @@ class MeadowRouteTest {
         assertTrue(scannerToPetals.restoreState)
 
         assertTrue(dashboardToCompost.saveState)
-        assertFalse(dashboardToCompost.restoreState)
+        assertTrue(dashboardToCompost.restoreState)
     }
 
     @Test

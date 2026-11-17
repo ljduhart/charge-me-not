@@ -96,6 +96,13 @@
     <string name="dashboard_menu">Open navigation menu</string>
     <string name="dashboard_search">Search subscriptions</string>
     <string name="dashboard_drawer_title">Garden Tools</string>
+    <string name="dashboard_open_garden_tools">Open garden tools</string>
+    <string name="meadow_navigate_back">Back to Garden Hub</string>
+    <string name="meadow_scan_bill">Scan bill</string>
+    <string name="meadow_bottom_petals">Petals</string>
+    <string name="meadow_bottom_rich_soil">Soil</string>
+    <string name="meadow_bottom_weed_whacker">Whacker</string>
+    <string name="meadow_bottom_harvest">Harvest</string>
     <string name="dashboard_welcome_back">Welcome back, %1$s.</string>
     <string name="dashboard_total_upcoming_label">TOTAL UPCOMING:</string>
     <string name="dashboard_bill_count">(%1$d Bills)</string>

@@ -4,7 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,9 +25,9 @@ import com.artie.chargemenot.ui.theme.MeadowGreenDark
 @Composable
 fun MeadowHubScaffold(
     title: String,
-    onOpenDrawer: () -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
+    showBackNavigation: Boolean = false,
     containerColor: Color = MeadowCream,
     topBarContainerColor: Color = MeadowCream,
     titleContentColor: Color = MeadowGreenDark,
@@ -50,11 +50,13 @@ fun MeadowHubScaffold(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onOpenDrawer) {
-                        Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = stringResource(R.string.dashboard_menu)
-                        )
+                    if (showBackNavigation) {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.meadow_navigate_back)
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
