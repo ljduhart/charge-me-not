@@ -1,6 +1,7 @@
 package com.artie.chargemenot.ui.navigation
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
@@ -79,7 +80,7 @@ fun MeadowBottomBar(
 }
 
 @Composable
-private fun MeadowBottomBarItem(
+private fun RowScope.MeadowBottomBarItem(
     route: MeadowRoute,
     selected: Boolean,
     onClick: () -> Unit
